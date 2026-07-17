@@ -90,7 +90,6 @@
          x-data="{
              labels: @entangle('chartData.labels'),
              datasets: @entangle('chartData.datasets'),
-             chart: null,
              init() {
                  this.$nextTick(() => {
                      this.renderChart();
@@ -107,10 +106,10 @@
                      const rawLabels = JSON.parse(JSON.stringify(this.labels || []));
                      const rawDatasets = JSON.parse(JSON.stringify(this.datasets || []));
 
-                     if (this.chart) {
-                         this.chart.data.labels = rawLabels;
-                         this.chart.data.datasets = rawDatasets;
-                         this.chart.update('none');
+                     if (canvas._chart) {
+                         canvas._chart.data.labels = rawLabels;
+                         canvas._chart.data.datasets = rawDatasets;
+                         canvas._chart.update('none');
                          return;
                      }
 
@@ -121,7 +120,7 @@
                      const textColor = isDark ? '#94a3b8' : '#64748b';
                      const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
                      
-                     this.chart = new Chart(ctx, {
+                     canvas._chart = new Chart(ctx, {
                          type: 'line',
                          data: {
                              labels: rawLabels,
