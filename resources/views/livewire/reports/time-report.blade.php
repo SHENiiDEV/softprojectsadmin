@@ -107,44 +107,53 @@
                  const ctx = canvas.getContext('2d');
                  const isDark = document.documentElement.classList.contains('dark');
                  const textColor = isDark ? '#94a3b8' : '#64748b';
-                 const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
                  const colors = [
-                     'rgba(14, 165, 233, 0.8)',
-                     'rgba(99, 102, 241, 0.8)',
-                     'rgba(16, 185, 129, 0.8)',
-                     'rgba(245, 158, 11, 0.8)',
-                     'rgba(239, 68, 68, 0.8)',
-                     'rgba(168, 85, 247, 0.8)',
+                     'rgba(14, 165, 233, 0.85)',
+                     'rgba(99, 102, 241, 0.85)',
+                     'rgba(16, 185, 129, 0.85)',
+                     'rgba(245, 158, 11, 0.85)',
+                     'rgba(239, 68, 68, 0.85)',
+                     'rgba(168, 85, 247, 0.85)',
                  ];
                  this.chart = new Chart(ctx, {
-                     type: 'bar',
+                     type: 'doughnut',
                      data: {
                          labels: this.labels,
                          datasets: [{
-                             label: 'Hours Worked',
                              data: this.hours,
                              backgroundColor: this.labels.map((_, i) => colors[i % colors.length]),
-                             borderRadius: 8,
-                             borderSkipped: false,
+                             borderWidth: 2,
+                             borderColor: isDark ? '#0f172a' : '#ffffff',
                          }]
                      },
                      options: {
                          responsive: true,
                          maintainAspectRatio: false,
+                         cutout: '72%',
                          plugins: {
-                             legend: { display: false },
-                             tooltip: {
-                                 callbacks: {
-                                     label: ctx => ` ${ctx.parsed.y}h`
+                             legend: {
+                                 display: true,
+                                 position: 'bottom',
+                                 labels: {
+                                     color: textColor,
+                                     usePointStyle: true,
+                                     padding: 20,
+                                     font: {
+                                         family: 'Inter, sans-serif',
+                                         size: 11
+                                     }
                                  }
-                             }
-                         },
-                         scales: {
-                             x: { ticks: { color: textColor }, grid: { display: false } },
-                             y: {
-                                 ticks: { color: textColor, callback: v => v + 'h' },
-                                 grid: { color: gridColor },
-                                 beginAtZero: true
+                             },
+                             tooltip: {
+                                 backgroundColor: isDark ? '#1e293b' : '#ffffff',
+                                 titleColor: isDark ? '#ffffff' : '#0f172a',
+                                 bodyColor: isDark ? '#94a3b8' : '#475569',
+                                 borderColor: isDark ? '#334155' : '#e2e8f0',
+                                 borderWidth: 1,
+                                 padding: 10,
+                                 callbacks: {
+                                     label: ctx => ` ${ctx.label}: ${ctx.raw}h`
+                                 }
                              }
                          }
                      }
@@ -155,7 +164,7 @@
         <h2 class="font-outfit font-bold text-lg text-slate-800 dark:text-white mb-4">
             {{ $userId === '' ? 'Time Distribution by Team Member' : 'Time Distribution by Task' }}
         </h2>
-        <div style="height: 280px; position: relative;">
+        <div style="height: 320px; position: relative;">
             <canvas id="timeReportChart"></canvas>
         </div>
     </div>
