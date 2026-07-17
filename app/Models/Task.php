@@ -188,7 +188,7 @@ class Task extends Model implements HasMedia
      */
     public function comments(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
-        return $this->hasMany(Comment::class)->whereNull('parent_id')->orderBy('created_at', 'asc');
+        return $this->hasMany(Comment::class)->whereNull('parent_id')->orderBy('created_at', 'desc');
     }
 
     /**
@@ -196,7 +196,7 @@ class Task extends Model implements HasMedia
      */
     public function allComments(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
-        return $this->hasMany(Comment::class)->orderBy('created_at', 'asc');
+        return $this->hasMany(Comment::class)->orderBy('created_at', 'desc');
     }
 
     /**
