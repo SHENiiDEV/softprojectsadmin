@@ -88,7 +88,7 @@ class CompanyDocumentsAndSettlementBanksTest extends TestCase
         Livewire::actingAs($this->user)
             ->test(DocumentsSection::class, ['project' => $project])
             ->set('files', [$file1, $file2])
-            ->call('upload')
+            ->call('uploadDocuments')
             ->assertHasNoErrors();
 
         $project->refresh();

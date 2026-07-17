@@ -19,7 +19,7 @@ class DocumentsSection extends Component
         $this->project = $project;
     }
 
-    public function upload(): void
+    public function uploadDocuments(): void
     {
         $this->validate([
             'files.*' => 'required|file|max:10240', // 10MB max per file

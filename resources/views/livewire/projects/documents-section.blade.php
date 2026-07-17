@@ -5,7 +5,7 @@
             <i class="fa-solid fa-cloud-arrow-up text-sky-500"></i> Upload Company Documents
         </h3>
         
-        <form wire:submit.prevent="upload" class="space-y-4">
+        <form wire:submit.prevent="uploadDocuments" class="space-y-4">
             <div class="flex items-center justify-center w-full">
                 <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-slate-200 dark:border-slate-800 border-dashed rounded-2xl cursor-pointer bg-slate-50/50 dark:bg-slate-950/20 hover:bg-slate-50 dark:hover:bg-slate-950/40 transition-colors">
                     <div class="flex flex-col items-center justify-center pt-5 pb-6">
@@ -41,8 +41,8 @@
                         @if(empty($files)) disabled @endif
                         class="inline-flex items-center gap-2 px-4 py-2.5 bg-sky-600 hover:bg-sky-700 disabled:opacity-50 disabled:pointer-events-none text-white text-sm font-semibold rounded-xl transition-colors shadow-sm cursor-pointer">
                     <i class="fa-solid fa-cloud-arrow-up"></i>
-                    <span wire:loading.remove wire:target="upload">Upload Documents</span>
-                    <span wire:loading wire:target="upload">Uploading...</span>
+                    <span wire:loading.remove wire:target="uploadDocuments">Upload Documents</span>
+                    <span wire:loading wire:target="uploadDocuments">Uploading...</span>
                 </button>
             </div>
         </form>
