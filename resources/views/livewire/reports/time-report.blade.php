@@ -86,7 +86,72 @@
 
     {{-- Chart Section --}}
     @if(!empty($chartData['labels']))
-    <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-2xl p-6 shadow-sm">
+    <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-2xl p-6 shadow-sm"
+         x-data="{
+             labels: @entangle('chartData.labels'),
+             hours: @entangle('chartData.hours'),
+             chart: null,
+             init() {
+                 this.$nextTick(() => {
+                     this.renderChart();
+                 });
+                 this.$watch('labels', () => this.renderChart());
+                 this.$watch('hours', () => this.renderChart());
+             },
+             renderChart() {
+                 if (this.chart) {
+                     this.chart.destroy();
+                 }
+                 const canvas = document.getElementById('timeReportChart');
+                 if (!canvas) return;
+                 const ctx = canvas.getContext('2d');
+                 const isDark = document.documentElement.classList.contains('dark');
+                 const textColor = isDark ? '#94a3b8' : '#64748b';
+                 const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+                 const colors = [
+                     'rgba(14, 165, 233, 0.8)',
+                     'rgba(99, 102, 241, 0.8)',
+                     'rgba(16, 185, 129, 0.8)',
+                     'rgba(245, 158, 11, 0.8)',
+                     'rgba(239, 68, 68, 0.8)',
+                     'rgba(168, 85, 247, 0.8)',
+                 ];
+                 this.chart = new Chart(ctx, {
+                     type: 'bar',
+                     data: {
+                         labels: this.labels,
+                         datasets: [{
+                             label: 'Hours Worked',
+                             data: this.hours,
+                             backgroundColor: this.labels.map((_, i) => colors[i % colors.length]),
+                             borderRadius: 8,
+                             borderSkipped: false,
+                         }]
+                     },
+                     options: {
+                         responsive: true,
+                         maintainAspectRatio: false,
+                         plugins: {
+                             legend: { display: false },
+                             tooltip: {
+                                 callbacks: {
+                                     label: ctx => ` ${ctx.parsed.y}h`
+                                 }
+                             }
+                         },
+                         scales: {
+                             x: { ticks: { color: textColor }, grid: { display: false } },
+                             y: {
+                                 ticks: { color: textColor, callback: v => v + 'h' },
+                                 grid: { color: gridColor },
+                                 beginAtZero: true
+                             }
+                         }
+                     }
+                 });
+             }
+         }"
+         wire:ignore>
         <h2 class="font-outfit font-bold text-lg text-slate-800 dark:text-white mb-4">
             {{ $userId === '' ? 'Time Distribution by Team Member' : 'Time Distribution by Task' }}
         </h2>
@@ -94,63 +159,6 @@
             <canvas id="timeReportChart"></canvas>
         </div>
     </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
-    <script>
-    (function() {
-        const labels = @json($chartData['labels']);
-        const data   = @json($chartData['hours']);
-
-        const colors = [
-            'rgba(14, 165, 233, 0.8)',
-            'rgba(99, 102, 241, 0.8)',
-            'rgba(16, 185, 129, 0.8)',
-            'rgba(245, 158, 11, 0.8)',
-            'rgba(239, 68, 68, 0.8)',
-            'rgba(168, 85, 247, 0.8)',
-        ];
-
-        const isDark    = document.documentElement.classList.contains('dark');
-        const textColor = isDark ? '#94a3b8' : '#64748b';
-        const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
-
-        const ctx = document.getElementById('timeReportChart').getContext('2d');
-        if (window._timeChart) window._timeChart.destroy();
-        window._timeChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels,
-                datasets: [{
-                    label: 'Hours Worked',
-                    data,
-                    backgroundColor: labels.map((_, i) => colors[i % colors.length]),
-                    borderRadius: 8,
-                    borderSkipped: false,
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        callbacks: {
-                            label: ctx => ` ${ctx.parsed.y}h`
-                        }
-                    }
-                },
-                scales: {
-                    x: { ticks: { color: textColor }, grid: { display: false } },
-                    y: {
-                        ticks: { color: textColor, callback: v => v + 'h' },
-                        grid: { color: gridColor },
-                        beginAtZero: true
-                    }
-                }
-            }
-        });
-    })();
-    </script>
     @endif
 
     <!-- Main Content Grid -->

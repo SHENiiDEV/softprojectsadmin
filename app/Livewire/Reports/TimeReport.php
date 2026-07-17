@@ -12,6 +12,7 @@ class TimeReport extends Component
     public $userId = ''; // Empty string means 'All'
     public $fromDate;
     public $toDate;
+    public $chartData = [];
 
     public function mount()
     {
@@ -82,7 +83,7 @@ class TimeReport extends Component
             })->sortByDesc('total_seconds')->values()->all();
         }
 
-        $chartData = $this->buildChartData($userBreakdown, $taskBreakdown);
+        $this->chartData = $this->buildChartData($userBreakdown, $taskBreakdown);
 
         return view('livewire.reports.time-report', [
             'users' => $users,
@@ -92,7 +93,7 @@ class TimeReport extends Component
             'uniqueTasksCount' => $uniqueTasksCount,
             'userBreakdown' => $userBreakdown,
             'taskBreakdown' => $taskBreakdown,
-            'chartData' => $chartData,
+            'chartData' => $this->chartData,
         ]);
     }
 
