@@ -39,6 +39,10 @@ class Edit extends Component
 
     public ?int $client_id = null;
 
+    public string $settlement_bank_1 = '';
+
+    public string $settlement_bank_2 = '';
+
     // Director fields
     public string $director_name = '';
 
@@ -59,6 +63,8 @@ class Edit extends Component
         $this->notes = $project->notes ?? '';
         $this->manager_id = $project->manager_id;
         $this->client_id = $project->client_id;
+        $this->settlement_bank_1 = $project->settlement_bank_1 ?? '';
+        $this->settlement_bank_2 = $project->settlement_bank_2 ?? '';
 
         $phones = $project->phones ?? [];
         $this->phone_krisp = $phones['Krisp'] ?? '';
@@ -96,6 +102,8 @@ class Edit extends Component
             'notes' => 'nullable|string',
             'manager_id' => 'nullable|exists:users,id',
             'client_id' => 'nullable|exists:clients,id',
+            'settlement_bank_1' => 'nullable|string|max:2000',
+            'settlement_bank_2' => 'nullable|string|max:2000',
             'director_name' => 'required|string|max:255',
             'director_fee_status' => 'required|string',
             'director_managed_by' => 'nullable|exists:users,id',
@@ -133,6 +141,8 @@ class Edit extends Component
             'notes' => $this->notes ?: null,
             'manager_id' => $this->manager_id ?: null,
             'client_id' => $this->client_id ?: null,
+            'settlement_bank_1' => $this->settlement_bank_1 ?: null,
+            'settlement_bank_2' => $this->settlement_bank_2 ?: null,
         ]);
 
         if ($this->website) {

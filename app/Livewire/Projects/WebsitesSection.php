@@ -8,6 +8,32 @@ use Livewire\Component;
 
 class WebsitesSection extends Component
 {
+    public const AVAILABLE_GATEWAYS = [
+        'Cardaq',
+        'Madfin',
+        'ThePaymentFactory',
+        'Decta',
+        'Xsell',
+        'Fenige',
+        'Walletto',
+        'Vialet',
+        'Exactly',
+        'JFX',
+        'NexPay',
+        'Paytently',
+        'EcomPay',
+        'Trustpayments',
+        'Skrill',
+        'PaySafeCard',
+        'Blik',
+        'Paystrax',
+        'Rapyd',
+        'MIA',
+        'Pixxles',
+        'Syspay',
+        'Revolut',
+    ];
+
     public Project $project;
 
     public bool $showForm = false;
@@ -21,11 +47,18 @@ class WebsitesSection extends Component
 
     public string $status = 'No integration';
 
-    protected array $rules = [
-        'name' => 'required|string|max:255',
-        'url' => 'required|url',
-        'status' => 'required|in:Live,Test,No integration',
-    ];
+    public array $gateways = [];
+
+    protected function rules(): array
+    {
+        return [
+            'name' => 'required|string|max:255',
+            'url' => 'required|url',
+            'status' => 'required|in:Live,Test,No integration',
+            'gateways' => 'nullable|array',
+            'gateways.*' => 'string|in:'.implode(',', self::AVAILABLE_GATEWAYS),
+        ];
+    }
 
     public function mount(Project $project): void
     {
@@ -46,6 +79,7 @@ class WebsitesSection extends Component
         $this->name = $website->name;
         $this->url = $website->url;
         $this->status = $website->status ?? 'No integration';
+        $this->gateways = $website->gateways ?? [];
         $this->showForm = true;
     }
 
@@ -59,6 +93,7 @@ class WebsitesSection extends Component
                 'name' => $this->name,
                 'url' => $this->url,
                 'status' => $this->status,
+                'gateways' => $this->gateways,
             ]);
             session()->flash('message', 'Website successfully updated.');
         } else {
@@ -66,6 +101,7 @@ class WebsitesSection extends Component
                 'name' => $this->name,
                 'url' => $this->url,
                 'status' => $this->status,
+                'gateways' => $this->gateways,
             ]);
             session()->flash('message', 'New website successfully added.');
         }
@@ -92,6 +128,7 @@ class WebsitesSection extends Component
         $this->name = '';
         $this->url = '';
         $this->status = 'No integration';
+        $this->gateways = [];
         $this->resetValidation();
     }
 

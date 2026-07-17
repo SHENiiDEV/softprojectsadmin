@@ -225,6 +225,22 @@
                         </div>
                     </div>
 
+                    <!-- Settlement Bank Accounts -->
+                    <div class="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <span class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">Settlement Bank Account 1</span>
+                            <div class="p-3 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800/80 rounded-xl text-sm text-slate-700 dark:text-slate-300 min-h-[60px] whitespace-pre-line">
+                                {{ $project->settlement_bank_1 ?: 'Not specified' }}
+                            </div>
+                        </div>
+                        <div>
+                            <span class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">Settlement Bank Account 2</span>
+                            <div class="p-3 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800/80 rounded-xl text-sm text-slate-700 dark:text-slate-300 min-h-[60px] whitespace-pre-line">
+                                {{ $project->settlement_bank_2 ?: 'Not specified' }}
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Notes -->
                     @if(config('features.notes_tab', true))
                     <div class="md:col-span-2">
@@ -364,6 +380,16 @@
             </button>
             @endif
 
+            <!-- Documents Tab -->
+            <button @click="activeTab = 'documents'" 
+                    :class="activeTab === 'documents' ? 'bg-sky-100/70 text-sky-700 border-sky-500 dark:bg-sky-950/40 dark:text-sky-400 dark:border-sky-400' : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'"
+                    class="flex items-center px-6 py-4 border-b-2 font-semibold text-sm transition-all duration-150 whitespace-nowrap">
+                <svg class="w-4.5 h-4.5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Documents
+            </button>
+
             <!-- Notes Tab -->
             @if(config('features.notes_tab', true))
             <button @click="activeTab = 'notes'" 
@@ -418,6 +444,11 @@
                 <livewire:projects.reports-section :project="$project" />
             </div>
             @endif
+
+            <!-- Documents Tab Pane -->
+            <div x-show="activeTab === 'documents'" x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0">
+                <livewire:projects.documents-section :project="$project" />
+            </div>
 
             <!-- Notes Tab Pane -->
             @if(config('features.notes_tab', true))

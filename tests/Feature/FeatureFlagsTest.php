@@ -2,9 +2,17 @@
 
 namespace Tests\Feature;
 
+use App\Livewire\ClientPortal;
+use App\Livewire\Tasks\KanbanBoard;
+use App\Models\Client;
+use App\Models\Project;
+use App\Models\Task;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class FeatureFlagsTest extends TestCase
@@ -26,8 +34,8 @@ class FeatureFlagsTest extends TestCase
         config(['features.calendar' => true]);
 
         // Create a task with a due date to ensure formatting works
-        $project = \App\Models\Project::factory()->create();
-        \App\Models\Task::create([
+        $project = Project::factory()->create();
+        Task::create([
             'title' => 'Calendar Task',
             'project_id' => $project->id,
             'creator_id' => $this->user->id,
@@ -125,7 +133,7 @@ class FeatureFlagsTest extends TestCase
 
     public function test_project_details_shows_or_hides_tabs_based_on_feature_flags(): void
     {
-        $project = \App\Models\Project::factory()->create();
+        $project = Project::factory()->create();
 
         // 1. All enabled
         config([
@@ -170,8 +178,8 @@ class FeatureFlagsTest extends TestCase
 
     public function test_kanban_board_details_shows_or_hides_subfeatures_based_on_flags(): void
     {
-        $project = \App\Models\Project::factory()->create();
-        $task = \App\Models\Task::create([
+        $project = Project::factory()->create();
+        $task = Task::create([
             'title' => 'Feature Test Task',
             'project_id' => $project->id,
             'creator_id' => $this->user->id,
@@ -189,8 +197,8 @@ class FeatureFlagsTest extends TestCase
             'features.session_log_history' => true,
         ]);
 
-        \Livewire\Livewire::actingAs($this->user)
-            ->test(\App\Livewire\Tasks\KanbanBoard::class)
+        Livewire::actingAs($this->user)
+            ->test(KanbanBoard::class)
             ->call('openTaskModal', $task->id)
             ->assertSee('Comments')
             ->assertSee('Work Logs')
@@ -208,8 +216,8 @@ class FeatureFlagsTest extends TestCase
             'features.session_log_history' => false,
         ]);
 
-        \Livewire\Livewire::actingAs($this->user)
-            ->test(\App\Livewire\Tasks\KanbanBoard::class)
+        Livewire::actingAs($this->user)
+            ->test(KanbanBoard::class)
             ->call('openTaskModal', $task->id)
             ->assertDontSee('Comments')
             ->assertDontSee('Work Logs')
@@ -221,18 +229,18 @@ class FeatureFlagsTest extends TestCase
 
     public function test_client_portal_shows_or_hides_subfeatures_based_on_flags(): void
     {
-        \Illuminate\Support\Facades\Storage::fake('public');
+        Storage::fake('public');
 
-        $client = \App\Models\Client::create([
+        $client = Client::create([
             'name' => 'Flag Test Client',
             'hash' => 'flaghash12345678901234567890123456',
         ]);
 
-        $project = \App\Models\Project::factory()->create([
+        $project = Project::factory()->create([
             'client_id' => $client->id,
         ]);
 
-        $task = \App\Models\Task::create([
+        $task = Task::create([
             'title' => 'Flag Task',
             'project_id' => $project->id,
             'creator_id' => $this->user->id,
@@ -241,7 +249,7 @@ class FeatureFlagsTest extends TestCase
         ]);
 
         // Attach a file to task to test attachments section visibility
-        $file = \Illuminate\Http\UploadedFile::fake()->create('document.pdf', 100);
+        $file = UploadedFile::fake()->create('document.pdf', 100);
         $task->addMedia($file)->toMediaCollection('documents');
 
         $this->assertCount(1, $task->getMedia('documents'));
@@ -251,8 +259,10 @@ class FeatureFlagsTest extends TestCase
             'features.client_portal_comments' => true,
             'features.task_attachments' => true,
         ]);
+        putenv('ENABLE_CLIENT_PORTAL_COMMENTS=true');
+        putenv('ENABLE_TASK_ATTACHMENTS=true');
 
-        \Livewire\Livewire::test(\App\Livewire\ClientPortal::class, ['hash' => $client->hash])
+        Livewire::test(ClientPortal::class, ['hash' => $client->hash])
             ->call('openTaskModal', $task->id)
             ->assertSee('Discussion')
             ->assertSee('Attachments');
@@ -262,10 +272,16 @@ class FeatureFlagsTest extends TestCase
             'features.client_portal_comments' => false,
             'features.task_attachments' => false,
         ]);
+        putenv('ENABLE_CLIENT_PORTAL_COMMENTS=false');
+        putenv('ENABLE_TASK_ATTACHMENTS=false');
 
-        \Livewire\Livewire::test(\App\Livewire\ClientPortal::class, ['hash' => $client->hash])
+        Livewire::test(ClientPortal::class, ['hash' => $client->hash])
             ->call('openTaskModal', $task->id)
             ->assertDontSee('Discussion')
             ->assertDontSee('Attachments');
+
+        // Reset env
+        putenv('ENABLE_CLIENT_PORTAL_COMMENTS');
+        putenv('ENABLE_TASK_ATTACHMENTS');
     }
 }

@@ -2,28 +2,26 @@
 
 namespace App\Models;
 
+use Database\Factories\ProjectFactory;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-
-use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Models\ProjectNote;
-use App\Models\ActivityLog;
-use App\Models\User;
-use App\Models\Client;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
-#[Fillable(['name', 'status', 'integration_status', 'ubo', 'mcc', 'phones', 'emails', 'notes', 'archived_at', 'manager_id', 'client_id'])]
-class Project extends Model
+#[Fillable(['name', 'status', 'integration_status', 'ubo', 'mcc', 'phones', 'emails', 'notes', 'archived_at', 'manager_id', 'client_id', 'settlement_bank_1', 'settlement_bank_2'])]
+class Project extends Model implements HasMedia
 {
-    /** @use HasFactory<\Database\Factories\ProjectFactory> */
-    use HasFactory;
+    /** @use HasFactory<ProjectFactory> */
+    use HasFactory, InteractsWithMedia;
 
     protected static function booted(): void
     {
         static::updated(function (Project $project) {
-            if (!config('features.company_changelog', true)) {
+            if (! config('features.company_changelog', true)) {
                 return;
             }
 
@@ -45,22 +43,26 @@ class Project extends Model
                 } elseif ($key === 'status') {
                     $changes[] = "Company status updated from '{$original}' to '{$value}'";
                 } elseif ($key === 'integration_status') {
-                    $changes[] = "Integration status updated from '" . ($original ?? 'pending') . "' to '" . ($value ?? 'pending') . "'";
+                    $changes[] = "Integration status updated from '".($original ?? 'pending')."' to '".($value ?? 'pending')."'";
                 } elseif ($key === 'ubo') {
-                    $changes[] = "UBO updated from '" . ($original ?? 'not specified') . "' to '" . ($value ?? 'not specified') . "'";
+                    $changes[] = "UBO updated from '".($original ?? 'not specified')."' to '".($value ?? 'not specified')."'";
                 } elseif ($key === 'mcc') {
-                    $changes[] = "MCC Code updated from '" . ($original ?? 'not specified') . "' to '" . ($value ?? 'not specified') . "'";
+                    $changes[] = "MCC Code updated from '".($original ?? 'not specified')."' to '".($value ?? 'not specified')."'";
+                } elseif ($key === 'settlement_bank_1') {
+                    $changes[] = 'Settlement Bank 1 details were updated';
+                } elseif ($key === 'settlement_bank_2') {
+                    $changes[] = 'Settlement Bank 2 details were updated';
                 } elseif ($key === 'archived_at') {
                     if ($value === null) {
-                        $changes[] = "Company was restored from archive";
+                        $changes[] = 'Company was restored from archive';
                     } else {
-                        $changes[] = "Company was archived";
+                        $changes[] = 'Company was archived';
                     }
                 } else {
                     if (is_array($value) || is_array($original)) {
-                        $changes[] = "Company contact details (fields: " . $key . ") were updated";
+                        $changes[] = 'Company contact details (fields: '.$key.') were updated';
                     } else {
-                        $changes[] = "Field '{$key}' changed from '" . ($original ?? 'none') . "' to '" . ($value ?? 'none') . "'";
+                        $changes[] = "Field '{$key}' changed from '".($original ?? 'none')."' to '".($value ?? 'none')."'";
                     }
                 }
             }
@@ -180,8 +182,8 @@ class Project extends Model
     protected function casts(): array
     {
         return [
-            'phones'      => 'array',
-            'emails'      => 'array',
+            'phones' => 'array',
+            'emails' => 'array',
             'archived_at' => 'datetime',
         ];
     }

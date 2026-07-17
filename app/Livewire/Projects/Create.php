@@ -37,6 +37,10 @@ class Create extends Component
 
     public ?int $client_id = null;
 
+    public string $settlement_bank_1 = '';
+
+    public string $settlement_bank_2 = '';
+
     // Director fields
     public string $director_name = '';
 
@@ -58,6 +62,8 @@ class Create extends Component
         'notes' => 'nullable|string',
         'manager_id' => 'nullable|exists:users,id',
         'client_id' => 'nullable|exists:clients,id',
+        'settlement_bank_1' => 'nullable|string|max:2000',
+        'settlement_bank_2' => 'nullable|string|max:2000',
         'director_name' => 'required|string|max:255',
         'director_fee_status' => 'required|string',
         'director_managed_by' => 'nullable|exists:users,id',
@@ -94,6 +100,8 @@ class Create extends Component
             'notes' => $this->notes ?: null,
             'manager_id' => $this->manager_id ?: null,
             'client_id' => $this->client_id ?: null,
+            'settlement_bank_1' => $this->settlement_bank_1 ?: null,
+            'settlement_bank_2' => $this->settlement_bank_2 ?: null,
         ]);
 
         if ($this->website) {

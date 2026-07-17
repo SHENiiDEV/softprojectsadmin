@@ -136,6 +136,14 @@
                     @endforelse
                 </td>
             </tr>
+            <tr>
+                <th>Settlement Bank Account 1</th>
+                <td style="white-space: pre-line;">{{ $project->settlement_bank_1 ?: 'Not specified' }}</td>
+            </tr>
+            <tr>
+                <th>Settlement Bank Account 2</th>
+                <td style="white-space: pre-line;">{{ $project->settlement_bank_2 ?: 'Not specified' }}</td>
+            </tr>
         </table>
     </div>
 

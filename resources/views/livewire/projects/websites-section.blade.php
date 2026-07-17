@@ -56,7 +56,7 @@
                 </div>
 
                 <!-- Status -->
-                <div class="md:col-span-2">
+                <div>
                     <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">Integration Status <span class="text-rose-500">*</span></label>
                     <select wire:model="status" class="w-full px-3.5 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-150">
                         <option value="No integration">No integration</option>
@@ -64,6 +64,20 @@
                         <option value="Live">Live</option>
                     </select>
                     @error('status') <span class="text-[10px] text-rose-500 mt-1 block">{{ $message }}</span> @enderror
+                </div>
+
+                <!-- Gateway Providers -->
+                <div class="md:col-span-2 space-y-2">
+                    <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Gateway Providers</label>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 max-h-[180px] overflow-y-auto custom-scroll">
+                        @foreach(\App\Livewire\Projects\WebsitesSection::AVAILABLE_GATEWAYS as $gw)
+                            <label class="flex items-center space-x-2 text-xs text-slate-700 dark:text-slate-300 cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+                                <input type="checkbox" wire:model="gateways" value="{{ $gw }}" class="rounded bg-slate-50 dark:bg-slate-950 border-slate-300 dark:border-slate-800 text-indigo-600 focus:ring-indigo-500/20 focus:ring-offset-slate-900">
+                                <span>{{ $gw }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                    @error('gateways') <span class="text-[10px] text-rose-500 mt-1 block">{{ $message }}</span> @enderror
                 </div>
 
                 <!-- Form Buttons -->
@@ -95,8 +109,17 @@
                     @forelse($websites as $web)
                         <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-colors duration-150">
                             <!-- Name -->
-                            <td class="p-3.5 font-semibold text-slate-800 dark:text-slate-200 whitespace-nowrap">
-                                {{ $web->name }}
+                            <td class="p-3.5 whitespace-nowrap">
+                                <div class="font-semibold text-slate-800 dark:text-slate-200">{{ $web->name }}</div>
+                                @if(!empty($web->gateways))
+                                    <div class="flex flex-wrap gap-1 mt-1 max-w-[320px]">
+                                        @foreach($web->gateways as $gw)
+                                            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200/20 dark:border-indigo-900/20">
+                                                {{ $gw }}
+                                            </span>
+                                        @endforeach
+                                    </div>
+                                @endif
                             </td>
 
                             <!-- URL Link -->

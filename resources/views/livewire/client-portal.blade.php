@@ -623,7 +623,7 @@
                             </div>
                         </div>
 
-                        <!-- Right: Discussion Chat -->
+                        <!-- Right: Chat Area -->
                         @if(config('features.client_portal_comments', true))
                             <div class="md:w-2/5 flex flex-col bg-slate-50 dark:bg-slate-800/50">
                                 <div class="px-4 py-3 border-b border-slate-200 dark:border-slate-700/50">
