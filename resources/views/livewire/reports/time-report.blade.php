@@ -99,64 +99,75 @@
                  this.$watch('datasets', () => this.renderChart());
              },
              renderChart() {
-                 if (this.chart) {
-                     this.chart.destroy();
-                 }
-                 const canvas = document.getElementById('timeReportChart');
-                 if (!canvas) return;
-                 const ctx = canvas.getContext('2d');
-                 const isDark = document.documentElement.classList.contains('dark');
-                 const textColor = isDark ? '#94a3b8' : '#64748b';
-                 const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
-                 
-                 this.chart = new Chart(ctx, {
-                     type: 'line',
-                     data: {
-                         labels: this.labels,
-                         datasets: this.datasets
-                     },
-                     options: {
-                         responsive: true,
-                         maintainAspectRatio: false,
-                         plugins: {
-                             legend: {
-                                 display: true,
-                                 position: 'bottom',
-                                 labels: {
-                                     color: textColor,
-                                     usePointStyle: true,
-                                     padding: 20,
-                                     font: {
-                                         family: 'Inter, sans-serif',
-                                         size: 11
+                 try {
+                     const canvas = document.getElementById('timeReportChart');
+                     if (!canvas) return;
+
+                     if (this.chart) {
+                         this.chart.data.labels = this.labels;
+                         this.chart.data.datasets = this.datasets;
+                         this.chart.update('none');
+                         return;
+                     }
+
+                     const ctx = canvas.getContext('2d');
+                     if (!ctx) return;
+
+                     const isDark = document.documentElement.classList.contains('dark');
+                     const textColor = isDark ? '#94a3b8' : '#64748b';
+                     const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+                     
+                     this.chart = new Chart(ctx, {
+                         type: 'line',
+                         data: {
+                             labels: this.labels,
+                             datasets: this.datasets
+                         },
+                         options: {
+                             responsive: true,
+                             maintainAspectRatio: false,
+                             plugins: {
+                                 legend: {
+                                     display: true,
+                                     position: 'bottom',
+                                     labels: {
+                                         color: textColor,
+                                         usePointStyle: true,
+                                         padding: 20,
+                                         font: {
+                                             family: 'Inter, sans-serif',
+                                             size: 11
+                                         }
+                                     }
+                                 },
+                                 tooltip: {
+                                     backgroundColor: isDark ? '#1e293b' : '#ffffff',
+                                     titleColor: isDark ? '#ffffff' : '#0f172a',
+                                     bodyColor: isDark ? '#94a3b8' : '#475569',
+                                     borderColor: isDark ? '#334155' : '#e2e8f0',
+                                     borderWidth: 1,
+                                     padding: 10,
+                                     callbacks: {
+                                         label: ctx => ` ${ctx.dataset.label}: ${ctx.raw}h`
                                      }
                                  }
                              },
-                             tooltip: {
-                                 backgroundColor: isDark ? '#1e293b' : '#ffffff',
-                                 titleColor: isDark ? '#ffffff' : '#0f172a',
-                                 bodyColor: isDark ? '#94a3b8' : '#475569',
-                                 borderColor: isDark ? '#334155' : '#e2e8f0',
-                                 borderWidth: 1,
-                                 padding: 10,
-                                 callbacks: {
-                                     label: ctx => ` ${ctx.dataset.label}: ${ctx.raw}h`
+                             scales: {
+                                 x: { 
+                                     ticks: { color: textColor }, 
+                                     grid: { color: gridColor } 
+                                 },
+                                 y: {
+                                     ticks: { color: textColor, callback: v => v + 'h' },
+                                     grid: { color: gridColor },
+                                     beginAtZero: true
                                  }
                              }
-                         },
-                         scales: {
-                             x: { 
-                                 ticks: { color: textColor }, 
-                                 grid: { color: gridColor } 
-                             },
-                             y: {
-                                 ticks: { color: textColor, callback: v => v + 'h' },
-                                 grid: { color: gridColor },
-                                 beginAtZero: true
-                             }
                          }
-                     }
-                 });
+                     });
+                 } catch (e) {
+                     console.error('Chart error:', e);
+                 }
              }
          }"
          wire:ignore>
