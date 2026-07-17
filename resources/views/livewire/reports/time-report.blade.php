@@ -103,9 +103,13 @@
                      const canvas = document.getElementById('timeReportChart');
                      if (!canvas) return;
 
+                     // Deep clone Alpine proxy objects to prevent Chart.js mutation loops
+                     const rawLabels = JSON.parse(JSON.stringify(this.labels || []));
+                     const rawDatasets = JSON.parse(JSON.stringify(this.datasets || []));
+
                      if (this.chart) {
-                         this.chart.data.labels = this.labels;
-                         this.chart.data.datasets = this.datasets;
+                         this.chart.data.labels = rawLabels;
+                         this.chart.data.datasets = rawDatasets;
                          this.chart.update('none');
                          return;
                      }
@@ -120,8 +124,8 @@
                      this.chart = new Chart(ctx, {
                          type: 'line',
                          data: {
-                             labels: this.labels,
-                             datasets: this.datasets
+                             labels: rawLabels,
+                             datasets: rawDatasets
                          },
                          options: {
                              responsive: true,
