@@ -89,14 +89,14 @@
     <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-2xl p-6 shadow-sm"
          x-data="{
              labels: @entangle('chartData.labels'),
-             hours: @entangle('chartData.hours'),
+             datasets: @entangle('chartData.datasets'),
              chart: null,
              init() {
                  this.$nextTick(() => {
                      this.renderChart();
                  });
                  this.$watch('labels', () => this.renderChart());
-                 this.$watch('hours', () => this.renderChart());
+                 this.$watch('datasets', () => this.renderChart());
              },
              renderChart() {
                  if (this.chart) {
@@ -107,29 +107,17 @@
                  const ctx = canvas.getContext('2d');
                  const isDark = document.documentElement.classList.contains('dark');
                  const textColor = isDark ? '#94a3b8' : '#64748b';
-                 const colors = [
-                     'rgba(14, 165, 233, 0.85)',
-                     'rgba(99, 102, 241, 0.85)',
-                     'rgba(16, 185, 129, 0.85)',
-                     'rgba(245, 158, 11, 0.85)',
-                     'rgba(239, 68, 68, 0.85)',
-                     'rgba(168, 85, 247, 0.85)',
-                 ];
+                 const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+                 
                  this.chart = new Chart(ctx, {
-                     type: 'doughnut',
+                     type: 'line',
                      data: {
                          labels: this.labels,
-                         datasets: [{
-                             data: this.hours,
-                             backgroundColor: this.labels.map((_, i) => colors[i % colors.length]),
-                             borderWidth: 2,
-                             borderColor: isDark ? '#0f172a' : '#ffffff',
-                         }]
+                         datasets: this.datasets
                      },
                      options: {
                          responsive: true,
                          maintainAspectRatio: false,
-                         cutout: '72%',
                          plugins: {
                              legend: {
                                  display: true,
@@ -137,7 +125,6 @@
                                  labels: {
                                      color: textColor,
                                      usePointStyle: true,
-                                     pointStyle: 'rectRounded',
                                      padding: 20,
                                      font: {
                                          family: 'Inter, sans-serif',
@@ -153,8 +140,19 @@
                                  borderWidth: 1,
                                  padding: 10,
                                  callbacks: {
-                                     label: ctx => ` ${ctx.label}: ${ctx.raw}h`
+                                     label: ctx => ` ${ctx.dataset.label}: ${ctx.raw}h`
                                  }
+                             }
+                         },
+                         scales: {
+                             x: { 
+                                 ticks: { color: textColor }, 
+                                 grid: { color: gridColor } 
+                             },
+                             y: {
+                                 ticks: { color: textColor, callback: v => v + 'h' },
+                                 grid: { color: gridColor },
+                                 beginAtZero: true
                              }
                          }
                      }

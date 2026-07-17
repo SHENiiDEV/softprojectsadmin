@@ -83,7 +83,7 @@ class TimeReport extends Component
             })->sortByDesc('total_seconds')->values()->all();
         }
 
-        $this->chartData = $this->buildChartData($userBreakdown, $taskBreakdown);
+        $this->chartData = $this->buildChartData($logs, $start, $end);
 
         return view('livewire.reports.time-report', [
             'users' => $users,
@@ -117,27 +117,126 @@ class TimeReport extends Component
         return implode(' ', $parts);
     }
 
-    private function buildChartData(array $userBreakdown, array $taskBreakdown): array
+    private function buildChartData($logs, $start, $end): array
     {
+        $dateKeys = [];
+        $dateLabels = [];
+        $temp = clone $start;
+        while ($temp->lte($end)) {
+            $dateKeys[] = $temp->format('Y-m-d');
+            $dateLabels[] = $temp->format('d M');
+            $temp->addDay();
+        }
+
+        $colors = [
+            '#0ea5e9', // sky
+            '#6366f1', // indigo
+            '#10b981', // emerald
+            '#f59e0b', // amber
+            '#ef4444', // red
+            '#a855f7', // purple
+            '#ec4899', // pink
+            '#14b8a6', // teal
+        ];
+
+        $pointStyles = [
+            'circle',
+            'rect',
+            'triangle',
+            'rectRot',
+            'star',
+            'cross',
+            'crossRot',
+            'dash'
+        ];
+
+        $datasets = [];
+
         if ($this->userId === '') {
-            // All-users mode: bar chart by team member
-            $labels = array_column($userBreakdown, 'user_name');
-            $hours  = array_map(
-                fn($r) => round($r['total_seconds'] / 3600, 2),
-                $userBreakdown
-            );
+            // Group by user_id
+            $grouped = $logs->groupBy('user_id');
+            $idx = 0;
+            foreach ($grouped as $userId => $userLogs) {
+                $user = $userLogs->first()->user;
+                $userName = $user?->name ?? 'Deleted User';
+
+                // Map hours per date
+                $data = [];
+                foreach ($dateKeys as $dateKey) {
+                    $dayStart = Carbon::parse($dateKey)->startOfDay();
+                    $dayEnd = Carbon::parse($dateKey)->endOfDay();
+                    $seconds = $userLogs->filter(function($log) use ($dayStart, $dayEnd) {
+                        return $log->started_at->between($dayStart, $dayEnd);
+                    })->sum('duration_seconds');
+                    $data[] = round($seconds / 3600, 2);
+                }
+
+                $color = $colors[$idx % count($colors)];
+                $pointStyle = $pointStyles[$idx % count($pointStyles)];
+
+                $datasets[] = [
+                    'label' => $userName,
+                    'data' => $data,
+                    'borderColor' => $color,
+                    'backgroundColor' => $color,
+                    'pointStyle' => $pointStyle,
+                    'pointRadius' => 6,
+                    'pointHoverRadius' => 10,
+                    'tension' => 0.35,
+                ];
+                $idx++;
+            }
         } else {
-            // Single-user mode: bar chart by task
-            $labels = array_column($taskBreakdown, 'task_title');
-            $hours  = array_map(
-                fn($r) => round($r['total_seconds'] / 3600, 2),
-                $taskBreakdown
-            );
+            // Group by task_id
+            $grouped = $logs->groupBy('task_id');
+            $idx = 0;
+            foreach ($grouped as $taskId => $taskLogs) {
+                $task = $taskLogs->first()->task;
+                $taskTitle = $task?->title ?? 'Deleted Task';
+
+                // Map hours per date
+                $data = [];
+                foreach ($dateKeys as $dateKey) {
+                    $dayStart = Carbon::parse($dateKey)->startOfDay();
+                    $dayEnd = Carbon::parse($dateKey)->endOfDay();
+                    $seconds = $taskLogs->filter(function($log) use ($dayStart, $dayEnd) {
+                        return $log->started_at->between($dayStart, $dayEnd);
+                    })->sum('duration_seconds');
+                    $data[] = round($seconds / 3600, 2);
+                }
+
+                $color = $colors[$idx % count($colors)];
+                $pointStyle = $pointStyles[$idx % count($pointStyles)];
+
+                $datasets[] = [
+                    'label' => $taskTitle,
+                    'data' => $data,
+                    'borderColor' => $color,
+                    'backgroundColor' => $color,
+                    'pointStyle' => $pointStyle,
+                    'pointRadius' => 6,
+                    'pointHoverRadius' => 10,
+                    'tension' => 0.35,
+                ];
+                $idx++;
+            }
+        }
+
+        // If no datasets exist, create a dummy empty dataset
+        if (empty($datasets)) {
+            $datasets[] = [
+                'label' => 'No Data',
+                'data' => array_fill(0, count($dateLabels), 0),
+                'borderColor' => '#64748b',
+                'backgroundColor' => 'transparent',
+                'pointStyle' => 'circle',
+                'pointRadius' => 4,
+            ];
         }
 
         return [
-            'labels' => $labels,
-            'hours'  => $hours,
+            'labels' => $dateLabels,
+            'datasets' => $datasets,
         ];
     }
 }
