@@ -508,7 +508,7 @@
     </div>
 
     {{-- ============================================ --}}
-    {{-- TICKET DETAIL MODAL --}}
+    {{-- TICKET DETAIL MODAL (Jira-like) --}}
     {{-- ============================================ --}}
     @if($showTaskModal && $viewTaskId)
         @php
@@ -516,226 +516,282 @@
         @endphp
         @if($viewTask)
             <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-sm animate-fade-in" @keydown.escape.window="$wire.closeModal()">
-                <div class="bg-white dark:bg-slate-900 w-full max-w-4xl rounded-2xl max-h-[90vh] overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-700 flex flex-col" @click.away="$wire.closeModal()">
+                <div class="bg-white dark:bg-slate-900 w-full max-w-5xl rounded-2xl max-h-[92vh] overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-700/80 flex flex-col" @click.away="$wire.closeModal()">
 
-                    <!-- Modal Header -->
-                    <div class="flex items-start justify-between p-5 border-b border-slate-200 dark:border-white/5 flex-shrink-0">
-                        <div class="space-y-2 pr-8 overflow-hidden">
-                            <div class="flex items-center space-x-2 flex-wrap gap-y-1">
-                                <span class="text-[9px] font-bold uppercase tracking-wider text-slate-400 bg-slate-100 dark:bg-white/5 px-2 py-0.5 rounded">#{{ $viewTask->id }}</span>
-                                <span class="text-[9px] font-bold uppercase tracking-widest text-indigo-500 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-500/20 px-2 py-0.5 rounded-full">
-                                    {{ $viewTask->project ? $viewTask->project->name : 'General' }}
-                                </span>
-                                @if($viewTask->status === 'todo')
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">To Do</span>
-                                @elseif($viewTask->status === 'in_progress')
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-sky-100 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400">In Progress</span>
-                                @elseif($viewTask->status === 'review')
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400">Review</span>
-                                @elseif($viewTask->status === 'done')
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">Done</span>
-                                @endif
-                                <!-- Priority -->
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold
-                                    {{ $viewTask->priority === 'critical' ? 'bg-rose-100 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400' :
-                                       ($viewTask->priority === 'high' ? 'bg-orange-100 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400' :
-                                       ($viewTask->priority === 'medium' ? 'bg-sky-100 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400' :
-                                       'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400')) }}">
-                                    {{ ucfirst($viewTask->priority) }}
-                                </span>
+                    {{-- ── Modal Header ── --}}
+                    <div class="flex items-start justify-between px-6 py-4 border-b border-slate-200/80 dark:border-white/5 flex-shrink-0">
+                        <div class="space-y-1.5 pr-8 overflow-hidden min-w-0">
+                            <div class="flex items-center gap-1.5 flex-wrap text-[10px]">
+                                <span class="font-mono font-bold text-slate-400 dark:text-slate-500">TICKET-{{ $viewTask->id }}</span>
+                                <span class="text-slate-300 dark:text-slate-600">/</span>
+                                <span class="font-semibold text-indigo-600 dark:text-indigo-400">{{ $viewTask->project ? $viewTask->project->name : 'General' }}</span>
                             </div>
-                            <h2 class="text-lg font-bold font-outfit text-slate-900 dark:text-white leading-tight tracking-tight">{{ $viewTask->title }}</h2>
+                            <h2 class="text-xl font-bold font-outfit text-slate-900 dark:text-white leading-tight tracking-tight">{{ $viewTask->title }}</h2>
                         </div>
-                        <button type="button" wire:click="closeModal" class="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 transition-all cursor-pointer flex-shrink-0">
+                        <button type="button" wire:click="closeModal" class="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 transition-all cursor-pointer flex-shrink-0 mt-1">
                             <i class="fa-solid fa-xmark text-lg"></i>
                         </button>
                     </div>
 
-                    <!-- Status Progress Bar -->
-                    @php
-                        $statusSteps = ['todo' => 'To Do', 'in_progress' => 'In Progress', 'review' => 'Review', 'done' => 'Done'];
-                        $statusOrder = array_keys($statusSteps);
-                        $currentIndex = array_search($viewTask->status, $statusOrder);
-                    @endphp
-                    <div class="px-5 py-3 border-b border-slate-100 dark:border-slate-700/50 flex-shrink-0 bg-slate-50 dark:bg-slate-800/30">
-                        <div class="flex items-center">
-                            @foreach($statusSteps as $key => $label)
-                                @php $stepIndex = array_search($key, $statusOrder); @endphp
-                                <div class="flex items-center {{ $loop->last ? '' : 'flex-1' }}">
-                                    <div class="flex items-center space-x-2">
-                                        <div class="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold flex-shrink-0
-                                            {{ $stepIndex < $currentIndex ? 'bg-emerald-500 text-white' : ($stepIndex === $currentIndex ? 'bg-indigo-500 text-white ring-4 ring-indigo-500/20' : 'bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500') }}">
-                                            @if($stepIndex < $currentIndex)
-                                                <i class="fa-solid fa-check"></i>
-                                            @else
-                                                {{ $stepIndex + 1 }}
-                                            @endif
-                                        </div>
-                                        <span class="text-[11px] font-semibold whitespace-nowrap {{ $stepIndex <= $currentIndex ? 'text-slate-700 dark:text-slate-300' : 'text-slate-400 dark:text-slate-500' }}">{{ $label }}</span>
-                                    </div>
-                                    @if(!$loop->last)
-                                        <div class="flex-1 h-0.5 mx-3 rounded {{ $stepIndex < $currentIndex ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-slate-700' }}"></div>
-                                    @endif
-                                </div>
-                            @endforeach
-                        </div>
-                    </div>
+                    {{-- ── Modal Body: 2-Column ── --}}
+                    <div class="flex-1 overflow-hidden flex flex-col lg:flex-row min-h-0">
 
-                    <!-- Modal Body: 2-Column -->
-                    <div class="flex-1 overflow-hidden flex flex-col md:flex-row">
-                        <!-- Left: Ticket Info -->
-                        <div class="md:w-3/5 p-5 overflow-y-auto custom-scroll space-y-4 border-r border-slate-100 dark:border-slate-700/50">
-                            <!-- Description -->
-                            <div class="space-y-2">
-                                <h4 class="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-wider">Description</h4>
-                                <div class="text-sm text-slate-700 dark:text-slate-300 leading-relaxed bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-700/50 p-4 rounded-xl whitespace-pre-wrap">{{ $viewTask->description ?: 'No description provided.' }}</div>
-                            </div>
+                        {{-- LEFT PANEL: Description + Activity --}}
+                        <div class="lg:w-[62%] flex flex-col min-h-0 border-r border-slate-100 dark:border-slate-700/40">
+                            <div class="flex-1 overflow-y-auto custom-scroll px-6 py-5 space-y-6">
 
-                            @if(config('features.task_attachments', true) && $viewTask->hasMedia('documents'))
-                                <!-- Attachments -->
+                                {{-- Description --}}
                                 <div class="space-y-2">
-                                    <h4 class="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-wider">Attachments</h4>
-                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    <h4 class="text-xs uppercase font-bold text-slate-400 dark:text-slate-500 tracking-wider flex items-center gap-1.5">
+                                        <i class="fa-solid fa-align-left text-[10px]"></i> Description
+                                    </h4>
+                                    <div class="text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">{{ $viewTask->description ?: 'No description provided.' }}</div>
+                                </div>
+
+                                {{-- Attachments --}}
+                                @if(config('features.task_attachments', true) && $viewTask->hasMedia('documents'))
+                                <div class="space-y-2">
+                                    <h4 class="text-xs uppercase font-bold text-slate-400 dark:text-slate-500 tracking-wider flex items-center gap-1.5">
+                                        <i class="fa-solid fa-paperclip text-[10px]"></i> Attachments
+                                    </h4>
+                                    <div class="flex flex-wrap gap-2">
                                         @foreach($viewTask->getMedia('documents') as $media)
                                             <a href="{{ Storage::url($media->id . '/' . $media->file_name) }}" target="_blank"
-                                               class="flex items-center space-x-2 p-3 bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5 rounded-xl hover:bg-slate-100 dark:hover:bg-white/10 transition-colors">
-                                                <i class="fa-solid fa-file text-slate-400 text-sm"></i>
-                                                <div class="overflow-hidden">
-                                                    <p class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 truncate">{{ $media->file_name }}</p>
-                                                    <p class="text-[9px] text-slate-400">{{ number_format($media->size / 1024, 1) }} KB</p>
-                                                </div>
+                                               class="inline-flex items-center gap-2 px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg hover:bg-sky-50 dark:hover:bg-sky-950/20 hover:border-sky-200 dark:hover:border-sky-800/40 transition-all text-xs group">
+                                                <i class="fa-solid fa-file text-slate-400 group-hover:text-sky-500 transition-colors"></i>
+                                                <span class="font-medium text-slate-700 dark:text-slate-300 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors truncate max-w-[140px]">{{ $media->file_name }}</span>
+                                                <span class="text-[10px] text-slate-400">{{ number_format($media->size / 1024, 1) }}KB</span>
                                             </a>
                                         @endforeach
                                     </div>
                                 </div>
-                            @endif
+                                @endif
 
-                            <!-- Meta Info -->
-                            <div class="grid grid-cols-2 gap-3 pt-2">
-                                <div class="bg-slate-50 dark:bg-white/3 rounded-xl p-3 space-y-1">
-                                    <span class="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Created</span>
-                                    <p class="text-xs font-semibold text-slate-700 dark:text-slate-300">{{ $viewTask->created_at->format('M d, Y H:i') }}</p>
-                                </div>
-                                <div class="bg-slate-50 dark:bg-white/3 rounded-xl p-3 space-y-1">
-                                    <span class="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Last Updated</span>
-                                    <p class="text-xs font-semibold text-slate-700 dark:text-slate-300">{{ $viewTask->updated_at->diffForHumans() }}</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Right: Chat Area -->
-                        @if(config('features.client_portal_comments', true))
-                            <div class="md:w-2/5 flex flex-col bg-slate-50 dark:bg-slate-800/50">
-                                <div class="px-4 py-3 border-b border-slate-200 dark:border-slate-700/50">
-                                    <h4 class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center space-x-1.5">
-                                        <i class="fa-regular fa-comments text-slate-400"></i>
-                                        <span>Discussion</span>
-                                        <span class="text-[9px] bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded-full font-bold">
+                                {{-- Activity / Discussion --}}
+                                @if(config('features.client_portal_comments', true))
+                                <div class="space-y-4 pt-2 border-t border-slate-100 dark:border-slate-700/40">
+                                    <h4 class="text-xs uppercase font-bold text-slate-400 dark:text-slate-500 tracking-wider flex items-center gap-1.5">
+                                        <i class="fa-solid fa-stream text-[10px]"></i> Activity
+                                        <span class="ml-1 text-[9px] bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded-full font-bold">
                                             {{ $viewTask->comments()->where('is_private', false)->count() + $viewTask->allComments()->where('is_private', false)->whereNotNull('parent_id')->count() }}
                                         </span>
                                     </h4>
-                                </div>
 
-                                <!-- Chat Messages -->
-                                <div class="flex-1 overflow-y-auto custom-scroll p-4 space-y-4 max-h-[450px]">
-                                    @forelse($viewTask->comments()->where('is_private', false)->get() as $comment)
-                                        @php $isClient = !empty($comment->client_id); @endphp
-                                        <div class="flex flex-col {{ $isClient ? 'items-end' : 'items-start' }} w-full space-y-1">
-                                            <!-- Message Header -->
-                                            <div class="flex items-center space-x-1.5 text-[10px] text-slate-400 dark:text-slate-500">
-                                                @if(!$isClient)
-                                                    <div class="h-5 w-5 rounded-full bg-gradient-to-tr from-indigo-400 to-violet-500 text-white flex items-center justify-center text-[8px] font-bold uppercase flex-shrink-0">
-                                                        {{ substr($comment->user ? $comment->user->name : 'S', 0, 2) }}
-                                                    </div>
-                                                    <span class="font-bold text-slate-700 dark:text-slate-300">
-                                                        {{ $comment->user ? $comment->user->name : 'System' }}
-                                                    </span>
-                                                @else
-                                                    <span class="font-bold text-slate-700 dark:text-slate-300">
-                                                        {{ $comment->client->name }}
-                                                    </span>
-                                                @endif
-                                                <span>·</span>
-                                                <span>{{ $comment->created_at->diffForHumans() }}</span>
-                                                @if($isClient)
-                                                    <div class="h-5 w-5 rounded-full bg-gradient-to-tr from-sky-400 to-cyan-500 text-white flex items-center justify-center text-[8px] font-bold uppercase flex-shrink-0">
-                                                        {{ substr($comment->client->name, 0, 2) }}
-                                                    </div>
-                                                @endif
-                                            </div>
-
-                                            <!-- Message Bubble -->
-                                            <div class="max-w-[85%] text-left">
-                                                <div class="inline-block text-xs leading-relaxed p-3 rounded-2xl shadow-sm whitespace-pre-wrap text-left
-                                                    {{ $isClient 
-                                                        ? 'bg-indigo-600 text-white rounded-tr-none' 
-                                                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 rounded-tl-none' }}">
-                                                    {!! $comment->formatted_content !!}
+                                    {{-- Comment List (Jira-style flat threads) --}}
+                                    <div class="space-y-0">
+                                        @forelse($viewTask->comments()->where('is_private', false)->get() as $comment)
+                                            @php $isClient = !empty($comment->client_id); @endphp
+                                            <div class="group relative flex gap-3 py-4 {{ !$loop->last ? 'border-b border-slate-100 dark:border-slate-700/30' : '' }}">
+                                                {{-- Avatar --}}
+                                                <div class="flex-shrink-0 mt-0.5">
+                                                    @if($isClient)
+                                                        <div class="h-8 w-8 rounded-full bg-gradient-to-br from-sky-400 to-cyan-500 text-white flex items-center justify-center text-[10px] font-bold uppercase shadow-sm">
+                                                            {{ substr($comment->client->name, 0, 2) }}
+                                                        </div>
+                                                    @else
+                                                        <div class="h-8 w-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 text-white flex items-center justify-center text-[10px] font-bold uppercase shadow-sm">
+                                                            {{ substr($comment->user ? $comment->user->name : 'S', 0, 2) }}
+                                                        </div>
+                                                    @endif
                                                 </div>
-                                            </div>
 
-                                            <!-- Nested Replies -->
-                                            @if($comment->replies()->where('is_private', false)->count() > 0)
-                                                <div class="w-full flex flex-col {{ $isClient ? 'items-end' : 'items-start' }} space-y-2 mt-1">
-                                                    @foreach($comment->replies()->where('is_private', false)->get() as $reply)
-                                                        @php $isReplyClient = !empty($reply->client_id); @endphp
-                                                        <div class="flex flex-col {{ $isReplyClient ? 'items-end' : 'items-start' }} w-full space-y-0.5">
-                                                            <div class="flex items-center space-x-1 text-[9px] text-slate-400 dark:text-slate-500">
-                                                                <span class="font-bold">
-                                                                    {{ $reply->user ? $reply->user->name : ($reply->client ? $reply->client->name : 'System') }}
-                                                                </span>
-                                                                <span>·</span>
-                                                                <span>{{ $reply->created_at->diffForHumans() }}</span>
-                                                            </div>
-                                                            <div class="max-w-[80%] text-left">
-                                                                <div class="inline-block text-[11px] leading-relaxed p-2 rounded-xl shadow-sm whitespace-pre-wrap text-left
-                                                                    {{ $isReplyClient 
-                                                                        ? 'bg-indigo-500 text-white rounded-tr-none' 
-                                                                        : 'bg-slate-100 dark:bg-slate-850 text-slate-600 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60 rounded-tl-none' }}">
-                                                                    {!! $reply->formatted_content !!}
+                                                {{-- Comment Content --}}
+                                                <div class="flex-1 min-w-0">
+                                                    <div class="flex items-baseline gap-2 mb-1">
+                                                        <span class="text-xs font-bold text-slate-800 dark:text-slate-200">
+                                                            {{ $isClient ? $comment->client->name : ($comment->user ? $comment->user->name : 'System') }}
+                                                        </span>
+                                                        @if(!$isClient)
+                                                            <span class="text-[9px] font-semibold bg-indigo-100 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded">Team</span>
+                                                        @endif
+                                                        <span class="text-[10px] text-slate-400 dark:text-slate-500">{{ $comment->created_at->diffForHumans() }}</span>
+                                                    </div>
+                                                    <div class="text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">{!! $comment->formatted_content !!}</div>
+
+                                                    {{-- Nested Replies --}}
+                                                    @if($comment->replies()->where('is_private', false)->count() > 0)
+                                                        <div class="mt-3 ml-2 pl-4 border-l-2 border-slate-200 dark:border-slate-700/60 space-y-3">
+                                                            @foreach($comment->replies()->where('is_private', false)->get() as $reply)
+                                                                @php $isReplyClient = !empty($reply->client_id); @endphp
+                                                                <div class="flex gap-2.5">
+                                                                    <div class="flex-shrink-0 mt-0.5">
+                                                                        <div class="h-6 w-6 rounded-full {{ $isReplyClient ? 'bg-gradient-to-br from-sky-400 to-cyan-500' : 'bg-gradient-to-br from-indigo-500 to-violet-500' }} text-white flex items-center justify-center text-[8px] font-bold uppercase">
+                                                                            {{ substr($reply->user ? $reply->user->name : ($reply->client ? $reply->client->name : 'S'), 0, 2) }}
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="flex-1 min-w-0">
+                                                                        <div class="flex items-baseline gap-2 mb-0.5">
+                                                                            <span class="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                                                                                {{ $reply->user ? $reply->user->name : ($reply->client ? $reply->client->name : 'System') }}
+                                                                            </span>
+                                                                            <span class="text-[10px] text-slate-400 dark:text-slate-500">{{ $reply->created_at->diffForHumans() }}</span>
+                                                                        </div>
+                                                                        <div class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed whitespace-pre-wrap">{!! $reply->formatted_content !!}</div>
+                                                                    </div>
                                                                 </div>
+                                                            @endforeach
+                                                        </div>
+                                                    @endif
+
+                                                    {{-- Reply button --}}
+                                                    <div x-data="{ showReply: false }" class="mt-2">
+                                                        <button type="button" @click="showReply = !showReply" class="text-[10px] font-semibold text-slate-400 hover:text-indigo-500 transition-colors cursor-pointer focus:outline-none flex items-center gap-1">
+                                                            <i class="fa-solid fa-reply text-[9px]"></i> Reply
+                                                        </button>
+                                                        <div x-show="showReply" x-transition class="mt-2 space-y-2 animate-fade-in">
+                                                            <textarea wire:model="replyCommentContent.{{ $comment->id }}" rows="2" placeholder="Write a reply..."
+                                                                class="w-full px-3 py-2 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all resize-none"></textarea>
+                                                            <div class="flex justify-end gap-2">
+                                                                <button type="button" @click="showReply = false" class="px-3 py-1.5 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 text-[10px] font-semibold cursor-pointer">Cancel</button>
+                                                                <button type="button" wire:click="addReply({{ $comment->id }})" @click="showReply = false" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-[10px] transition-all cursor-pointer shadow-sm">
+                                                                    Save
+                                                                </button>
                                                             </div>
                                                         </div>
-                                                    @endforeach
-                                                </div>
-                                            @endif
-
-                                            <!-- Reply toggle button & form -->
-                                            <div x-data="{ showReply: false }" class="pt-0.5 w-full flex flex-col {{ $isClient ? 'items-end' : 'items-start' }}">
-                                                <button type="button" @click="showReply = !showReply" class="text-[9px] font-bold text-indigo-500 hover:text-indigo-400 transition-colors cursor-pointer focus:outline-none">
-                                                    <i class="fa-solid fa-reply mr-0.5"></i> Reply
-                                                </button>
-                                                <div x-show="showReply" x-transition class="mt-2 w-full max-w-[85%] space-y-1.5 animate-fade-in">
-                                                    <textarea wire:model="replyCommentContent.{{ $comment->id }}" rows="2" placeholder="Write a reply..." class="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all resize-none"></textarea>
-                                                    <div class="flex justify-end">
-                                                        <button type="button" wire:click="addReply({{ $comment->id }})" @click="showReply = false" class="px-3 py-1.5 bg-indigo-500 hover:bg-indigo-600 text-white font-bold rounded-lg text-[10px] transition-all cursor-pointer">
-                                                            Send
-                                                        </button>
                                                     </div>
                                                 </div>
                                             </div>
+                                        @empty
+                                            <div class="flex flex-col items-center py-10 text-slate-400 dark:text-slate-500">
+                                                <i class="fa-regular fa-comment-dots text-3xl mb-2 opacity-40"></i>
+                                                <p class="text-xs">No activity yet.</p>
+                                            </div>
+                                        @endforelse
+                                    </div>
+
+                                    {{-- Comment Input --}}
+                                    <form wire:submit.prevent="addComment" class="pt-3 border-t border-slate-100 dark:border-slate-700/40">
+                                        <div class="flex gap-3">
+                                            <div class="flex-shrink-0 mt-1">
+                                                <div class="h-8 w-8 rounded-full bg-gradient-to-br from-sky-400 to-cyan-500 text-white flex items-center justify-center text-[10px] font-bold uppercase shadow-sm">
+                                                    {{ substr($client->name, 0, 2) }}
+                                                </div>
+                                            </div>
+                                            <div class="flex-1 space-y-2">
+                                                <textarea wire:model="newCommentContent" rows="3" placeholder="Add a comment..."
+                                                    class="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all resize-none"></textarea>
+                                                @error('newCommentContent') <span class="text-[10px] text-rose-500 block">{{ $message }}</span> @enderror
+                                                <div class="flex justify-end">
+                                                    <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition-all cursor-pointer shadow-sm">
+                                                        <i class="fa-solid fa-paper-plane mr-1.5 text-[10px]"></i> Save
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
-                                    @empty
-                                        <div class="text-center py-12 text-slate-400 dark:text-slate-500">
-                                            <i class="fa-regular fa-comments text-2xl mb-2 block"></i>
-                                            <p class="text-xs">No messages yet. Start the conversation!</p>
-                                        </div>
-                                    @endforelse
+                                    </form>
+                                </div>
+                                @endif
+
+                            </div>
+                        </div>
+
+                        {{-- RIGHT PANEL: Details Sidebar --}}
+                        <div class="lg:w-[38%] flex flex-col bg-slate-50/80 dark:bg-slate-800/30 min-h-0">
+                            <div class="flex-1 overflow-y-auto custom-scroll px-5 py-5 space-y-5">
+
+                                {{-- Status --}}
+                                <div class="space-y-2">
+                                    <h4 class="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-wider">Status</h4>
+                                    @php
+                                        $statusConfig = [
+                                            'todo' => ['label' => 'To Do', 'bg' => 'bg-slate-200 dark:bg-slate-700', 'text' => 'text-slate-600 dark:text-slate-300'],
+                                            'in_progress' => ['label' => 'In Progress', 'bg' => 'bg-sky-100 dark:bg-sky-900/50', 'text' => 'text-sky-700 dark:text-sky-300'],
+                                            'review' => ['label' => 'In Review', 'bg' => 'bg-amber-100 dark:bg-amber-900/50', 'text' => 'text-amber-700 dark:text-amber-300'],
+                                            'done' => ['label' => 'Done', 'bg' => 'bg-emerald-100 dark:bg-emerald-900/50', 'text' => 'text-emerald-700 dark:text-emerald-300'],
+                                        ];
+                                        $sc = $statusConfig[$viewTask->status] ?? $statusConfig['todo'];
+                                    @endphp
+                                    <span class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-bold {{ $sc['bg'] }} {{ $sc['text'] }}">
+                                        {{ $sc['label'] }}
+                                    </span>
                                 </div>
 
-                                <!-- Message Input (sticky bottom) -->
-                                <div class="p-3 border-t border-slate-200 dark:border-slate-700/50 bg-white dark:bg-slate-900">
-                                    <form wire:submit.prevent="addComment" class="flex items-end space-x-2">
-                                        <textarea wire:model="newCommentContent" rows="2" placeholder="Type a message..."
-                                                  class="flex-1 px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all resize-none"></textarea>
-                                        <button type="submit" class="p-2.5 bg-gradient-to-r from-sky-500 to-indigo-600 text-white rounded-xl hover:from-sky-400 hover:to-indigo-500 transition-all cursor-pointer shadow-md flex-shrink-0">
-                                            <i class="fa-solid fa-paper-plane text-xs"></i>
-                                        </button>
-                                    </form>
-                                    @error('newCommentContent') <span class="text-[10px] text-rose-500 mt-1 block">{{ $message }}</span> @enderror
+                                {{-- Progress Steps --}}
+                                <div class="space-y-2">
+                                    <h4 class="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-wider">Progress</h4>
+                                    @php
+                                        $statusSteps = ['todo' => 'To Do', 'in_progress' => 'In Progress', 'review' => 'Review', 'done' => 'Done'];
+                                        $statusOrder = array_keys($statusSteps);
+                                        $currentIndex = array_search($viewTask->status, $statusOrder);
+                                    @endphp
+                                    <div class="space-y-0">
+                                        @foreach($statusSteps as $key => $label)
+                                            @php $stepIndex = array_search($key, $statusOrder); @endphp
+                                            <div class="flex items-center gap-3 py-1.5">
+                                                <div class="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold flex-shrink-0
+                                                    {{ $stepIndex < $currentIndex ? 'bg-emerald-500 text-white' : ($stepIndex === $currentIndex ? 'bg-indigo-500 text-white ring-2 ring-indigo-500/25' : 'bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500') }}">
+                                                    @if($stepIndex < $currentIndex)
+                                                        <i class="fa-solid fa-check"></i>
+                                                    @else
+                                                        {{ $stepIndex + 1 }}
+                                                    @endif
+                                                </div>
+                                                <span class="text-xs font-medium {{ $stepIndex <= $currentIndex ? 'text-slate-700 dark:text-slate-300' : 'text-slate-400 dark:text-slate-500' }}">{{ $label }}</span>
+                                                @if($stepIndex === $currentIndex)
+                                                    <span class="text-[8px] font-bold text-indigo-500 dark:text-indigo-400 uppercase tracking-wider">Current</span>
+                                                @endif
+                                            </div>
+                                            @if(!$loop->last)
+                                                <div class="ml-2.5 w-px h-3 {{ $stepIndex < $currentIndex ? 'bg-emerald-400' : 'bg-slate-200 dark:bg-slate-700' }}"></div>
+                                            @endif
+                                        @endforeach
+                                    </div>
                                 </div>
+
+                                {{-- Priority --}}
+                                <div class="space-y-2">
+                                    <h4 class="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-wider">Priority</h4>
+                                    @php
+                                        $priorityConfig = [
+                                            'critical' => ['icon' => 'fa-solid fa-arrow-up', 'color' => 'text-rose-500', 'label' => 'Critical'],
+                                            'high' => ['icon' => 'fa-solid fa-arrow-up', 'color' => 'text-orange-500', 'label' => 'High'],
+                                            'medium' => ['icon' => 'fa-solid fa-equals', 'color' => 'text-sky-500', 'label' => 'Medium'],
+                                            'low' => ['icon' => 'fa-solid fa-arrow-down', 'color' => 'text-emerald-500', 'label' => 'Low'],
+                                        ];
+                                        $pc = $priorityConfig[$viewTask->priority] ?? $priorityConfig['medium'];
+                                    @endphp
+                                    <div class="flex items-center gap-2">
+                                        <i class="{{ $pc['icon'] }} {{ $pc['color'] }} text-xs"></i>
+                                        <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">{{ $pc['label'] }}</span>
+                                    </div>
+                                </div>
+
+                                <hr class="border-slate-200 dark:border-slate-700/50">
+
+                                {{-- Details Fields --}}
+                                <div class="space-y-4">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-wider">Created</span>
+                                        <span class="text-xs font-medium text-slate-700 dark:text-slate-300">{{ $viewTask->created_at->format('M d, Y H:i') }}</span>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-wider">Updated</span>
+                                        <span class="text-xs font-medium text-slate-700 dark:text-slate-300">{{ $viewTask->updated_at->diffForHumans() }}</span>
+                                    </div>
+                                    @if($viewTask->due_date)
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-wider">Due Date</span>
+                                        <span class="text-xs font-medium {{ $viewTask->due_date->isPast() ? 'text-rose-500' : 'text-slate-700 dark:text-slate-300' }}">
+                                            {{ $viewTask->due_date->format('M d, Y') }}
+                                        </span>
+                                    </div>
+                                    @endif
+                                    @if($viewTask->assignee)
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-wider">Assignee</span>
+                                        <div class="flex items-center gap-1.5">
+                                            <div class="h-5 w-5 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 text-white flex items-center justify-center text-[8px] font-bold uppercase">
+                                                {{ substr($viewTask->assignee->name, 0, 2) }}
+                                            </div>
+                                            <span class="text-xs font-medium text-slate-700 dark:text-slate-300">{{ $viewTask->assignee->name }}</span>
+                                        </div>
+                                    </div>
+                                    @endif
+                                </div>
+
                             </div>
-                        @endif
+                        </div>
+
                     </div>
                 </div>
             </div>
