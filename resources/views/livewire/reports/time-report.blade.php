@@ -137,6 +137,7 @@
                                  labels: {
                                      color: textColor,
                                      usePointStyle: true,
+                                     pointStyle: 'rectRounded',
                                      padding: 20,
                                      font: {
                                          family: 'Inter, sans-serif',
