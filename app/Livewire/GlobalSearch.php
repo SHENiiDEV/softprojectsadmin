@@ -9,6 +9,7 @@ use App\Models\ProjectNote;
 use App\Models\Task;
 use App\Models\User;
 use App\Models\Website;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Livewire\Component;
 
@@ -24,8 +25,11 @@ class GlobalSearch extends Component
         if (strlen($this->query) < 2) {
             return;
         }
+
+        $like = DB::connection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
+
         // Clients
-        $clients = Client::where('name', 'ilike', "%{$this->query}%")
+        $clients = Client::where('name', $like, "%{$this->query}%")
             ->limit(5)
             ->get(['id', 'name']);
         foreach ($clients as $c) {
@@ -38,7 +42,7 @@ class GlobalSearch extends Component
         }
 
         // Companies (Projects)
-        $projects = Project::where('name', 'ilike', "%{$this->query}%")
+        $projects = Project::where('name', $like, "%{$this->query}%")
             ->limit(5)
             ->get(['id', 'name']);
         foreach ($projects as $p) {
@@ -50,7 +54,7 @@ class GlobalSearch extends Component
             ];
         }
         // Tasks
-        $tasks = Task::where('title', 'ilike', "%{$this->query}%")
+        $tasks = Task::where('title', $like, "%{$this->query}%")
             ->limit(5)
             ->get(['id', 'title']);
         foreach ($tasks as $t) {
@@ -62,8 +66,8 @@ class GlobalSearch extends Component
             ];
         }
         // Users
-        $users = User::where('name', 'ilike', "%{$this->query}%")
-            ->orWhere('email', 'ilike', "%{$this->query}%")
+        $users = User::where('name', $like, "%{$this->query}%")
+            ->orWhere('email', $like, "%{$this->query}%")
             ->limit(5)
             ->get(['id', 'name', 'email']);
         foreach ($users as $u) {
@@ -75,8 +79,8 @@ class GlobalSearch extends Component
             ];
         }
         // Websites
-        $websites = Website::where('name', 'ilike', "%{$this->query}%")
-            ->orWhere('url', 'ilike', "%{$this->query}%")
+        $websites = Website::where('name', $like, "%{$this->query}%")
+            ->orWhere('url', $like, "%{$this->query}%")
             ->limit(5)
             ->get(['id', 'name', 'project_id']);
         foreach ($websites as $w) {
@@ -88,8 +92,8 @@ class GlobalSearch extends Component
             ];
         }
         // Credentials
-        $credentials = Credential::where('name', 'ilike', "%{$this->query}%")
-            ->orWhere('login', 'ilike', "%{$this->query}%")
+        $credentials = Credential::where('name', $like, "%{$this->query}%")
+            ->orWhere('login', $like, "%{$this->query}%")
             ->limit(5)
             ->get(['id', 'name', 'project_id']);
         foreach ($credentials as $c) {
@@ -103,7 +107,7 @@ class GlobalSearch extends Component
 
         // Project Notes
         if (config('features.global_search_notes', true)) {
-            $notes = ProjectNote::where('content', 'ilike', "%{$this->query}%")
+            $notes = ProjectNote::where('content', $like, "%{$this->query}%")
                 ->limit(5)
                 ->with('project')
                 ->get();

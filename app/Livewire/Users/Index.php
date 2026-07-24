@@ -3,6 +3,7 @@
 namespace App\Livewire\Users;
 
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
@@ -13,18 +14,25 @@ class Index extends Component
     use WithPagination;
 
     public string $search = '';
+
     public string $filterRole = '';
 
     // Modal controls
     public bool $showModal = false;
+
     public bool $showResetModal = false;
+
     public ?int $editingUserId = null;
 
     // Form inputs
     public string $name = '';
+
     public string $email = '';
+
     public string $password = '';
+
     public string $role = 'worker';
+
     public string $newPassword = '';
 
     protected $queryString = [
@@ -37,7 +45,7 @@ class Index extends Component
      */
     public function mount(): void
     {
-        if (!auth()->user()->can('manage_users')) {
+        if (! auth()->user()->can('manage_users')) {
             abort(403, 'Unauthorized.');
         }
     }
@@ -159,13 +167,15 @@ class Index extends Component
      */
     public function deleteUser(int $userId): void
     {
-        if (!auth()->user()->hasRole('admin')) {
+        if (! auth()->user()->hasRole('admin')) {
             session()->flash('error', 'Only administrators can delete users.');
+
             return;
         }
 
         if (auth()->id() === $userId) {
             session()->flash('error', 'You cannot delete yourself.');
+
             return;
         }
 
@@ -176,12 +186,14 @@ class Index extends Component
 
     public function render()
     {
+        $like = DB::connection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
+
         $users = User::query()
             ->with('roles')
-            ->when($this->search, function ($query) {
-                $query->where(function ($q) {
-                    $q->where('name', 'ilike', '%' . $this->search . '%')
-                      ->orWhere('email', 'ilike', '%' . $this->search . '%');
+            ->when($this->search, function ($query) use ($like) {
+                $query->where(function ($q) use ($like) {
+                    $q->where('name', $like, '%'.$this->search.'%')
+                        ->orWhere('email', $like, '%'.$this->search.'%');
                 });
             })
             ->when($this->filterRole, function ($query) {

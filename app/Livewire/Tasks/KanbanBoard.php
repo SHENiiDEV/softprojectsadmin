@@ -2,13 +2,18 @@
 
 namespace App\Livewire\Tasks;
 
+use App\Models\ActivityLog;
+use App\Models\Client;
+use App\Models\Comment;
+use App\Models\Project;
+use App\Models\Task;
+use App\Models\TaskTimeLog;
+use App\Models\User;
+use App\Services\NotificationService;
+use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 use Livewire\WithFileUploads;
-use App\Models\Task;
-use App\Models\Project;
-use App\Models\User;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
-use Illuminate\Support\Facades\Storage;
 
 class KanbanBoard extends Component
 {
@@ -16,28 +21,42 @@ class KanbanBoard extends Component
 
     // Filters
     public $search = '';
+
     public $filterProject = '';
+
     public $filterAssignee = '';
+
     public $filterPriority = '';
 
     // Modal state
     public $showModal = false;
+
     public $editingTaskId = null;
 
     // Form fields
     public $taskTitle = '';
+
     public $taskDescription = '';
+
     public $taskProject = ''; // Nullable
+
     public $taskAssignee = ''; // Nullable
+
     public $taskPriority = 'medium';
+
     public $taskStatus = 'todo';
+
     public $taskDueDate = '';
+
     public $attachments = [];
+
     public $existingMedia = [];
 
     // Comments fields
     public $newCommentContent = '';
+
     public $newCommentIsPrivate = false;
+
     public $replyCommentContent = [];
 
     // Validation rules
@@ -80,37 +99,38 @@ class KanbanBoard extends Component
             // Curator sees tasks assigned to themselves, managers, workers, or unassigned tasks
             $query->where(function ($q) use ($user) {
                 $q->whereNull('assigned_to')
-                  ->orWhere('assigned_to', $user->id)
-                  ->orWhereHas('assignee', function ($qSub) {
-                      $qSub->role(['manager', 'worker']);
-                  });
+                    ->orWhere('assigned_to', $user->id)
+                    ->orWhereHas('assignee', function ($qSub) {
+                        $qSub->role(['manager', 'worker']);
+                    });
             });
         } elseif ($user->hasRole('manager')) {
             // Manager sees tasks assigned to themselves, workers, or unassigned tasks
             $query->where(function ($q) use ($user) {
                 $q->whereNull('assigned_to')
-                  ->orWhere('assigned_to', $user->id)
-                  ->orWhereHas('assignee', function ($qSub) {
-                      $qSub->role('worker');
-                  });
+                    ->orWhere('assigned_to', $user->id)
+                    ->orWhereHas('assignee', function ($qSub) {
+                        $qSub->role('worker');
+                    });
             });
         } elseif ($user->hasRole('worker')) {
             // Worker sees only tasks assigned to themselves or unassigned tasks
             $query->where(function ($q) use ($user) {
                 $q->whereNull('assigned_to')
-                  ->orWhere('assigned_to', $user->id);
+                    ->orWhere('assigned_to', $user->id);
             });
         }
 
         // Apply filters
-        if (!empty($this->search)) {
-            $query->where(function ($q) {
-                $q->where('title', 'ilike', '%' . $this->search . '%')
-                  ->orWhere('description', 'ilike', '%' . $this->search . '%');
+        if (! empty($this->search)) {
+            $like = DB::connection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
+            $query->where(function ($q) use ($like) {
+                $q->where('title', $like, '%'.$this->search.'%')
+                    ->orWhere('description', $like, '%'.$this->search.'%');
             });
         }
 
-        if (!empty($this->filterProject)) {
+        if (! empty($this->filterProject)) {
             if ($this->filterProject === 'global') {
                 $query->whereNull('project_id');
             } else {
@@ -118,11 +138,11 @@ class KanbanBoard extends Component
             }
         }
 
-        if (!empty($this->filterAssignee)) {
+        if (! empty($this->filterAssignee)) {
             $query->where('assigned_to', $this->filterAssignee);
         }
 
-        if (!empty($this->filterPriority)) {
+        if (! empty($this->filterPriority)) {
             $query->where('priority', $this->filterPriority);
         }
 
@@ -140,7 +160,7 @@ class KanbanBoard extends Component
             'tasks' => $tasks,
             'projects' => Project::with('client')->orderBy('name')->get(),
             'users' => User::orderBy('name')->get(),
-            'clients' => \App\Models\Client::orderBy('name')->get(),
+            'clients' => Client::orderBy('name')->get(),
         ]);
     }
 
@@ -155,15 +175,17 @@ class KanbanBoard extends Component
         // Authorization checks
         if ($user->hasRole('curator')) {
             session()->flash('error', 'Curators are not allowed to change task status.');
+
             return;
         }
 
         if ($user->hasRole('worker') && $task->assigned_to !== $user->id) {
             session()->flash('error', 'Workers are only allowed to modify their own tasks.');
+
             return;
         }
 
-        if (!in_array($newStatus, ['todo', 'in_progress', 'review', 'done'])) {
+        if (! in_array($newStatus, ['todo', 'in_progress', 'review', 'done'])) {
             return;
         }
 
@@ -243,16 +265,19 @@ class KanbanBoard extends Component
             $task = Task::findOrFail($this->editingTaskId);
             if ($user->hasRole('curator')) {
                 session()->flash('error', 'Curators are not allowed to modify tasks.');
+
                 return;
             }
             if ($user->hasRole('worker') && $task->assigned_to !== $user->id) {
                 session()->flash('error', 'Workers are only allowed to modify their own tasks.');
+
                 return;
             }
         } else {
             // Creation check
             if ($user->hasRole('curator')) {
                 session()->flash('error', 'Curators are not allowed to create tasks.');
+
                 return;
             }
         }
@@ -278,12 +303,12 @@ class KanbanBoard extends Component
         }
 
         // Handle file uploads
-        if (!empty($this->attachments)) {
+        if (! empty($this->attachments)) {
             foreach ($this->attachments as $file) {
                 $task->addMedia($file->getRealPath())
-                     ->usingFileName($file->getClientOriginalName())
-                     ->usingName(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME))
-                     ->toMediaCollection('documents');
+                    ->usingFileName($file->getClientOriginalName())
+                    ->usingName(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME))
+                    ->toMediaCollection('documents');
             }
         }
 
@@ -299,8 +324,9 @@ class KanbanBoard extends Component
     {
         $user = auth()->user();
 
-        if (!$user->hasAnyRole(['admin', 'manager'])) {
+        if (! $user->hasAnyRole(['admin', 'manager'])) {
             session()->flash('error', 'Only admins and managers can delete tasks.');
+
             return;
         }
 
@@ -323,10 +349,12 @@ class KanbanBoard extends Component
         // Authorization check
         if ($user->hasRole('curator')) {
             session()->flash('error', 'Curators are not allowed to modify attachments.');
+
             return;
         }
         if ($user->hasRole('worker') && $task->assigned_to !== $user->id) {
             session()->flash('error', 'Workers are only allowed to modify attachments in their own tasks.');
+
             return;
         }
 
@@ -346,7 +374,7 @@ class KanbanBoard extends Component
     public function takeTask($taskId)
     {
         $task = Task::findOrFail($taskId);
-        
+
         // Assign to currently logged in user
         $task->assigned_to = auth()->id();
         $task->save();
@@ -363,8 +391,9 @@ class KanbanBoard extends Component
         $task = Task::findOrFail($taskId);
 
         // Make sure only the assignee (or admin/manager) can track time
-        if ($task->assigned_to !== $user->id && !$user->hasAnyRole(['admin', 'manager'])) {
+        if ($task->assigned_to !== $user->id && ! $user->hasAnyRole(['admin', 'manager'])) {
             session()->flash('error', 'Only the assignee can track time on this task.');
+
             return;
         }
 
@@ -385,21 +414,21 @@ class KanbanBoard extends Component
             $formattedDuration = gmdate('H:i:s', $durationSeconds);
 
             // Log timer stopped
-            \App\Models\ActivityLog::create([
+            ActivityLog::create([
                 'user_id' => $user->id,
                 'task_id' => $task->id,
                 'project_id' => $task->project_id,
                 'action' => 'timer_stopped',
-                'description' => "Timer stopped on task '{$task->title}' after working for {$formattedDuration} by " . $user->name,
+                'description' => "Timer stopped on task '{$task->title}' after working for {$formattedDuration} by ".$user->name,
             ]);
 
             // Dispatch notification
-            \App\Services\NotificationService::sendTimerAction($task, 'stopped', $durationSeconds, $user);
+            NotificationService::sendTimerAction($task, 'stopped', $durationSeconds, $user);
 
-            session()->flash('message', 'Timer stopped. Tracked: ' . $task->formatted_duration);
+            session()->flash('message', 'Timer stopped. Tracked: '.$task->formatted_duration);
         } else {
             // Stop any other active timers for this user first
-            \App\Models\TaskTimeLog::where('user_id', $user->id)
+            TaskTimeLog::where('user_id', $user->id)
                 ->whereNull('stopped_at')
                 ->each(function ($log) use ($user) {
                     $log->stopped_at = now();
@@ -411,16 +440,16 @@ class KanbanBoard extends Component
                     $formattedDuration = gmdate('H:i:s', $durationSeconds);
 
                     if ($otherTask) {
-                        \App\Models\ActivityLog::create([
+                        ActivityLog::create([
                             'user_id' => $user->id,
                             'task_id' => $otherTask->id,
                             'project_id' => $otherTask->project_id,
                             'action' => 'timer_stopped',
-                            'description' => "Timer automatically stopped on task '{$otherTask->title}' (conflict override) after working for {$formattedDuration} by " . $user->name,
+                            'description' => "Timer automatically stopped on task '{$otherTask->title}' (conflict override) after working for {$formattedDuration} by ".$user->name,
                         ]);
 
                         // Dispatch notification for override stopped timer
-                        \App\Services\NotificationService::sendTimerAction($otherTask, 'stopped', $durationSeconds, $user);
+                        NotificationService::sendTimerAction($otherTask, 'stopped', $durationSeconds, $user);
                     }
                 });
 
@@ -431,16 +460,16 @@ class KanbanBoard extends Component
             ]);
 
             // Log timer started
-            \App\Models\ActivityLog::create([
+            ActivityLog::create([
                 'user_id' => $user->id,
                 'task_id' => $task->id,
                 'project_id' => $task->project_id,
                 'action' => 'timer_started',
-                'description' => "Timer started on task '{$task->title}' by " . $user->name,
+                'description' => "Timer started on task '{$task->title}' by ".$user->name,
             ]);
 
             // Dispatch notification for started timer
-            \App\Services\NotificationService::sendTimerAction($task, 'started', 0, $user);
+            NotificationService::sendTimerAction($task, 'started', 0, $user);
 
             session()->flash('message', 'Timer started for task.');
         }
@@ -455,13 +484,13 @@ class KanbanBoard extends Component
             'newCommentContent' => 'required|string|min:1',
         ]);
 
-        if (!$this->editingTaskId) {
+        if (! $this->editingTaskId) {
             return;
         }
 
         $task = Task::findOrFail($this->editingTaskId);
 
-        $comment = \App\Models\Comment::create([
+        $comment = Comment::create([
             'task_id' => $task->id,
             'user_id' => auth()->id(),
             'content' => $this->newCommentContent,
@@ -469,16 +498,16 @@ class KanbanBoard extends Component
         ]);
 
         // Log to ActivityLog
-        \App\Models\ActivityLog::create([
+        ActivityLog::create([
             'user_id' => auth()->id(),
             'task_id' => $task->id,
             'project_id' => $task->project_id,
             'action' => 'task_updated',
-            'description' => "Comment was added to task '{$task->title}' by " . auth()->user()->name,
+            'description' => "Comment was added to task '{$task->title}' by ".auth()->user()->name,
         ]);
 
         // Send notifications
-        \App\Services\NotificationService::sendNewCommentNotification($comment);
+        NotificationService::sendNewCommentNotification($comment);
 
         // Reset inputs
         $this->newCommentContent = '';
@@ -495,14 +524,14 @@ class KanbanBoard extends Component
             return;
         }
 
-        if (!$this->editingTaskId) {
+        if (! $this->editingTaskId) {
             return;
         }
 
         $task = Task::findOrFail($this->editingTaskId);
-        $parent = \App\Models\Comment::findOrFail($parentId);
+        $parent = Comment::findOrFail($parentId);
 
-        $comment = \App\Models\Comment::create([
+        $comment = Comment::create([
             'task_id' => $task->id,
             'user_id' => auth()->id(),
             'parent_id' => $parentId,
@@ -511,7 +540,7 @@ class KanbanBoard extends Component
         ]);
 
         // Send notifications
-        \App\Services\NotificationService::sendNewCommentNotification($comment);
+        NotificationService::sendNewCommentNotification($comment);
 
         // Reset input for this comment
         unset($this->replyCommentContent[$parentId]);
@@ -522,8 +551,8 @@ class KanbanBoard extends Component
      */
     public function deleteComment($commentId)
     {
-        $comment = \App\Models\Comment::findOrFail($commentId);
-        
+        $comment = Comment::findOrFail($commentId);
+
         $user = auth()->user();
         if ($user->hasRole('admin') || $user->hasRole('manager') || $comment->user_id === $user->id) {
             $comment->delete();

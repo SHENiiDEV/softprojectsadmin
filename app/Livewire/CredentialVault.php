@@ -7,6 +7,7 @@ use App\Models\Credential;
 use App\Models\Project;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 
 class CredentialVault extends Component
@@ -68,11 +69,12 @@ class CredentialVault extends Component
 
         if ($this->search) {
             $s = $this->search;
-            $query->where(fn ($q) => $q->where('name', 'ilike', "%$s%")
-                ->orWhere('type', 'ilike', "%$s%")
-                ->orWhere('login', 'ilike', "%$s%")
-                ->orWhereHas('project', fn ($q2) => $q2->where('name', 'ilike', "%$s%"))
-                ->orWhereHas('website', fn ($q2) => $q2->where('url', 'ilike', "%$s%"))
+            $like = DB::connection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
+            $query->where(fn ($q) => $q->where('name', $like, "%$s%")
+                ->orWhere('type', $like, "%$s%")
+                ->orWhere('login', $like, "%$s%")
+                ->orWhereHas('project', fn ($q2) => $q2->where('name', $like, "%$s%"))
+                ->orWhereHas('website', fn ($q2) => $q2->where('url', $like, "%$s%"))
             );
         }
 

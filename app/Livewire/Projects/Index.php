@@ -4,6 +4,8 @@ namespace App\Livewire\Projects;
 
 use App\Models\Client;
 use App\Models\Project;
+use App\Models\ProjectNote;
+use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -107,7 +109,7 @@ class Index extends Component
             'noteContent' => 'required|string|min:2|max:5000',
         ]);
 
-        \App\Models\ProjectNote::create([
+        ProjectNote::create([
             'project_id' => $this->noteProjectId,
             'user_id' => auth()->id(),
             'content' => $this->noteContent,
@@ -122,15 +124,17 @@ class Index extends Component
 
     public function render()
     {
+        $like = DB::connection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
+
         $projects = Project::query()
             ->with(['director', 'manager', 'client'])
-            ->when($this->search, function ($query) {
-                $query->where(function ($q) {
-                    $q->where('name', 'ilike', '%'.$this->search.'%')
-                        ->orWhere('ubo', 'ilike', '%'.$this->search.'%')
-                        ->orWhere('mcc', 'ilike', '%'.$this->search.'%')
-                        ->orWhereHas('director', function ($dq) {
-                            $dq->where('name', 'ilike', '%'.$this->search.'%');
+            ->when($this->search, function ($query) use ($like) {
+                $query->where(function ($q) use ($like) {
+                    $q->where('name', $like, '%'.$this->search.'%')
+                        ->orWhere('ubo', $like, '%'.$this->search.'%')
+                        ->orWhere('mcc', $like, '%'.$this->search.'%')
+                        ->orWhereHas('director', function ($dq) use ($like) {
+                            $dq->where('name', $like, '%'.$this->search.'%');
                         });
                 });
             })

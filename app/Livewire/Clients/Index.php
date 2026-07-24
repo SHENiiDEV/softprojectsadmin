@@ -3,6 +3,7 @@
 namespace App\Livewire\Clients;
 
 use App\Models\Client;
+use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -109,10 +110,12 @@ class Index extends Component
 
     public function render()
     {
+        $like = DB::connection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
+
         $clients = Client::query()
             ->withCount('companies')
-            ->when($this->search, function ($query) {
-                $query->where('name', 'ilike', '%'.$this->search.'%');
+            ->when($this->search, function ($query) use ($like) {
+                $query->where('name', $like, '%'.$this->search.'%');
             })
             ->orderBy('id', 'desc')
             ->paginate(10);
