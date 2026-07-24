@@ -7,7 +7,7 @@
         <div>
             <h1 class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Credential Vault</h1>
             <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-                Доступы по всем компаниям — {{ $credentials->count() }} записей
+                Credentials across all companies — {{ $credentials->count() }} records
             </p>
         </div>
 
@@ -18,14 +18,14 @@
                            {{ $groupBy === 'project'
                                ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm'
                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200' }}">
-                По компании
+                By Company
             </button>
             <button wire:click="$set('groupBy', 'type')"
                     class="px-3 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200 cursor-pointer
                            {{ $groupBy === 'type'
                                ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm'
                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200' }}">
-                По типу
+                By Type
             </button>
         </div>
     </div>
@@ -42,7 +42,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
             </svg>
             <input wire:model.live.debounce.300ms="search"
-                   type="text" placeholder="Поиск по названию, логину, компании, сайту..."
+                   type="text" placeholder="Search by name, login, company, website..."
                    class="w-full pl-9 pr-3 py-2 text-sm rounded-xl bg-white dark:bg-slate-800
                           border border-slate-200 dark:border-slate-700
                           text-slate-700 dark:text-slate-200 placeholder-slate-400
@@ -55,7 +55,7 @@
                        border border-slate-200 dark:border-slate-700
                        text-slate-700 dark:text-slate-200
                        focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer">
-            <option value="">Все типы</option>
+            <option value="">All Types</option>
             @foreach($types as $type)
                 <option value="{{ $type }}">{{ $type }}</option>
             @endforeach
@@ -63,11 +63,11 @@
 
         {{-- Project filter --}}
         <select wire:model.live="filterProject"
-                class="px-3 py-2 text-sm rounded-xl bg-white dark:bg-slate-800
+                class="px-3 py-2 text-sm rounded-xl bg-white dark:bg-slate-805
                        border border-slate-200 dark:border-slate-700
                        text-slate-700 dark:text-slate-200
                        focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer max-w-56">
-            <option value="">Все компании</option>
+            <option value="">All Companies</option>
             @foreach($projects as $p)
                 <option value="{{ $p->id }}">{{ $p->name }}</option>
             @endforeach
@@ -82,7 +82,7 @@
                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
-                Сбросить
+                Reset
             </button>
         @endif
     </div>
@@ -97,8 +97,8 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
                 </svg>
             </div>
-            <p class="text-slate-600 dark:text-slate-300 font-semibold text-lg">Нет credentials</p>
-            <p class="text-slate-400 dark:text-slate-500 text-sm mt-1">Попробуйте изменить фильтры.</p>
+            <p class="text-slate-600 dark:text-slate-300 font-semibold text-lg">No credentials found</p>
+            <p class="text-slate-400 dark:text-slate-500 text-sm mt-1">Try changing the filters.</p>
         </div>
     @else
         <div class="space-y-8">
@@ -263,7 +263,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
                             </svg>
                             <div>
-                                <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Компания</p>
+                                <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Company</p>
                                 <p class="text-sm font-medium text-slate-800 dark:text-slate-100 mt-0.5">{{ $selectedCredential->project->name }}</p>
                             </div>
                         </div>
@@ -276,7 +276,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
                             </svg>
                             <div class="flex-1 min-w-0">
-                                <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Сайт</p>
+                                <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Website</p>
                                 <a href="{{ $selectedCredential->website->url }}" target="_blank"
                                    class="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:underline truncate block mt-0.5">
                                     {{ $selectedCredential->website->url }}
@@ -288,7 +288,7 @@
                     {{-- Login --}}
                     <div class="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
                         <div class="px-4 py-2 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-                            <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Логин</p>
+                            <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Login</p>
                         </div>
                         <div class="flex items-center justify-between px-4 py-3">
                             <span class="text-sm font-mono text-slate-800 dark:text-slate-100 select-all">
@@ -300,13 +300,13 @@
                                            bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/50
                                            rounded-lg transition-all duration-200 cursor-pointer"
                                     x-data x-on:click="
-                                        $el.innerHTML = '<svg class=\'w-3 h-3\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'currentColor\' stroke-width=\'2.5\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' d=\'M5 13l4 4L19 7\'/></svg> Скопировано';
-                                        setTimeout(() => $el.innerHTML = '<svg class=\'w-3 h-3\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'currentColor\' stroke-width=\'2\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' d=\'M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z\'/></svg> Копировать', 2000);
+                                        $el.innerHTML = '<svg class=\'w-3 h-3\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'currentColor\' stroke-width=\'2.5\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' d=\'M5 13l4 4L19 7\'/></svg> Copied';
+                                        setTimeout(() => $el.innerHTML = '<svg class=\'w-3 h-3\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'currentColor\' stroke-width=\'2\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' d=\'M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z\'/></svg> Copy', 2000);
                                     ">
                                 <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
                                 </svg>
-                                Копировать
+                                Copy
                             </button>
                         </div>
                     </div>
@@ -314,7 +314,7 @@
                     {{-- Password --}}
                     <div class="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
                         <div class="px-4 py-2 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-                            <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Пароль</p>
+                            <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Password</p>
                         </div>
                         <div class="flex items-center justify-between px-4 py-3 gap-3">
                             <span class="text-sm font-mono text-slate-800 dark:text-slate-100 flex-1 truncate select-all">
@@ -345,13 +345,13 @@
                                                bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/50
                                                rounded-lg transition-all duration-200 cursor-pointer"
                                         x-data x-on:click="
-                                            $el.innerHTML = '<svg class=\'w-3 h-3\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'currentColor\' stroke-width=\'2.5\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' d=\'M5 13l4 4L19 7\'/></svg> Скопировано';
-                                            setTimeout(() => $el.innerHTML = '<svg class=\'w-3 h-3\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'currentColor\' stroke-width=\'2\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' d=\'M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z\'/></svg> Копировать', 2000);
+                                            $el.innerHTML = '<svg class=\'w-3 h-3\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'currentColor\' stroke-width=\'2.5\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' d=\'M5 13l4 4L19 7\'/></svg> Copied';
+                                            setTimeout(() => $el.innerHTML = '<svg class=\'w-3 h-3\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'currentColor\' stroke-width=\'2\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' d=\'M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z\'/></svg> Copy', 2000);
                                         ">
                                     <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
                                     </svg>
-                                    Копировать
+                                    Copy
                                 </button>
                             </div>
                         </div>
@@ -361,7 +361,7 @@
                     @if($selectedCredential->comments)
                         <div class="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
                             <div class="px-4 py-2 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-                                <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Комментарий</p>
+                                <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Comment</p>
                             </div>
                             <p class="px-4 py-3 text-sm text-slate-700 dark:text-slate-300">
                                 {{ $selectedCredential->comments }}
@@ -376,7 +376,7 @@
                             class="w-full px-4 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200
                                    hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl text-sm font-semibold
                                    transition-all duration-200 cursor-pointer">
-                        Закрыть
+                        Close
                     </button>
                 </div>
             </div>
