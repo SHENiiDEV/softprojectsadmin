@@ -68,7 +68,6 @@
 
                     <!-- Clients Link -->
                     @if(config('features.clients'))
-                    @hasanyrole('admin|manager|curator')
                     <a href="{{ route('clients.index') }}"
                        class="flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 group {{ request()->routeIs('clients.*') ? 'bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-400' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-800 dark:hover:text-white' }}">
                         <svg class="mr-3 h-5 w-5 transition-transform duration-200 group-hover:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -76,7 +75,6 @@
                         </svg>
                         Clients
                     </a>
-                    @endhasanyrole
                     @endif
 
                     <!-- Companies Link -->
@@ -160,7 +158,6 @@
                     @endif
 
                     @if(config('features.credential_vault'))
-                    @can('view_credentials')
                     <a href="{{ route('credentials') }}"
                        class="flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 group {{ request()->routeIs('credentials') ? 'bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-400' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-800 dark:hover:text-white' }}">
                         <svg class="mr-3 h-5 w-5 transition-transform duration-200 group-hover:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -168,7 +165,6 @@
                         </svg>
                         Credentials
                     </a>
-                    @endcan
                     @endif
 
                     @if(config('features.calendar'))
@@ -302,14 +298,12 @@
                         @endcan
 
                         @if(config('features.clients'))
-                        @hasanyrole('admin|manager|curator')
                         <a href="{{ route('clients.index') }}" class="flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 group {{ request()->routeIs('clients.*') ? 'bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-400' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-800 dark:hover:text-white' }}">
                             <svg class="mr-3 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                             </svg>
                             Clients
                         </a>
-                        @endhasanyrole
                         @endif
 
                         @if(config('features.kanban'))
@@ -367,12 +361,10 @@
                         @endif
 
                         @if(config('features.credential_vault'))
-                        @can('view_credentials')
                         <a href="{{ route('credentials') }}" class="flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 group {{ request()->routeIs('credentials') ? 'bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-400' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-800 dark:hover:text-white' }}">
                             <svg class="mr-3 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
                             Credentials
                         </a>
-                        @endcan
                         @endif
 
                         @if(config('features.calendar'))

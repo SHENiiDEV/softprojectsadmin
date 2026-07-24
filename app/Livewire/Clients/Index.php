@@ -14,6 +14,7 @@ class Index extends Component
 
     // Modal controls
     public bool $showModal = false;
+
     public ?int $clientId = null;
 
     // Form inputs
@@ -28,9 +29,7 @@ class Index extends Component
      */
     public function mount(): void
     {
-        if (!auth()->user()->hasAnyRole(['admin', 'manager', 'curator'])) {
-            abort(403, 'Unauthorized.');
-        }
+        // Allowed for all authenticated users
     }
 
     public function updatingSearch(): void
@@ -66,8 +65,9 @@ class Index extends Component
      */
     public function saveClient(): void
     {
-        if (!auth()->user()->hasAnyRole(['admin', 'manager'])) {
+        if (! auth()->user()->hasAnyRole(['admin', 'manager'])) {
             session()->flash('error', 'You do not have permission to modify clients.');
+
             return;
         }
 
@@ -96,8 +96,9 @@ class Index extends Component
      */
     public function deleteClient(int $id): void
     {
-        if (!auth()->user()->hasAnyRole(['admin', 'manager'])) {
+        if (! auth()->user()->hasAnyRole(['admin', 'manager'])) {
             session()->flash('error', 'You do not have permission to delete clients.');
+
             return;
         }
 
@@ -111,7 +112,7 @@ class Index extends Component
         $clients = Client::query()
             ->withCount('companies')
             ->when($this->search, function ($query) {
-                $query->where('name', 'ilike', '%' . $this->search . '%');
+                $query->where('name', 'ilike', '%'.$this->search.'%');
             })
             ->orderBy('id', 'desc')
             ->paginate(10);
