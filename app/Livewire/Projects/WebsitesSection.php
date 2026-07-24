@@ -49,6 +49,10 @@ class WebsitesSection extends Component
 
     public array $gateways = [];
 
+    public string $visa_status = 'Stopped';
+
+    public string $mastercard_status = 'Stopped';
+
     protected function rules(): array
     {
         return [
@@ -57,6 +61,8 @@ class WebsitesSection extends Component
             'status' => 'required|in:Live,Test,No integration',
             'gateways' => 'nullable|array',
             'gateways.*' => 'string|in:'.implode(',', self::AVAILABLE_GATEWAYS),
+            'visa_status' => 'required|in:In Progress,Working,Stopped',
+            'mastercard_status' => 'required|in:In Progress,Working,Stopped',
         ];
     }
 
@@ -80,6 +86,8 @@ class WebsitesSection extends Component
         $this->url = $website->url;
         $this->status = $website->status ?? 'No integration';
         $this->gateways = $website->gateways ?? [];
+        $this->visa_status = $website->visa_status ?? 'Stopped';
+        $this->mastercard_status = $website->mastercard_status ?? 'Stopped';
         $this->showForm = true;
     }
 
@@ -94,6 +102,8 @@ class WebsitesSection extends Component
                 'url' => $this->url,
                 'status' => $this->status,
                 'gateways' => $this->gateways,
+                'visa_status' => $this->visa_status,
+                'mastercard_status' => $this->mastercard_status,
             ]);
             session()->flash('message', 'Website successfully updated.');
         } else {
@@ -102,6 +112,8 @@ class WebsitesSection extends Component
                 'url' => $this->url,
                 'status' => $this->status,
                 'gateways' => $this->gateways,
+                'visa_status' => $this->visa_status,
+                'mastercard_status' => $this->mastercard_status,
             ]);
             session()->flash('message', 'New website successfully added.');
         }
@@ -129,6 +141,8 @@ class WebsitesSection extends Component
         $this->url = '';
         $this->status = 'No integration';
         $this->gateways = [];
+        $this->visa_status = 'Stopped';
+        $this->mastercard_status = 'Stopped';
         $this->resetValidation();
     }
 

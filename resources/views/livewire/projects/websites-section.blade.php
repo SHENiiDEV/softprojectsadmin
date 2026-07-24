@@ -40,16 +40,16 @@
                 {{ $editingId ? 'Edit Website' : 'Add New Website' }}
             </h4>
 
-            <form wire:submit.prevent="save" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <form wire:submit.prevent="save" class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <!-- Name -->
-                <div>
+                <div class="md:col-span-1">
                     <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">Website Name <span class="text-rose-500">*</span></label>
                     <input type="text" wire:model="name" placeholder="e.g. Main Website, Blog, Landing" class="w-full px-3.5 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-150">
                     @error('name') <span class="text-[10px] text-rose-500 mt-1 block">{{ $message }}</span> @enderror
                 </div>
 
                 <!-- URL -->
-                <div>
+                <div class="md:col-span-2">
                     <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">Website Address (URL) <span class="text-rose-500">*</span></label>
                     <input type="text" wire:model="url" placeholder="https://example.com" class="w-full px-3.5 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-150">
                     @error('url') <span class="text-[10px] text-rose-500 mt-1 block">{{ $message }}</span> @enderror
@@ -64,6 +64,28 @@
                         <option value="Live">Live</option>
                     </select>
                     @error('status') <span class="text-[10px] text-rose-500 mt-1 block">{{ $message }}</span> @enderror
+                </div>
+
+                <!-- VISA Status -->
+                <div>
+                    <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">VISA Status <span class="text-rose-500">*</span></label>
+                    <select wire:model="visa_status" class="w-full px-3.5 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-150">
+                        <option value="Stopped">Stopped</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Working">Working</option>
+                    </select>
+                    @error('visa_status') <span class="text-[10px] text-rose-500 mt-1 block">{{ $message }}</span> @enderror
+                </div>
+
+                <!-- MasterCard Status -->
+                <div>
+                    <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">MasterCard Status <span class="text-rose-500">*</span></label>
+                    <select wire:model="mastercard_status" class="w-full px-3.5 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-150">
+                        <option value="Stopped">Stopped</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Working">Working</option>
+                    </select>
+                    @error('mastercard_status') <span class="text-[10px] text-rose-500 mt-1 block">{{ $message }}</span> @enderror
                 </div>
 
                 <!-- Gateway Providers -->
@@ -102,6 +124,8 @@
                         <th class="p-3.5">Name</th>
                         <th class="p-3.5">Link (URL)</th>
                         <th class="p-3.5">Status</th>
+                        <th class="p-3.5">VISA Status</th>
+                        <th class="p-3.5">MasterCard Status</th>
                         <th class="p-3.5 text-right">Actions</th>
                     </tr>
                 </thead>
@@ -149,6 +173,40 @@
                                 @endif
                             </td>
 
+                            <!-- VISA Status Badge -->
+                            <td class="p-3.5 whitespace-nowrap">
+                                @if(($web->visa_status ?? 'Stopped') === 'Working')
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200/20">
+                                        Working
+                                    </span>
+                                @elseif(($web->visa_status ?? 'Stopped') === 'In Progress')
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-sky-50 text-sky-700 dark:bg-sky-950/30 dark:text-sky-400 border border-sky-200/20">
+                                        In Progress
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400 border border-rose-200/20">
+                                        Stopped
+                                    </span>
+                                @endif
+                            </td>
+
+                            <!-- MasterCard Status Badge -->
+                            <td class="p-3.5 whitespace-nowrap">
+                                @if(($web->mastercard_status ?? 'Stopped') === 'Working')
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200/20">
+                                        Working
+                                    </span>
+                                @elseif(($web->mastercard_status ?? 'Stopped') === 'In Progress')
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-sky-50 text-sky-700 dark:bg-sky-950/30 dark:text-sky-400 border border-sky-200/20">
+                                        In Progress
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400 border border-rose-200/20">
+                                        Stopped
+                                    </span>
+                                @endif
+                            </td>
+
                             <!-- Actions -->
                             <td class="p-3.5 text-right space-x-1 whitespace-nowrap">
                                 <button type="button" wire:click="edit({{ $web->id }})" class="p-1 rounded text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-amber-600 dark:hover:text-amber-400 transition-all duration-150" title="Edit">
@@ -165,7 +223,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="4" class="p-8 text-center text-slate-400 dark:text-slate-500">
+                            <td colspan="6" class="p-8 text-center text-slate-400 dark:text-slate-500">
                                 No websites have been added for this project yet.
                             </td>
                         </tr>

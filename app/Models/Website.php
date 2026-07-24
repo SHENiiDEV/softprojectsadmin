@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['project_id', 'name', 'url', 'status', 'gateways'])]
+#[Fillable(['project_id', 'name', 'url', 'status', 'gateways', 'visa_status', 'mastercard_status'])]
 class Website extends Model
 {
     use HasFactory;
