@@ -239,13 +239,13 @@
                 <!-- User Profile & Logout -->
                 <div class="p-4 border-t border-slate-200/60 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-950/20">
                     <div class="flex items-center justify-between">
-                        <div class="flex items-center space-x-3 overflow-hidden">
-                            <img class="h-9 w-9 rounded-xl object-cover shadow-md shadow-sky-500/10" src="{{ auth()->user()->avatar_url }}" alt="{{ auth()->user()->name }}">
+                        <a href="{{ route('profile') }}" class="flex items-center space-x-3 overflow-hidden group hover:opacity-80 transition-opacity" wire:navigate>
+                            <img class="h-9 w-9 rounded-xl object-cover shadow-md shadow-sky-500/10 transition-transform duration-200 group-hover:scale-105" src="{{ auth()->user()->avatar_url }}" alt="{{ auth()->user()->name }}">
                             <div class="truncate">
-                                <p class="text-sm font-semibold text-slate-700 dark:text-white leading-tight">{{ auth()->user()->name }}</p>
+                                <p class="text-sm font-semibold text-slate-700 dark:text-white leading-tight group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors">{{ auth()->user()->name }}</p>
                                 <span class="text-xs text-slate-400 dark:text-indigo-400 capitalize">{{ auth()->user()->roles->first()?->name ?? 'User' }}</span>
                             </div>
-                        </div>
+                        </a>
                         <livewire:layout.navigation />
                     </div>
                 </div>
@@ -427,13 +427,13 @@
                     <!-- Mobile User Profile -->
                     <div class="p-4 border-t border-slate-200/60 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-950/20">
                         <div class="flex items-center justify-between">
-                            <div class="flex items-center space-x-3 overflow-hidden">
-                                <img class="h-9 w-9 rounded-xl object-cover shadow-md shadow-sky-500/10" src="{{ auth()->user()->avatar_url }}" alt="{{ auth()->user()->name }}">
+                            <a href="{{ route('profile') }}" class="flex items-center space-x-3 overflow-hidden group hover:opacity-80 transition-opacity" wire:navigate>
+                                <img class="h-9 w-9 rounded-xl object-cover shadow-md shadow-sky-500/10 transition-transform duration-200 group-hover:scale-105" src="{{ auth()->user()->avatar_url }}" alt="{{ auth()->user()->name }}">
                                 <div class="truncate">
-                                    <p class="text-sm font-semibold text-slate-700 dark:text-white leading-tight">{{ auth()->user()->name }}</p>
+                                    <p class="text-sm font-semibold text-slate-700 dark:text-white leading-tight group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors">{{ auth()->user()->name }}</p>
                                     <span class="text-xs text-slate-400 dark:text-indigo-400 capitalize">{{ auth()->user()->roles->first()?->name ?? 'User' }}</span>
                                 </div>
-                            </div>
+                            </a>
                         </div>
                     </div>
                 </div>
