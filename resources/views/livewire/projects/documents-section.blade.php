@@ -24,7 +24,7 @@
             <div class="relative w-full">
                 <label @dragover.prevent="isDropping = true"
                        @dragleave.prevent="isDropping = false"
-                       @drop.prevent="isDropping = false"
+                       @drop.prevent="isDropping = false; if ($event.dataTransfer.files.length) { $wire.uploadMultiple('files', $event.dataTransfer.files); }"
                        :class="{ 
                            'bg-sky-50/80 dark:bg-sky-950/40 border-sky-400 dark:border-sky-500 scale-[1.01] shadow-md ring-4 ring-sky-500/10': isDropping,
                            'bg-slate-50/50 dark:bg-slate-950/20 border-slate-200 dark:border-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-950/40 hover:border-sky-300 dark:hover:border-sky-700': !isDropping
@@ -45,7 +45,6 @@
                     </div>
 
                     <input type="file" 
-                           x-ref="fileInput"
                            wire:model="files" 
                            class="hidden" 
                            multiple />
