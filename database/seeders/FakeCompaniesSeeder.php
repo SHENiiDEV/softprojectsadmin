@@ -7,6 +7,7 @@ use App\Models\Project;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Throwable;
@@ -158,7 +159,7 @@ class FakeCompaniesSeeder extends Seeder
                         'name' => 'CMS Admin Panel',
                         'type' => 'cms',
                         'login' => 'admin_'.strtolower($compPref),
-                        'password' => 'secret_pass_'.rand(1000, 9999),
+                        'password' => Crypt::encryptString('secret_pass_'.rand(1000, 9999)),
                         'created_at' => $now,
                         'updated_at' => $now,
                     ];
