@@ -118,7 +118,7 @@ class Index extends Component
                 $query->where('name', $like, '%'.$this->search.'%');
             })
             ->orderBy('id', 'desc')
-            ->paginate(10);
+            ->paginate(20);
 
         return view('livewire.clients.index', [
             'clients' => $clients,
