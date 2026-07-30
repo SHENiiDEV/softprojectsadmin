@@ -12,7 +12,6 @@ use App\Models\Website;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
@@ -44,46 +43,14 @@ class masterSeed extends Seeder
         }
         Schema::enableForeignKeyConstraints();
 
-        // 2. Call Spatie Roles and Permissions Seeder
+        // 2. Call TeamSeeder to create all roles & team members
         $this->call([
-            RolesAndPermissionsSeeder::class,
+            TeamSeeder::class,
         ]);
 
-        // 3. Create all team members
-        $team = [
-            'Nikita' => ['role' => 'curator', 'email' => 'nikita@projecthub.com'],
-            'David' => ['role' => 'curator', 'email' => 'david@projecthub.com'],
-            'Mikita' => ['role' => 'curator', 'email' => 'mikita@projecthub.com'],
-            'Igor' => ['role' => 'curator', 'email' => 'igor@projecthub.com'],
-            'Vito IT' => ['role' => 'manager', 'email' => 'vito@projecthub.com'],
-            'Zahar' => ['role' => 'manager', 'email' => 'zahar@projecthub.com'],
-            'Jet' => ['role' => 'manager', 'email' => 'jet@projecthub.com'],
-            'Romanians' => ['role' => 'manager', 'email' => 'romanians@projecthub.com'],
-            'Timur' => ['role' => 'manager', 'email' => 'timur@projecthub.com'],
-            'Mila UK' => ['role' => 'manager', 'email' => 'mila@projecthub.com'],
-            'Vika' => ['role' => 'manager', 'email' => 'vika@projecthub.com'],
-            'Venkata UK' => ['role' => 'manager', 'email' => 'venkata@projecthub.com'],
-            'Zaks' => ['role' => 'manager', 'email' => 'zaks@projecthub.com'],
-            'Daniel Est' => ['role' => 'manager', 'email' => 'daniel.est@projecthub.com'],
-            'Kevin' => ['role' => 'manager', 'email' => 'kevin@projecthub.com'],
-            'Renat' => ['role' => 'manager', 'email' => 'renat@projecthub.com'],
-            'Gleb' => ['role' => 'manager', 'email' => 'gleb@projecthub.com'],
-            'Elizabeth' => ['role' => 'manager', 'email' => 'elizabeth@projecthub.com'],
-            'Jambulat' => ['role' => 'manager', 'email' => 'jambulat@projecthub.com'],
-            'Jacob' => ['role' => 'manager', 'email' => 'jacob@projecthub.com'],
-            'Admin' => ['role' => 'admin', 'email' => 'admin@projecthub.com'],
-        ];
-
         $users = [];
-        foreach ($team as $name => $info) {
-            $user = User::create([
-                'name' => $name,
-                'email' => $info['email'],
-                'password' => Hash::make('password'),
-                'email_verified_at' => now(),
-            ]);
-            $user->assignRole($info['role']);
-            $users[strtolower(trim($name))] = $user;
+        foreach (User::all() as $user) {
+            $users[strtolower(trim($user->name))] = $user;
         }
 
         // Helper function to resolve user
