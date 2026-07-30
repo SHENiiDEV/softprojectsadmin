@@ -1024,7 +1024,7 @@ class masterSeed extends Seeder
             [
                 'client' => 'Cardserv - R',
                 'company' => 'CHALET AQUARIUS LTD',
-                'website' => 'chaletcoaching.co.uk',
+                'website' => ['chaletcoaching.co.uk', 'shot-flow.com'],
                 'web_dev' => 'David',
                 'integration_status' => 'Live cred',
                 'mc_status' => 'Working',
@@ -1044,7 +1044,7 @@ class masterSeed extends Seeder
             [
                 'client' => 'Cardserv - R',
                 'company' => 'ARIES ACCESSIBILITY LTD',
-                'website' => 'ariessim.co.uk',
+                'website' => ['ariessim.co.uk', 'flash-gen.com'],
                 'web_dev' => 'David',
                 'integration_status' => 'Live cred',
                 'mc_status' => 'Working',
@@ -1064,7 +1064,7 @@ class masterSeed extends Seeder
             [
                 'client' => 'Cardserv - R',
                 'company' => 'MANAGEMENT RESILIENCE LTD',
-                'website' => 'resileplans.co.uk',
+                'website' => ['resileplans.co.uk', 'pixel-mill.com'],
                 'web_dev' => 'David',
                 'integration_status' => 'No integration',
                 'mc_status' => 'Working',
@@ -1084,7 +1084,7 @@ class masterSeed extends Seeder
             [
                 'client' => 'Cardserv - R',
                 'company' => 'LOGIC OCTAVE LTD',
-                'website' => 'octavelogistics.co.uk',
+                'website' => ['octavelogistics.co.uk', 'vidsparks.com'],
                 'web_dev' => 'David',
                 'integration_status' => 'No integration',
                 'mc_status' => 'Working',
@@ -1997,8 +1997,14 @@ class masterSeed extends Seeder
             }
 
             // Create Website
-            $webUrl = trim($row['website'] ?? '');
-            if (! empty($webUrl) && ! str_contains(strtoupper($webUrl), 'NEED WEB') && ! str_contains(strtoupper($webUrl), 'OTHER COLOUR')) {
+            // Create Website(s)
+            $rawWebsites = is_array($row['website'] ?? null) ? $row['website'] : [$row['website'] ?? ''];
+            foreach ($rawWebsites as $index => $webUrl) {
+                $webUrl = trim($webUrl);
+                if (empty($webUrl) || str_contains(strtoupper($webUrl), 'NEED WEB') || str_contains(strtoupper($webUrl), 'OTHER COLOUR')) {
+                    continue;
+                }
+
                 $formattedUrl = str_starts_with($webUrl, 'http') ? $webUrl : 'https://'.$webUrl;
 
                 // Integration status mapping
@@ -2024,11 +2030,13 @@ class masterSeed extends Seeder
                     $visaStatus = 'In Progress';
                 }
 
+                $siteName = count($rawWebsites) > 1 ? ($index === 0 ? 'Main Website' : 'Website '.($index + 1)) : 'Main Website';
+
                 Website::firstOrCreate([
                     'project_id' => $project->id,
                     'url' => $formattedUrl,
                 ], [
-                    'name' => 'Main Website',
+                    'name' => $siteName,
                     'status' => $intStatus,
                     'visa_status' => $visaStatus,
                     'mastercard_status' => $mcStatus,
