@@ -2,8 +2,12 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 class RolesAndPermissionsSeeder extends Seeder
 {
@@ -13,47 +17,106 @@ class RolesAndPermissionsSeeder extends Seeder
     public function run(): void
     {
         // Reset cached roles and permissions
-        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+        app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // Create roles
-        $adminRole = \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
-        $managerRole = \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'manager', 'guard_name' => 'web']);
-        $curatorRole = \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'curator', 'guard_name' => 'web']);
-        $workerRole = \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'worker', 'guard_name' => 'web']);
+        // Permissions list
+        $permissions = [
+            'view_projects',
+            'manage_projects',
+            'view_tasks',
+            'manage_tasks',
+            'view_deadlines',
+            'view_calendar',
+            'view_activity',
+            'view_credentials',
+            'manage_credentials',
+            'view_reports',
+            'manage_users',
+        ];
 
-        // Create a default admin user
-        $admin = \App\Models\User::create([
-            'name' => 'Admin User',
-            'email' => 'admin@projecthub.com',
-            'password' => \Illuminate\Support\Facades\Hash::make('password'),
-            'email_verified_at' => now(),
+        foreach ($permissions as $p) {
+            Permission::findOrCreate($p, 'web');
+        }
+
+        // Create roles and assign permissions
+        $adminRole = Role::findOrCreate('admin', 'web');
+        $adminRole->syncPermissions($permissions);
+
+        $managerRole = Role::findOrCreate('manager', 'web');
+        $managerRole->syncPermissions([
+            'view_projects',
+            'manage_projects',
+            'view_tasks',
+            'manage_tasks',
+            'view_deadlines',
+            'view_calendar',
+            'view_activity',
+            'view_credentials',
+            'manage_credentials',
+            'view_reports',
         ]);
 
-        $admin->assignRole($adminRole);
-
-        // Optional: Create a test user for each role to facilitate testing
-        $manager = \App\Models\User::create([
-            'name' => 'Manager User',
-            'email' => 'manager@projecthub.com',
-            'password' => \Illuminate\Support\Facades\Hash::make('password'),
-            'email_verified_at' => now(),
+        $curatorRole = Role::findOrCreate('curator', 'web');
+        $curatorRole->syncPermissions([
+            'view_projects',
+            'view_tasks',
+            'manage_tasks',
+            'view_deadlines',
+            'view_calendar',
+            'view_activity',
+            'view_credentials',
+            'manage_users',
         ]);
-        $manager->assignRole($managerRole);
 
-        $curator = \App\Models\User::create([
-            'name' => 'Curator User',
-            'email' => 'curator@projecthub.com',
-            'password' => \Illuminate\Support\Facades\Hash::make('password'),
-            'email_verified_at' => now(),
+        $workerRole = Role::findOrCreate('worker', 'web');
+        $workerRole->syncPermissions([
+            'view_projects',
+            'view_tasks',
+            'manage_tasks',
+            'view_deadlines',
+            'view_calendar',
+            'view_activity',
         ]);
-        $curator->assignRole($curatorRole);
 
-        $worker = \App\Models\User::create([
-            'name' => 'Worker User',
-            'email' => 'worker@projecthub.com',
-            'password' => \Illuminate\Support\Facades\Hash::make('password'),
-            'email_verified_at' => now(),
-        ]);
-        $worker->assignRole($workerRole);
+        // Create default users (idempotent, using updateOrCreate)
+        $admin = User::updateOrCreate(
+            ['email' => 'admin@projecthub.com'],
+            [
+                'name' => 'Admin User',
+                'password' => Hash::make('password'),
+                'email_verified_at' => now(),
+            ]
+        );
+        $admin->syncRoles([$adminRole]);
+
+        $manager = User::updateOrCreate(
+            ['email' => 'manager@projecthub.com'],
+            [
+                'name' => 'Manager User',
+                'password' => Hash::make('password'),
+                'email_verified_at' => now(),
+            ]
+        );
+        $manager->syncRoles([$managerRole]);
+
+        $curator = User::updateOrCreate(
+            ['email' => 'curator@projecthub.com'],
+            [
+                'name' => 'Curator User',
+                'password' => Hash::make('password'),
+                'email_verified_at' => now(),
+            ]
+        );
+        $curator->syncRoles([$curatorRole]);
+
+        $worker = User::updateOrCreate(
+            ['email' => 'worker@projecthub.com'],
+            [
+                'name' => 'Worker User',
+                'password' => Hash::make('password'),
+                'email_verified_at' => now(),
+            ]
+        );
+        $worker->syncRoles([$workerRole]);
     }
 }
