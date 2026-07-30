@@ -127,7 +127,7 @@
                 <div class="flex items-center justify-between pb-3.5 mb-4 border-b border-slate-200/50 dark:border-slate-800/50">
                     <span class="font-outfit font-bold text-sm text-slate-700 dark:text-slate-200">{{ $statusDetails['Name'] }}</span>
                     <span class="px-2 py-0.5 rounded-lg text-xs font-bold {{ $statusDetails['badge'] }}">
-                        {{ count($tasks[$statusCode]) }}
+                        {{ $statusCounts[$statusCode] ?? count($tasks[$statusCode]) }}
                     </span>
                 </div>
 
@@ -302,6 +302,17 @@
                             <span class="text-xs">No tasks available</span>
                         </div>
                     @endforelse
+
+                    @if(($statusCounts[$statusCode] ?? 0) > count($tasks[$statusCode]))
+                        <div class="pt-2">
+                            <button type="button" 
+                                    wire:click="loadMoreStatus('{{ $statusCode }}')" 
+                                    class="w-full py-2.5 px-3 text-xs font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 dark:bg-sky-950/40 dark:text-sky-300 border border-sky-200/40 dark:border-sky-800/40 rounded-xl transition-all duration-150 cursor-pointer shadow-sm">
+                                <i class="fa-solid fa-angles-down mr-1"></i>
+                                Load More (+{{ min(30, ($statusCounts[$statusCode] ?? 0) - count($tasks[$statusCode])) }} of {{ ($statusCounts[$statusCode] ?? 0) - count($tasks[$statusCode]) }} remaining)
+                            </button>
+                        </div>
+                    @endif
                 </div>
             </div>
         @endforeach

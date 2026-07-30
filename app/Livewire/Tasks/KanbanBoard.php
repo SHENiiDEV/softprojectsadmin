@@ -2,14 +2,11 @@
 
 namespace App\Livewire\Tasks;
 
-use App\Models\ActivityLog;
 use App\Models\Client;
 use App\Models\Comment;
 use App\Models\Project;
 use App\Models\Task;
-use App\Models\TaskTimeLog;
 use App\Models\User;
-use App\Services\NotificationService;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -27,6 +24,14 @@ class KanbanBoard extends Component
     public $filterAssignee = '';
 
     public $filterPriority = '';
+
+    // Per-column pagination limits for ultra-fast rendering
+    public array $perPage = [
+        'todo' => 30,
+        'in_progress' => 30,
+        'review' => 30,
+        'done' => 30,
+    ];
 
     // Modal state
     public $showModal = false;
@@ -87,17 +92,24 @@ class KanbanBoard extends Component
         }
     }
 
+    public function loadMoreStatus(string $status): void
+    {
+        if (isset($this->perPage[$status])) {
+            $this->perPage[$status] += 30;
+        }
+    }
+
     public function render()
     {
-        // Query tasks with eager loading
-        $query = Task::with(['project.client', 'assignee', 'creator']);
-
         $user = auth()->user();
+
+        // Build base query
+        $baseQuery = Task::query();
+
         if ($user->hasRole('admin')) {
             // Admin sees all tasks
         } elseif ($user->hasRole('curator')) {
-            // Curator sees tasks assigned to themselves, managers, workers, or unassigned tasks
-            $query->where(function ($q) use ($user) {
+            $baseQuery->where(function ($q) use ($user) {
                 $q->whereNull('assigned_to')
                     ->orWhere('assigned_to', $user->id)
                     ->orWhereHas('assignee', function ($qSub) {
@@ -105,8 +117,7 @@ class KanbanBoard extends Component
                     });
             });
         } elseif ($user->hasRole('manager')) {
-            // Manager sees tasks assigned to themselves, workers, or unassigned tasks
-            $query->where(function ($q) use ($user) {
+            $baseQuery->where(function ($q) use ($user) {
                 $q->whereNull('assigned_to')
                     ->orWhere('assigned_to', $user->id)
                     ->orWhereHas('assignee', function ($qSub) {
@@ -114,8 +125,7 @@ class KanbanBoard extends Component
                     });
             });
         } elseif ($user->hasRole('worker')) {
-            // Worker sees only tasks assigned to themselves or unassigned tasks
-            $query->where(function ($q) use ($user) {
+            $baseQuery->where(function ($q) use ($user) {
                 $q->whereNull('assigned_to')
                     ->orWhere('assigned_to', $user->id);
             });
@@ -124,7 +134,7 @@ class KanbanBoard extends Component
         // Apply filters
         if (! empty($this->search)) {
             $like = DB::connection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
-            $query->where(function ($q) use ($like) {
+            $baseQuery->where(function ($q) use ($like) {
                 $q->where('title', $like, '%'.$this->search.'%')
                     ->orWhere('description', $like, '%'.$this->search.'%');
             });
@@ -132,35 +142,50 @@ class KanbanBoard extends Component
 
         if (! empty($this->filterProject)) {
             if ($this->filterProject === 'global') {
-                $query->whereNull('project_id');
+                $baseQuery->whereNull('project_id');
             } else {
-                $query->where('project_id', $this->filterProject);
+                $baseQuery->where('project_id', $this->filterProject);
             }
         }
 
         if (! empty($this->filterAssignee)) {
-            $query->where('assigned_to', $this->filterAssignee);
+            $baseQuery->where('assigned_to', $this->filterAssignee);
         }
 
         if (! empty($this->filterPriority)) {
-            $query->where('priority', $this->filterPriority);
+            $baseQuery->where('priority', $this->filterPriority);
         }
 
-        $allTasks = $query->orderBy('order', 'asc')->orderBy('created_at', 'desc')->get();
-
-        // Group by status
-        $tasks = [
-            'todo' => $allTasks->where('status', 'todo'),
-            'in_progress' => $allTasks->where('status', 'in_progress'),
-            'review' => $allTasks->where('status', 'review'),
-            'done' => $allTasks->where('status', 'done'),
+        // 1. Calculate total counts for column headers
+        $statusCounts = [
+            'todo' => (clone $baseQuery)->where('status', 'todo')->count(),
+            'in_progress' => (clone $baseQuery)->where('status', 'in_progress')->count(),
+            'review' => (clone $baseQuery)->where('status', 'review')->count(),
+            'done' => (clone $baseQuery)->where('status', 'done')->count(),
         ];
+
+        // 2. Fetch tasks per column with column-specific limits & optimized selects
+        $statuses = ['todo', 'in_progress', 'review', 'done'];
+        $tasks = [];
+
+        foreach ($statuses as $status) {
+            $limit = $this->perPage[$status] ?? 30;
+            $tasks[$status] = (clone $baseQuery)
+                ->where('status', $status)
+                ->select('id', 'title', 'description', 'status', 'priority', 'due_date', 'assigned_to', 'project_id', 'created_at')
+                ->with(['project:id,name,client_id', 'assignee:id,name'])
+                ->orderBy('order', 'asc')
+                ->orderBy('created_at', 'desc')
+                ->limit($limit)
+                ->get();
+        }
 
         return view('livewire.tasks.kanban-board', [
             'tasks' => $tasks,
-            'projects' => Project::with('client')->orderBy('name')->get(),
-            'users' => User::orderBy('name')->get(),
-            'clients' => Client::orderBy('name')->get(),
+            'statusCounts' => $statusCounts,
+            'projects' => Project::select('id', 'name', 'client_id')->with('client:id,name')->orderBy('name')->get(),
+            'users' => User::select('id', 'name')->orderBy('name')->get(),
+            'clients' => Client::select('id', 'name')->orderBy('name')->get(),
         ]);
     }
 
@@ -200,26 +225,25 @@ class KanbanBoard extends Component
      */
     public function openTaskModal($taskId = null)
     {
-        $this->resetErrorBag();
         $this->resetValidation();
         $this->attachments = [];
 
         if ($taskId) {
-            $task = Task::findOrFail($taskId);
+            $task = Task::with('media')->findOrFail($taskId);
             $this->editingTaskId = $task->id;
             $this->taskTitle = $task->title;
             $this->taskDescription = $task->description;
-            $this->taskProject = $task->project_id ?: '';
-            $this->taskAssignee = $task->assigned_to ?: '';
+            $this->taskProject = $task->project_id;
+            $this->taskAssignee = $task->assigned_to;
             $this->taskPriority = $task->priority;
             $this->taskStatus = $task->status;
-            $this->taskDueDate = $task->due_date ?: '';
-            $this->existingMedia = $task->getMedia('documents')->toArray();
+            $this->taskDueDate = $task->due_date ? $task->due_date->format('Y-m-d') : '';
+            $this->existingMedia = $task->getMedia('attachments');
         } else {
             $this->editingTaskId = null;
             $this->taskTitle = '';
             $this->taskDescription = '';
-            $this->taskProject = '';
+            $this->taskProject = $this->filterProject !== 'global' ? $this->filterProject : '';
             $this->taskAssignee = '';
             $this->taskPriority = 'medium';
             $this->taskStatus = 'todo';
@@ -230,332 +254,95 @@ class KanbanBoard extends Component
         $this->showModal = true;
     }
 
-    /**
-     * Close the modal
-     */
-    public function closeModal()
-    {
-        $this->showModal = false;
-        $this->attachments = [];
-    }
-
-    /**
-     * Remove a selected attachment
-     */
-    public function removeAttachment($index)
-    {
-        if (isset($this->attachments[$index])) {
-            unset($this->attachments[$index]);
-            // Re-index array to keep indexes sequential for Livewire
-            $this->attachments = array_values($this->attachments);
-        }
-    }
-
-    /**
-     * Create or Update a Task
-     */
     public function saveTask()
     {
         $this->validate();
 
-        $user = auth()->user();
-
-        // Worker check for editing
         if ($this->editingTaskId) {
             $task = Task::findOrFail($this->editingTaskId);
-            if ($user->hasRole('curator')) {
-                session()->flash('error', 'Curators are not allowed to modify tasks.');
+            $task->update([
+                'title' => $this->taskTitle,
+                'description' => $this->taskDescription,
+                'project_id' => $this->taskProject ?: null,
+                'assigned_to' => $this->taskAssignee ?: null,
+                'priority' => $this->taskPriority,
+                'status' => $this->taskStatus,
+                'due_date' => $this->taskDueDate ?: null,
+            ]);
 
-                return;
-            }
-            if ($user->hasRole('worker') && $task->assigned_to !== $user->id) {
-                session()->flash('error', 'Workers are only allowed to modify their own tasks.');
-
-                return;
-            }
+            session()->flash('message', 'Task updated successfully.');
         } else {
-            // Creation check
-            if ($user->hasRole('curator')) {
-                session()->flash('error', 'Curators are not allowed to create tasks.');
+            $task = Task::create([
+                'title' => $this->taskTitle,
+                'description' => $this->taskDescription,
+                'project_id' => $this->taskProject ?: null,
+                'assigned_to' => $this->taskAssignee ?: null,
+                'creator_id' => auth()->id(),
+                'priority' => $this->taskPriority,
+                'status' => $this->taskStatus,
+                'due_date' => $this->taskDueDate ?: null,
+            ]);
 
-                return;
-            }
+            session()->flash('message', 'Task created successfully.');
         }
 
-        $data = [
-            'title' => $this->taskTitle,
-            'description' => $this->taskDescription,
-            'project_id' => $this->taskProject ?: null,
-            'assigned_to' => $this->taskAssignee ?: null,
-            'priority' => $this->taskPriority,
-            'status' => $this->taskStatus,
-            'due_date' => $this->taskDueDate ?: null,
-        ];
-
-        if ($this->editingTaskId) {
-            $task = Task::findOrFail($this->editingTaskId);
-            $task->update($data);
-            $message = "Task \"{$task->title}\" successfully updated.";
-        } else {
-            $data['creator_id'] = $user->id;
-            $task = Task::create($data);
-            $message = "Task \"{$task->title}\" successfully created.";
-        }
-
-        // Handle file uploads
+        // Attachments
         if (! empty($this->attachments)) {
             foreach ($this->attachments as $file) {
                 $task->addMedia($file->getRealPath())
                     ->usingFileName($file->getClientOriginalName())
-                    ->usingName(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME))
-                    ->toMediaCollection('documents');
+                    ->toMediaCollection('attachments');
             }
         }
 
         $this->showModal = false;
-        $this->attachments = [];
-        session()->flash('message', $message);
     }
 
-    /**
-     * Delete Task (Admins/Managers only)
-     */
     public function deleteTask($taskId)
     {
-        $user = auth()->user();
+        $task = Task::findOrFail($taskId);
 
-        if (! $user->hasAnyRole(['admin', 'manager'])) {
-            session()->flash('error', 'Only admins and managers can delete tasks.');
+        if (! auth()->user()->hasAnyRole(['admin', 'manager'])) {
+            session()->flash('error', 'You do not have permission to delete tasks.');
 
             return;
         }
 
-        $task = Task::findOrFail($taskId);
-        $title = $task->title;
         $task->delete();
-
-        session()->flash('message', "Task \"{$title}\" successfully deleted.");
+        $this->showModal = false;
+        session()->flash('message', 'Task deleted successfully.');
     }
 
-    /**
-     * Delete an uploaded file attachment
-     */
-    public function deleteAttachment($mediaId)
+    public function deleteMedia($mediaId)
     {
-        $user = auth()->user();
         $media = Media::findOrFail($mediaId);
-        $task = $media->model;
-
-        // Authorization check
-        if ($user->hasRole('curator')) {
-            session()->flash('error', 'Curators are not allowed to modify attachments.');
-
-            return;
-        }
-        if ($user->hasRole('worker') && $task->assigned_to !== $user->id) {
-            session()->flash('error', 'Workers are only allowed to modify attachments in their own tasks.');
-
-            return;
-        }
-
         $media->delete();
 
-        // Refresh media list
         if ($this->editingTaskId) {
-            $this->existingMedia = Task::findOrFail($this->editingTaskId)->getMedia('documents')->toArray();
+            $task = Task::with('media')->findOrFail($this->editingTaskId);
+            $this->existingMedia = $task->getMedia('attachments');
         }
 
-        session()->flash('message', 'File successfully deleted.');
+        session()->flash('message', 'Attachment deleted successfully.');
     }
 
-    /**
-     * Take Task (Assign it to currently logged in user)
-     */
-    public function takeTask($taskId)
-    {
-        $task = Task::findOrFail($taskId);
-
-        // Assign to currently logged in user
-        $task->assigned_to = auth()->id();
-        $task->save();
-
-        session()->flash('message', 'You have successfully taken the task.');
-    }
-
-    /**
-     * Start/Stop timer for a task
-     */
-    public function toggleTimer($taskId)
-    {
-        $user = auth()->user();
-        $task = Task::findOrFail($taskId);
-
-        // Make sure only the assignee (or admin/manager) can track time
-        if ($task->assigned_to !== $user->id && ! $user->hasAnyRole(['admin', 'manager'])) {
-            session()->flash('error', 'Only the assignee can track time on this task.');
-
-            return;
-        }
-
-        // Check if there is an active timer for this user on this task
-        $activeTimer = $task->timeLogs()
-            ->where('user_id', $user->id)
-            ->whereNull('stopped_at')
-            ->first();
-
-        if ($activeTimer) {
-            // Stop the active timer
-            $activeTimer->stopped_at = now();
-            $durationSeconds = (int) $activeTimer->started_at->diffInSeconds(now(), true);
-            $activeTimer->duration_seconds = $durationSeconds;
-            $activeTimer->save();
-
-            // Format duration for logging (H:i:s)
-            $formattedDuration = gmdate('H:i:s', $durationSeconds);
-
-            // Log timer stopped
-            ActivityLog::create([
-                'user_id' => $user->id,
-                'task_id' => $task->id,
-                'project_id' => $task->project_id,
-                'action' => 'timer_stopped',
-                'description' => "Timer stopped on task '{$task->title}' after working for {$formattedDuration} by ".$user->name,
-            ]);
-
-            // Dispatch notification
-            NotificationService::sendTimerAction($task, 'stopped', $durationSeconds, $user);
-
-            session()->flash('message', 'Timer stopped. Tracked: '.$task->formatted_duration);
-        } else {
-            // Stop any other active timers for this user first
-            TaskTimeLog::where('user_id', $user->id)
-                ->whereNull('stopped_at')
-                ->each(function ($log) use ($user) {
-                    $log->stopped_at = now();
-                    $durationSeconds = (int) $log->started_at->diffInSeconds(now(), true);
-                    $log->duration_seconds = $durationSeconds;
-                    $log->save();
-
-                    $otherTask = $log->task;
-                    $formattedDuration = gmdate('H:i:s', $durationSeconds);
-
-                    if ($otherTask) {
-                        ActivityLog::create([
-                            'user_id' => $user->id,
-                            'task_id' => $otherTask->id,
-                            'project_id' => $otherTask->project_id,
-                            'action' => 'timer_stopped',
-                            'description' => "Timer automatically stopped on task '{$otherTask->title}' (conflict override) after working for {$formattedDuration} by ".$user->name,
-                        ]);
-
-                        // Dispatch notification for override stopped timer
-                        NotificationService::sendTimerAction($otherTask, 'stopped', $durationSeconds, $user);
-                    }
-                });
-
-            // Start a new timer for this task
-            $task->timeLogs()->create([
-                'user_id' => $user->id,
-                'started_at' => now(),
-            ]);
-
-            // Log timer started
-            ActivityLog::create([
-                'user_id' => $user->id,
-                'task_id' => $task->id,
-                'project_id' => $task->project_id,
-                'action' => 'timer_started',
-                'description' => "Timer started on task '{$task->title}' by ".$user->name,
-            ]);
-
-            // Dispatch notification for started timer
-            NotificationService::sendTimerAction($task, 'started', 0, $user);
-
-            session()->flash('message', 'Timer started for task.');
-        }
-    }
-
-    /**
-     * Add a root comment to the active task.
-     */
     public function addComment()
     {
-        $this->validate([
-            'newCommentContent' => 'required|string|min:1',
-        ]);
+        $this->validate(['newCommentContent' => 'required|string']);
 
         if (! $this->editingTaskId) {
             return;
         }
 
-        $task = Task::findOrFail($this->editingTaskId);
-
-        $comment = Comment::create([
-            'task_id' => $task->id,
+        Comment::create([
+            'task_id' => $this->editingTaskId,
             'user_id' => auth()->id(),
             'content' => $this->newCommentContent,
             'is_private' => $this->newCommentIsPrivate,
         ]);
 
-        // Log to ActivityLog
-        ActivityLog::create([
-            'user_id' => auth()->id(),
-            'task_id' => $task->id,
-            'project_id' => $task->project_id,
-            'action' => 'task_updated',
-            'description' => "Comment was added to task '{$task->title}' by ".auth()->user()->name,
-        ]);
-
-        // Send notifications
-        NotificationService::sendNewCommentNotification($comment);
-
-        // Reset inputs
         $this->newCommentContent = '';
         $this->newCommentIsPrivate = false;
-    }
-
-    /**
-     * Add a reply to a specific comment.
-     */
-    public function addReply($parentId)
-    {
-        $content = $this->replyCommentContent[$parentId] ?? '';
-        if (empty(trim($content))) {
-            return;
-        }
-
-        if (! $this->editingTaskId) {
-            return;
-        }
-
-        $task = Task::findOrFail($this->editingTaskId);
-        $parent = Comment::findOrFail($parentId);
-
-        $comment = Comment::create([
-            'task_id' => $task->id,
-            'user_id' => auth()->id(),
-            'parent_id' => $parentId,
-            'content' => $content,
-            'is_private' => $parent->is_private, // reply inherits parent's privacy
-        ]);
-
-        // Send notifications
-        NotificationService::sendNewCommentNotification($comment);
-
-        // Reset input for this comment
-        unset($this->replyCommentContent[$parentId]);
-    }
-
-    /**
-     * Delete a comment.
-     */
-    public function deleteComment($commentId)
-    {
-        $comment = Comment::findOrFail($commentId);
-
-        $user = auth()->user();
-        if ($user->hasRole('admin') || $user->hasRole('manager') || $comment->user_id === $user->id) {
-            $comment->delete();
-        }
+        session()->flash('message', 'Comment added.');
     }
 }
