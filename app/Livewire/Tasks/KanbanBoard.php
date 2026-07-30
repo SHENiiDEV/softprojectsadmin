@@ -221,6 +221,15 @@ class KanbanBoard extends Component
     }
 
     /**
+     * Close Modal
+     */
+    public function closeModal()
+    {
+        $this->showModal = false;
+        $this->editingTaskId = null;
+    }
+
+    /**
      * Open Modal for Create or Edit
      */
     public function openTaskModal($taskId = null)
