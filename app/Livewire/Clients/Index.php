@@ -3,6 +3,7 @@
 namespace App\Livewire\Clients;
 
 use App\Models\Client;
+use App\Models\Project;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -12,6 +13,14 @@ class Index extends Component
     use WithPagination;
 
     public string $search = '';
+
+    public string $viewMode = 'table'; // table | grid
+
+    public string $filterCompanies = 'all'; // all | with_companies | empty
+
+    public string $sortBy = 'id_desc'; // id_desc | name_asc | companies_desc
+
+    public array $expandedClientIds = [];
 
     // Modal controls
     public bool $showModal = false;
@@ -23,24 +32,35 @@ class Index extends Component
 
     protected $queryString = [
         'search' => ['except' => ''],
+        'viewMode' => ['except' => 'table'],
+        'filterCompanies' => ['except' => 'all'],
+        'sortBy' => ['except' => 'id_desc'],
     ];
-
-    /**
-     * Authorize user access in mount.
-     */
-    public function mount(): void
-    {
-        // Allowed for all authenticated users
-    }
 
     public function updatingSearch(): void
     {
         $this->resetPage();
     }
 
-    /**
-     * Open Modal for creation.
-     */
+    public function updatingFilterCompanies(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatingSortBy(): void
+    {
+        $this->resetPage();
+    }
+
+    public function toggleExpand(int $id): void
+    {
+        if (in_array($id, $this->expandedClientIds)) {
+            $this->expandedClientIds = array_values(array_diff($this->expandedClientIds, [$id]));
+        } else {
+            $this->expandedClientIds[] = $id;
+        }
+    }
+
     public function openCreateModal(): void
     {
         $this->resetValidation();
@@ -49,9 +69,6 @@ class Index extends Component
         $this->showModal = true;
     }
 
-    /**
-     * Open Modal for editing.
-     */
     public function openEditModal(int $id): void
     {
         $this->resetValidation();
@@ -61,9 +78,6 @@ class Index extends Component
         $this->showModal = true;
     }
 
-    /**
-     * Save newly created or edited client.
-     */
     public function saveClient(): void
     {
         if (! auth()->user()->hasAnyRole(['admin', 'manager'])) {
@@ -92,9 +106,6 @@ class Index extends Component
         $this->showModal = false;
     }
 
-    /**
-     * Delete client from the system. (Admin/Manager only)
-     */
     public function deleteClient(int $id): void
     {
         if (! auth()->user()->hasAnyRole(['admin', 'manager'])) {
@@ -112,16 +123,39 @@ class Index extends Component
     {
         $like = DB::connection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
 
-        $clients = Client::query()
+        // KPI stats
+        $totalClients = Client::count();
+        $totalCompanies = Project::count();
+
+        $query = Client::query()
             ->withCount('companies')
-            ->when($this->search, function ($query) use ($like) {
-                $query->where('name', $like, '%'.$this->search.'%');
+            ->with(['companies' => function ($q) {
+                $q->select('id', 'client_id', 'name', 'status', 'ubo', 'archived_at')
+                    ->with(['websites' => fn ($w) => $w->select('id', 'project_id', 'url', 'status')]);
+            }])
+            ->when($this->search, function ($q) use ($like) {
+                $q->where('name', $like, '%'.$this->search.'%');
             })
-            ->orderBy('id', 'desc')
-            ->paginate(50);
+            ->when($this->filterCompanies === 'with_companies', function ($q) {
+                $q->has('companies');
+            })
+            ->when($this->filterCompanies === 'empty', function ($q) {
+                $q->doesntHave('companies');
+            });
+
+        // Sorting
+        match ($this->sortBy) {
+            'name_asc' => $query->orderBy('name', 'asc'),
+            'companies_desc' => $query->orderBy('companies_count', 'desc'),
+            default => $query->orderBy('id', 'desc'),
+        };
+
+        $clients = $query->paginate(50);
 
         return view('livewire.clients.index', [
             'clients' => $clients,
+            'totalClients' => $totalClients,
+            'totalCompanies' => $totalCompanies,
         ]);
     }
 }
