@@ -22,16 +22,28 @@
             <h1 class="font-outfit font-extrabold text-2xl text-slate-800 dark:text-white tracking-tight">Tasks & Projects</h1>
             <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Track the progress of team tasks.</p>
         </div>
-        @if(!auth()->user()->hasRole('curator'))
-            <div>
-                <button wire:click="openTaskModal()" class="inline-flex items-center justify-center px-4 py-2.5 text-sm font-semibold text-sky-700 bg-sky-100 hover:bg-sky-200 dark:bg-sky-950/40 dark:text-sky-400 border border-sky-200/40 dark:border-sky-900/40 rounded-xl shadow-sm hover:-translate-y-0.5 transition-all duration-200">
+        <div class="flex items-center gap-2">
+            <!-- Show Archive Toggle -->
+            <button wire:click="$set('showArchived', '{{ $showArchived === '0' ? '1' : '0' }}')" 
+                    class="inline-flex items-center justify-center px-4 py-2.5 text-sm font-semibold rounded-xl border transition-all duration-200 cursor-pointer shadow-sm {{ $showArchived === '1' ? 'bg-amber-50 text-amber-800 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-200 dark:border-slate-800 dark:hover:bg-slate-800' }}">
+                <i class="fa-solid fa-box-archive mr-2 {{ $showArchived === '1' ? 'text-amber-500' : 'text-slate-400' }}"></i>
+                <span>{{ $showArchived === '1' ? 'Show Active Tasks' : 'Show Archive' }}</span>
+                @if(($archivedCount ?? 0) > 0)
+                    <span class="ml-2 px-2 py-0.5 text-xs font-bold rounded-lg {{ $showArchived === '1' ? 'bg-amber-200 text-amber-900 dark:bg-amber-900 dark:text-amber-100' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400' }}">
+                        {{ $archivedCount }}
+                    </span>
+                @endif
+            </button>
+
+            @if(!auth()->user()->hasRole('curator'))
+                <button wire:click="openTaskModal()" class="inline-flex items-center justify-center px-4 py-2.5 text-sm font-semibold text-white bg-sky-600 hover:bg-sky-500 dark:bg-sky-500 dark:hover:bg-sky-400 rounded-xl shadow-sm hover:-translate-y-0.5 transition-all duration-200 cursor-pointer">
                     <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
                     </svg>
                     Create Task
                 </button>
-            </div>
-        @endif
+            @endif
+        </div>
     </div>
 
     <!-- Alert / Messages -->
@@ -292,6 +304,13 @@
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
                                             </svg>
                                             <span>Take</span>
+                                        </button>
+                                    @endif
+
+                                    @if($showArchived === '1' || $task->isArchived())
+                                        <button type="button" wire:click="restoreTask({{ $task->id }})" class="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-lg text-[9px] font-bold border border-emerald-100/40 dark:border-emerald-900/30 transition-all duration-150 flex items-center space-x-1" title="Restore task to active board">
+                                            <i class="fa-solid fa-rotate-left text-[9px]"></i>
+                                            <span>Restore</span>
                                         </button>
                                     @endif
                                 </div>

@@ -2,18 +2,18 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Jobs\SendTelegramMessageJob;
+use App\Services\NotificationService;
+use App\Services\TelegramService;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
-use App\Services\TelegramService;
-use App\Jobs\SendTelegramMessageJob;
-use Carbon\Carbon;
 
-#[Fillable(['project_id', 'creator_id', 'assigned_to', 'title', 'description', 'status', 'priority', 'due_date', 'order'])]
+#[Fillable(['project_id', 'creator_id', 'assigned_to', 'title', 'description', 'status', 'priority', 'due_date', 'order', 'archived_at'])]
 class Task extends Model implements HasMedia
 {
     use HasFactory, InteractsWithMedia;
@@ -32,16 +32,16 @@ class Task extends Model implements HasMedia
                     'task_id' => $task->id,
                     'project_id' => $task->project_id,
                     'action' => 'task_created',
-                    'description' => "Task '{$task->title}' was created by " . auth()->user()->name,
+                    'description' => "Task '{$task->title}' was created by ".auth()->user()->name,
                 ]);
             }
 
             // Dispatch notification regardless of who created it (e.g., API or system)
             if ($task->assignee) {
-                \App\Services\NotificationService::sendTaskAssigned($task, $task->assignee, auth()->user(), true);
+                NotificationService::sendTaskAssigned($task, $task->assignee, auth()->user(), true);
             } else {
                 if (auth()->check()) {
-                    \App\Services\NotificationService::sendTaskCreated($task, auth()->user());
+                    NotificationService::sendTaskCreated($task, auth()->user());
                 }
             }
         });
@@ -52,7 +52,7 @@ class Task extends Model implements HasMedia
 
             if ($task->wasChanged('assigned_to')) {
                 $newAssigneeId = $task->assigned_to;
-                
+
                 if ($actor) {
                     if ($newAssigneeId === $actor->id) {
                         ActivityLog::create([
@@ -60,7 +60,7 @@ class Task extends Model implements HasMedia
                             'task_id' => $task->id,
                             'project_id' => $task->project_id,
                             'action' => 'task_claimed',
-                            'description' => "Task '{$task->title}' was claimed by " . $actor->name,
+                            'description' => "Task '{$task->title}' was claimed by ".$actor->name,
                         ]);
                     } elseif ($newAssigneeId) {
                         $assigneeName = $task->assignee?->name ?? 'User';
@@ -69,7 +69,7 @@ class Task extends Model implements HasMedia
                             'task_id' => $task->id,
                             'project_id' => $task->project_id,
                             'action' => 'task_assigned',
-                            'description' => "Task '{$task->title}' was assigned to {$assigneeName} by " . $actor->name,
+                            'description' => "Task '{$task->title}' was assigned to {$assigneeName} by ".$actor->name,
                         ]);
                     } else {
                         ActivityLog::create([
@@ -77,14 +77,14 @@ class Task extends Model implements HasMedia
                             'task_id' => $task->id,
                             'project_id' => $task->project_id,
                             'action' => 'task_unassigned',
-                            'description' => "Task '{$task->title}' was unassigned by " . $actor->name,
+                            'description' => "Task '{$task->title}' was unassigned by ".$actor->name,
                         ]);
                     }
                 }
 
                 // Dispatch assignment notification
                 if ($newAssigneeId && $task->assignee) {
-                    \App\Services\NotificationService::sendTaskAssigned($task, $task->assignee, $actor, false);
+                    NotificationService::sendTaskAssigned($task, $task->assignee, $actor, false);
                 }
 
                 $originalAssigneeId = $task->getOriginal('assigned_to');
@@ -106,34 +106,34 @@ class Task extends Model implements HasMedia
                         'task_id' => $task->id,
                         'project_id' => $task->project_id,
                         'action' => 'task_status_updated',
-                        'description' => "Task '{$task->title}' status changed to '{$readableStatus}' by " . $actor->name,
+                        'description' => "Task '{$task->title}' status changed to '{$readableStatus}' by ".$actor->name,
                     ]);
                 }
 
-                \App\Services\NotificationService::sendTaskStatusUpdated(
-                    $task, 
-                    $task->getOriginal('status') ?? 'todo', 
-                    $task->status, 
+                NotificationService::sendTaskStatusUpdated(
+                    $task,
+                    $task->getOriginal('status') ?? 'todo',
+                    $task->status,
                     $actor
                 );
             }
 
             $relevant = ['title', 'description', 'priority', 'due_date'];
-            $changed = array_filter($relevant, fn($field) => $task->wasChanged($field));
-            if (!empty($changed) && !$task->wasChanged('status') && !$task->wasChanged('assigned_to')) {
+            $changed = array_filter($relevant, fn ($field) => $task->wasChanged($field));
+            if (! empty($changed) && ! $task->wasChanged('status') && ! $task->wasChanged('assigned_to')) {
                 if ($actor) {
                     ActivityLog::create([
                         'user_id' => $actor->id,
                         'task_id' => $task->id,
                         'project_id' => $task->project_id,
                         'action' => 'task_updated',
-                        'description' => "Task '{$task->title}' details were updated by " . $actor->name,
+                        'description' => "Task '{$task->title}' details were updated by ".$actor->name,
                     ]);
                 }
 
                 // Send details updated notification to assignee (if any)
-                if ($task->assignee && (!$actor || $task->assignee->id !== $actor->id)) {
-                    \App\Services\NotificationService::sendTaskStatusUpdated($task, $task->status, $task->status, $actor);
+                if ($task->assignee && (! $actor || $task->assignee->id !== $actor->id)) {
+                    NotificationService::sendTaskStatusUpdated($task, $task->status, $task->status, $actor);
                 }
             }
         });
@@ -148,6 +148,7 @@ class Task extends Model implements HasMedia
     {
         return [
             'due_date' => 'date',
+            'archived_at' => 'datetime',
         ];
     }
 
@@ -186,7 +187,7 @@ class Task extends Model implements HasMedia
     /**
      * Get root comments for the task.
      */
-    public function comments(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function comments(): HasMany
     {
         return $this->hasMany(Comment::class)->whereNull('parent_id')->orderBy('created_at', 'desc');
     }
@@ -194,7 +195,7 @@ class Task extends Model implements HasMedia
     /**
      * Get all comments for the task.
      */
-    public function allComments(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function allComments(): HasMany
     {
         return $this->hasMany(Comment::class)->orderBy('created_at', 'desc');
     }
@@ -202,7 +203,7 @@ class Task extends Model implements HasMedia
     /**
      * Get the time logs for the task.
      */
-    public function timeLogs(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function timeLogs(): HasMany
     {
         return $this->hasMany(TaskTimeLog::class);
     }
@@ -210,7 +211,7 @@ class Task extends Model implements HasMedia
     /**
      * Get the activity logs for the task.
      */
-    public function activityLogs(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function activityLogs(): HasMany
     {
         return $this->hasMany(ActivityLog::class);
     }
@@ -232,12 +233,12 @@ class Task extends Model implements HasMedia
     public function getTotalDurationAttribute(): int
     {
         $logged = $this->timeLogs()->whereNotNull('stopped_at')->sum('duration_seconds');
-        
+
         $active = $this->timeLogs()->whereNull('stopped_at')->first();
         if ($active) {
             $logged += $active->started_at->diffInSeconds(now(), true);
         }
-        
+
         return (int) $logged;
     }
 
@@ -299,29 +300,29 @@ class Task extends Model implements HasMedia
     {
         // Get all completed logs + currently active logs
         $logs = $this->timeLogs()->with('user')->get();
-        
+
         $users = [];
         foreach ($logs as $log) {
-            if (!$log->user) {
+            if (! $log->user) {
                 continue;
             }
             $userId = $log->user_id;
-            if (!isset($users[$userId])) {
+            if (! isset($users[$userId])) {
                 $users[$userId] = [
                     'user' => $log->user,
                     'duration' => 0,
                 ];
             }
-            
+
             $duration = $log->duration_seconds;
             if ($duration === null) {
                 // Active log
                 $duration = $log->started_at->diffInSeconds(now(), true);
             }
-            
+
             $users[$userId]['duration'] += $duration;
         }
-        
+
         // Convert to formatting
         $result = [];
         foreach ($users as $data) {
@@ -329,22 +330,73 @@ class Task extends Model implements HasMedia
             $hours = floor($seconds / 3600);
             $minutes = floor(($seconds / 60) % 60);
             $secs = $seconds % 60;
-            
+
             $data['formatted'] = sprintf('%02d:%02d:%02d', $hours, $minutes, $secs);
-            
+
             // Format also in human format
             $parts = [];
-            if ($hours > 0) $parts[] = "{$hours}h";
-            if ($minutes > 0 || $hours > 0) $parts[] = "{$minutes}m";
-            if ($secs > 0 || empty($parts)) $parts[] = "{$secs}s";
+            if ($hours > 0) {
+                $parts[] = "{$hours}h";
+            }
+            if ($minutes > 0 || $hours > 0) {
+                $parts[] = "{$minutes}m";
+            }
+            if ($secs > 0 || empty($parts)) {
+                $parts[] = "{$secs}s";
+            }
             $data['human'] = implode(' ', $parts);
-            
+
             $result[] = $data;
         }
-        
+
         // Sort by duration descending
-        usort($result, fn($a, $b) => $b['duration'] <=> $a['duration']);
-        
+        usort($result, fn ($a, $b) => $b['duration'] <=> $a['duration']);
+
         return $result;
+    }
+
+    /**
+     * Scope for active tasks (not archived).
+     */
+    public function scopeNotArchived($query)
+    {
+        $sevenDaysAgo = now()->subDays(7);
+
+        return $query->whereNull('archived_at')
+            ->where(function ($q) use ($sevenDaysAgo) {
+                $q->where('status', '!=', 'done')
+                    ->orWhere('updated_at', '>=', $sevenDaysAgo);
+            });
+    }
+
+    /**
+     * Scope for archived tasks (done for > 7 days or explicitly archived).
+     */
+    public function scopeArchived($query)
+    {
+        $sevenDaysAgo = now()->subDays(7);
+
+        return $query->where(function ($q) use ($sevenDaysAgo) {
+            $q->whereNotNull('archived_at')
+                ->orWhere(function ($qSub) use ($sevenDaysAgo) {
+                    $qSub->where('status', 'done')
+                        ->where('updated_at', '<', $sevenDaysAgo);
+                });
+        });
+    }
+
+    public function isArchived(): bool
+    {
+        return $this->archived_at !== null || ($this->status === 'done' && $this->updated_at < now()->subDays(7));
+    }
+
+    public function archive(): void
+    {
+        $this->update(['archived_at' => now()]);
+    }
+
+    public function unarchive(): void
+    {
+        $this->update(['archived_at' => null, 'status' => 'in_progress', 'updated_at' => now()]);
     }
 }

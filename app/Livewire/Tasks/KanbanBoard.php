@@ -25,6 +25,9 @@ class KanbanBoard extends Component
 
     public $filterPriority = '';
 
+    // Archive view mode ('0' = Active tasks, '1' = Archived tasks)
+    public string $showArchived = '0';
+
     // Per-column pagination limits for ultra-fast rendering
     public array $perPage = [
         'todo' => 30,
@@ -64,6 +67,10 @@ class KanbanBoard extends Component
 
     public $replyCommentContent = [];
 
+    protected $queryString = [
+        'showArchived' => ['except' => '0'],
+    ];
+
     // Validation rules
     protected function rules()
     {
@@ -99,12 +106,33 @@ class KanbanBoard extends Component
         }
     }
 
+    public function restoreTask($taskId): void
+    {
+        $task = Task::findOrFail($taskId);
+        $task->unarchive();
+        session()->flash('message', "Task \"{$task->title}\" restored from archive.");
+    }
+
+    public function archiveTask($taskId): void
+    {
+        $task = Task::findOrFail($taskId);
+        $task->archive();
+        session()->flash('message', "Task \"{$task->title}\" moved to archive.");
+    }
+
     public function render()
     {
         $user = auth()->user();
 
         // Build base query
         $baseQuery = Task::query();
+
+        // Apply Archiving Filter (Active vs Archived)
+        if ($this->showArchived === '1') {
+            $baseQuery->archived();
+        } else {
+            $baseQuery->notArchived();
+        }
 
         if ($user->hasRole('admin')) {
             // Admin sees all tasks
@@ -131,7 +159,7 @@ class KanbanBoard extends Component
             });
         }
 
-        // Apply filters
+        // Apply search & dropdown filters
         if (! empty($this->search)) {
             $like = DB::connection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
             $baseQuery->where(function ($q) use ($like) {
@@ -164,6 +192,9 @@ class KanbanBoard extends Component
             'done' => (clone $baseQuery)->where('status', 'done')->count(),
         ];
 
+        // Total count of archived tasks for header button badge
+        $archivedCount = Task::archived()->count();
+
         // 2. Fetch tasks per column with column-specific limits & optimized selects
         $statuses = ['todo', 'in_progress', 'review', 'done'];
         $tasks = [];
@@ -172,7 +203,7 @@ class KanbanBoard extends Component
             $limit = $this->perPage[$status] ?? 30;
             $tasks[$status] = (clone $baseQuery)
                 ->where('status', $status)
-                ->select('id', 'title', 'description', 'status', 'priority', 'due_date', 'assigned_to', 'project_id', 'created_at')
+                ->select('id', 'title', 'description', 'status', 'priority', 'due_date', 'assigned_to', 'project_id', 'created_at', 'updated_at', 'archived_at')
                 ->with(['project:id,name,client_id', 'assignee:id,name'])
                 ->orderBy('order', 'asc')
                 ->orderBy('created_at', 'desc')
@@ -183,6 +214,7 @@ class KanbanBoard extends Component
         return view('livewire.tasks.kanban-board', [
             'tasks' => $tasks,
             'statusCounts' => $statusCounts,
+            'archivedCount' => $archivedCount,
             'projects' => Project::select('id', 'name', 'client_id')->with('client:id,name')->orderBy('name')->get(),
             'users' => User::select('id', 'name')->orderBy('name')->get(),
             'clients' => Client::select('id', 'name')->orderBy('name')->get(),

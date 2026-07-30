@@ -50,13 +50,15 @@ class TeamSeeder extends Seeder
         ];
 
         foreach ($team as $name => $info) {
-            $user = User::create([
-                'name' => $name,
-                'email' => $info['email'],
-                'password' => Hash::make('password'),
-                'email_verified_at' => now(),
-            ]);
-            $user->assignRole($info['role']);
+            $user = User::updateOrCreate(
+                ['email' => $info['email']],
+                [
+                    'name' => $name,
+                    'password' => Hash::make('password'),
+                    'email_verified_at' => now(),
+                ]
+            );
+            $user->syncRoles([$info['role']]);
         }
     }
 }
