@@ -124,7 +124,7 @@
                             <option value="sent">Sent to {{ $gName }}</option>
                             <option value="in_progress">KYB In Review</option>
                             <option value="need_to_send">Need to Send</option>
-                            <option value="verified">KYB Verified (Верфай)</option>
+                            <option value="verified">KYB Verified</option>
                         </select>
                     </div>
 
@@ -134,8 +134,8 @@
                             {{ $gName }} Boarding Complete
                         </label>
                         <select wire:model="providers.{{ $gName }}.boarding_status" class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-950 border border-sky-300 dark:border-sky-800/80 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
-                            <option value="boarding_completed">Boarding Completed (Боард комплит)</option>
-                            <option value="verified">Verified (Верфай)</option>
+                            <option value="boarding_completed">Boarding Completed</option>
+                            <option value="verified">Verified</option>
                             <option value="in_progress">In Progress</option>
                             <option value="pending">Pending</option>
                             <option value="need_to_complete">Need to Complete</option>
@@ -148,8 +148,8 @@
                             {{ $gName }} Verification Status
                         </label>
                         <select wire:model="providers.{{ $gName }}.verification_status" class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-950 border border-sky-300 dark:border-sky-800/80 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
-                            <option value="verified">Verified (Верфай)</option>
-                            <option value="boarding_completed">Boarding Completed (Боард комплит)</option>
+                            <option value="verified">Verified</option>
+                            <option value="boarding_completed">Boarding Completed</option>
                             <option value="completed">Completed</option>
                             <option value="pending">Pending</option>
                             <option value="in_progress">In Progress</option>
@@ -188,8 +188,8 @@
                 <div>
                     <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">CFS Verification Status</label>
                     <select wire:model="cfs_verification" class="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-150">
-                        <option value="verified">Verified (Верфай)</option>
-                        <option value="boarding_completed">Boarding Completed (Боард комплит)</option>
+                        <option value="verified">Verified</option>
+                        <option value="boarding_completed">Boarding Completed</option>
                         <option value="need_to_complete">Need to Complete</option>
                         <option value="in_progress">In Progress</option>
                         <option value="completed">Completed</option>
