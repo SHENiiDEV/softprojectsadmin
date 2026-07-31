@@ -49,7 +49,7 @@ class ImportCredentials extends Command
             $type = strtolower(trim($item['type'] ?? 'other'));
             $providerUrl = trim($item['provider_url'] ?? $item['login_url'] ?? $item['portal'] ?? '');
             $login = trim($item['login'] ?? $item['username'] ?? $item['email'] ?? $item['user'] ?? '');
-            $password = $item['password'] ?? $item['pass'] ?? $item['secret'] ?? null;
+            $password = $item['password'] ?? $item['pass'] ?? $item['secret'] ?? '';
             $comments = trim($item['comments'] ?? $item['notes'] ?? $item['description'] ?? '');
             $fields = $item['fields'] ?? null;
 
@@ -104,8 +104,8 @@ class ImportCredentials extends Command
                 'name' => $name,
                 'type' => $type ?: 'other',
                 'provider_url' => $providerUrl ?: null,
-                'login' => $login !== null && $login !== '' ? $login : '',
-                'password' => $password !== null && $password !== '' ? $password : null,
+                'login' => $login ?? '',
+                'password' => $password !== null ? (string) $password : '',
                 'comments' => $comments ?: null,
                 'fields' => is_array($fields) ? $fields : null,
             ]);

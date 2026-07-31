@@ -36,7 +36,7 @@ class Credential extends Model
     public function getPasswordAttribute(?string $value): ?string
     {
         if ($value === null || $value === '') {
-            return null;
+            return '';
         }
 
         try {
@@ -52,7 +52,7 @@ class Credential extends Model
     public function setPasswordAttribute(?string $value): void
     {
         if ($value === null || $value === '') {
-            $this->attributes['password'] = null;
+            $this->attributes['password'] = '';
 
             return;
         }
