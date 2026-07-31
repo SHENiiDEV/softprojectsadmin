@@ -7,6 +7,7 @@ use App\Models\Credential;
 use App\Models\Project;
 use App\Models\Website;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 
 class ImportCredentials extends Command
 {
@@ -33,6 +34,7 @@ class ImportCredentials extends Command
             return 1;
         }
 
+        $like = DB::connection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
         $imported = 0;
         $createdProjects = 0;
         $matchedProjects = 0;
@@ -40,31 +42,36 @@ class ImportCredentials extends Command
         $defaultClient = Client::firstOrCreate(['name' => 'Imported Clients']);
 
         foreach ($data as $index => $item) {
+            $projectId = $item['project_id'] ?? $item['company_id'] ?? null;
             $companyName = trim($item['company_name'] ?? $item['project_name'] ?? $item['company'] ?? $item['project'] ?? '');
             $websiteUrl = trim($item['website_url'] ?? $item['url'] ?? $item['website'] ?? '');
             $name = trim($item['name'] ?? $item['title'] ?? $item['label'] ?? 'Access Credential');
             $type = strtolower(trim($item['type'] ?? 'other'));
             $providerUrl = trim($item['provider_url'] ?? $item['login_url'] ?? $item['portal'] ?? '');
             $login = trim($item['login'] ?? $item['username'] ?? $item['email'] ?? $item['user'] ?? '');
-            $password = $item['password'] ?? $item['pass'] ?? $item['secret'] ?? '';
+            $password = $item['password'] ?? $item['pass'] ?? $item['secret'] ?? null;
             $comments = trim($item['comments'] ?? $item['notes'] ?? $item['description'] ?? '');
             $fields = $item['fields'] ?? null;
 
-            if (empty($companyName) && empty($websiteUrl)) {
-                $this->warn("Skipping item #{$index}: No company name or website URL provided.");
+            if (empty($companyName) && empty($websiteUrl) && empty($projectId)) {
+                $this->warn("Skipping item #{$index}: No company name, ID or website URL provided.");
 
                 continue;
             }
 
             // Find or create Project
             $project = null;
-            if ($companyName) {
-                $project = Project::where('name', 'ilike', $companyName)->first();
+            if ($projectId) {
+                $project = Project::find($projectId);
+            }
+
+            if (! $project && $companyName) {
+                $project = Project::where('name', $like, $companyName)->first();
             }
 
             if (! $project && $websiteUrl) {
                 $host = parse_url($websiteUrl, PHP_URL_HOST) ?? $websiteUrl;
-                $project = Project::whereHas('websites', fn ($q) => $q->where('url', 'ilike', "%{$host}%"))->first();
+                $project = Project::whereHas('websites', fn ($q) => $q->where('url', $like, "%{$host}%"))->first();
             }
 
             if (! $project) {
@@ -97,8 +104,8 @@ class ImportCredentials extends Command
                 'name' => $name,
                 'type' => $type ?: 'other',
                 'provider_url' => $providerUrl ?: null,
-                'login' => $login ?: 'admin',
-                'password' => $password,
+                'login' => $login !== null && $login !== '' ? $login : '',
+                'password' => $password !== null && $password !== '' ? $password : null,
                 'comments' => $comments ?: null,
                 'fields' => is_array($fields) ? $fields : null,
             ]);
