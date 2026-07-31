@@ -11,24 +11,56 @@
             </p>
         </div>
 
-        {{-- Group by toggle --}}
-        <div class="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
-            <button wire:click="$set('groupBy', 'project')"
-                    class="px-3 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200 cursor-pointer
-                           {{ $groupBy === 'project'
-                               ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm'
-                               : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200' }}">
-                By Company
+        <div class="flex items-center gap-3">
+            {{-- Import JSON Action --}}
+            <button wire:click="openImportModal" class="inline-flex items-center justify-center px-4 py-2 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-500 rounded-xl shadow-sm transition-all duration-150 cursor-pointer">
+                <i class="fa-solid fa-file-import mr-1.5"></i> Import JSON
             </button>
-            <button wire:click="$set('groupBy', 'type')"
-                    class="px-3 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200 cursor-pointer
-                           {{ $groupBy === 'type'
-                               ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm'
-                               : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200' }}">
-                By Type
-            </button>
+
+            {{-- Group by toggle --}}
+            <div class="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
+                <button wire:click="$set('groupBy', 'project')"
+                        class="px-3 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200 cursor-pointer
+                               {{ $groupBy === 'project'
+                                   ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm'
+                                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200' }}">
+                    By Company
+                </button>
+                <button wire:click="$set('groupBy', 'type')"
+                        class="px-3 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200 cursor-pointer
+                               {{ $groupBy === 'type'
+                                   ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm'
+                                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200' }}">
+                    By Type
+                </button>
+            </div>
         </div>
     </div>
+
+    {{-- Alert Messages --}}
+    @if (session()->has('message'))
+        <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)" x-transition class="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-800/40 text-emerald-800 dark:text-emerald-400 flex items-center justify-between shadow-sm">
+            <div class="flex items-center space-x-3">
+                <i class="fa-solid fa-circle-check text-emerald-600 dark:text-emerald-400 text-lg"></i>
+                <span class="text-sm font-medium">{{ session('message') }}</span>
+            </div>
+            <button @click="show = false" class="text-emerald-500 hover:text-emerald-700 dark:hover:text-emerald-300">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+    @endif
+
+    @if (session()->has('error'))
+        <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)" x-transition class="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-800/40 text-rose-800 dark:text-rose-400 flex items-center justify-between shadow-sm">
+            <div class="flex items-center space-x-3">
+                <i class="fa-solid fa-triangle-exclamation text-rose-600 dark:text-rose-400 text-lg"></i>
+                <span class="text-sm font-medium">{{ session('error') }}</span>
+            </div>
+            <button @click="show = false" class="text-rose-500 hover:text-rose-700 dark:hover:text-rose-300">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+    @endif
 
     {{-- ═══════════════════════════════════════════════════════════
          FILTERS
@@ -39,358 +71,292 @@
         <div class="relative flex-1 min-w-64">
             <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"
                  fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
-            <input wire:model.live.debounce.300ms="search"
-                   type="text" placeholder="Search by name, login, company, website..."
-                   class="w-full pl-9 pr-3 py-2 text-sm rounded-xl bg-white dark:bg-slate-800
-                          border border-slate-200 dark:border-slate-700
-                          text-slate-700 dark:text-slate-200 placeholder-slate-400
-                          focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200"/>
+            <input type="text"
+                   wire:model.live.debounce.250ms="search"
+                   placeholder="Search by name, login, company..."
+                   class="w-full pl-9 pr-4 py-2 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all placeholder:text-slate-400">
+            @if($search)
+                <button wire:click="$set('search', '')" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs">
+                    ✕
+                </button>
+            @endif
         </div>
 
-        {{-- Type filter --}}
+        {{-- Type Filter --}}
         <select wire:model.live="filterType"
-                class="px-3 py-2 text-sm rounded-xl bg-white dark:bg-slate-800
-                       border border-slate-200 dark:border-slate-700
-                       text-slate-700 dark:text-slate-200
-                       focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer">
+                class="px-3 py-2 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
             <option value="">All Types</option>
-            @foreach($types as $type)
-                <option value="{{ $type }}">{{ $type }}</option>
+            @foreach(['cms', 'hosting', 'db', 'payment_gateway', 'ssh', 'email', 'other'] as $t)
+                <option value="{{ $t }}">{{ ucfirst(str_replace('_', ' ', $t)) }}</option>
             @endforeach
         </select>
 
-        {{-- Project filter --}}
+        {{-- Company Filter --}}
         <select wire:model.live="filterProject"
-                class="px-3 py-2 text-sm rounded-xl bg-white dark:bg-slate-805
-                       border border-slate-200 dark:border-slate-700
-                       text-slate-700 dark:text-slate-200
-                       focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer max-w-56">
+                class="px-3 py-2 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all max-w-48 truncate">
             <option value="">All Companies</option>
             @foreach($projects as $p)
                 <option value="{{ $p->id }}">{{ $p->name }}</option>
             @endforeach
         </select>
 
-        {{-- Clear filters --}}
         @if($search || $filterType || $filterProject)
             <button wire:click="$set('search', ''); $set('filterType', ''); $set('filterProject', '')"
-                    class="px-3 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300
-                           bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600
-                           rounded-xl transition-all duration-200 cursor-pointer flex items-center gap-1.5">
-                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
+                    class="px-3 py-2 text-xs font-semibold text-rose-600 hover:text-rose-700 bg-rose-50 dark:bg-rose-950/30 rounded-xl transition-all">
                 Reset
             </button>
         @endif
     </div>
 
     {{-- ═══════════════════════════════════════════════════════════
-         GROUPED CREDENTIAL SECTIONS
+         CREDENTIALS GROUPS
     ═══════════════════════════════════════════════════════════ --}}
     @if($grouped->isEmpty())
-        <div class="flex flex-col items-center justify-center py-20 text-center">
-            <div class="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4">
-                <svg class="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
-                </svg>
-            </div>
-            <p class="text-slate-600 dark:text-slate-300 font-semibold text-lg">No credentials found</p>
-            <p class="text-slate-400 dark:text-slate-500 text-sm mt-1">Try changing the filters.</p>
+        <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-2xl p-12 text-center shadow-sm">
+            <i class="fa-solid fa-key text-3xl text-slate-300 dark:text-slate-700 mb-3"></i>
+            <p class="text-sm font-semibold text-slate-600 dark:text-slate-400">No credentials found</p>
+            <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">Try adjusting your filters or import new credentials via JSON.</p>
         </div>
     @else
-        <div class="space-y-8">
-            @foreach($grouped as $section)
-                <div>
-                    {{-- Section header --}}
-                    <div class="flex items-center gap-3 mb-3">
-                        <div class="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/40
-                                    flex items-center justify-center flex-shrink-0">
+        <div class="space-y-6">
+            @foreach($grouped as $group)
+                <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-2xl shadow-sm overflow-hidden">
+
+                    {{-- Group Header --}}
+                    <div class="px-5 py-3.5 bg-slate-50/70 dark:bg-slate-950/40 border-b border-slate-100 dark:border-slate-800/60 flex items-center justify-between">
+                        <div class="flex items-center space-x-2.5">
                             @if($groupBy === 'type')
-                                <svg class="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
-                                </svg>
+                                <span class="w-2 h-2 rounded-full bg-sky-500"></span>
+                                <h3 class="font-outfit font-bold text-sm text-slate-800 dark:text-white capitalize">
+                                    {{ str_replace('_', ' ', $group['label']) }}
+                                </h3>
                             @else
-                                <svg class="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-                                </svg>
+                                <i class="fa-solid fa-building text-indigo-500 text-xs"></i>
+                                <h3 class="font-outfit font-bold text-sm text-slate-800 dark:text-white">
+                                    {{ $group['label'] }}
+                                </h3>
                             @endif
                         </div>
-                        <h2 class="text-sm font-bold text-slate-800 dark:text-slate-100 truncate">
-                            {{ $section['label'] }}
-                        </h2>
-                        <span class="text-xs font-semibold text-slate-400 dark:text-slate-500
-                                     bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full flex-shrink-0">
-                            {{ $section['items']->count() }}
+                        <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-200/60 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                            {{ $group['items']->count() }} {{ Str::plural('record', $group['items']->count()) }}
                         </span>
-                        <div class="flex-1 h-px bg-slate-200 dark:bg-slate-700"></div>
                     </div>
 
-                    {{-- Cards grid --}}
-                    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                        @foreach($section['items'] as $cred)
+                    {{-- Items Grid --}}
+                    <div class="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        @foreach($group['items'] as $credential)
                             @php
-                                $typeColors = [
-                                    'Portal' => 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300',
-                                    'Email'  => 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300',
-                                    'FTP'    => 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
-                                    'SSH'    => 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
-                                    'Bank'   => 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
-                                ];
-                                $typeColor = $typeColors[$cred->type] ?? 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300';
+                                $typeColor = match($credential->type) {
+                                    'cms' => 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border-emerald-200/60',
+                                    'hosting' => 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-400 border-indigo-200/60',
+                                    'db' => 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 border-amber-200/60',
+                                    'payment_gateway' => 'bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-400 border-purple-200/60',
+                                    default => 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-200/60',
+                                };
                             @endphp
 
-                            <button wire:click="openCredential({{ $cred->id }})"
-                                    class="group text-left w-full flex flex-col bg-white dark:bg-slate-800/80 rounded-xl
-                                           border border-slate-200 dark:border-slate-700
-                                           hover:border-indigo-300 dark:hover:border-indigo-700
-                                           hover:shadow-md transition-all duration-200 cursor-pointer overflow-hidden p-4">
+                            <div wire:click="openCredential({{ $credential->id }})"
+                                 class="group p-3.5 rounded-xl bg-slate-50/50 dark:bg-slate-950/20 border border-slate-200/60 dark:border-slate-800/80 hover:border-sky-400 dark:hover:border-sky-600 hover:shadow-md transition-all duration-150 cursor-pointer space-y-2">
 
-                                {{-- Type + lock icon --}}
-                                <div class="flex items-center justify-between mb-3">
-                                    <span class="inline-flex items-center gap-1.5 text-xs font-bold px-2 py-0.5 rounded-md {{ $typeColor }}">
-                                        <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
-                                        </svg>
-                                        {{ $cred->type }}
+                                <div class="flex items-start justify-between gap-2">
+                                    <h4 class="font-bold text-xs text-slate-800 dark:text-white group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors line-clamp-1">
+                                        {{ $credential->name ?: 'Access Details' }}
+                                    </h4>
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-semibold border uppercase {{ $typeColor }}">
+                                        {{ str_replace('_', ' ', $credential->type) }}
                                     </span>
-                                    <svg class="w-4 h-4 text-slate-300 dark:text-slate-600 group-hover:text-indigo-400 transition-colors duration-200"
-                                         fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                                    </svg>
                                 </div>
 
-                                {{-- Name / login --}}
-                                <h3 class="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate mb-1">
-                                    {{ $cred->name ?: $cred->login }}
-                                </h3>
-
-                                {{-- Login --}}
-                                <p class="text-xs text-slate-500 dark:text-slate-400 truncate mb-2">
-                                    {{ $cred->login }}
-                                </p>
-
-                                {{-- Project (when grouping by type) --}}
-                                @if($groupBy === 'type' && $cred->project)
-                                    <div class="flex items-center gap-1 mb-1">
-                                        <svg class="w-3 h-3 text-slate-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-                                        </svg>
-                                        <span class="text-xs text-slate-400 dark:text-slate-500 truncate">{{ $cred->project->name }}</span>
-                                    </div>
+                                @if($groupBy === 'type' && $credential->project)
+                                    <p class="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                                        <i class="fa-solid fa-building text-slate-400"></i>
+                                        <span class="truncate">{{ $credential->project->name }}</span>
+                                    </p>
                                 @endif
 
-                                {{-- Website --}}
-                                @if($cred->website)
-                                    <div class="flex items-center gap-1">
-                                        <svg class="w-3 h-3 text-slate-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
-                                        </svg>
-                                        <span class="text-xs text-indigo-500 dark:text-indigo-400 truncate">
-                                            {{ parse_url($cred->website->url, PHP_URL_HOST) ?: $cred->website->url }}
-                                        </span>
-                                    </div>
+                                @if($credential->login)
+                                    <p class="text-xs font-mono text-slate-600 dark:text-slate-400 flex items-center gap-1.5 truncate">
+                                        <i class="fa-solid fa-user text-slate-400 text-[10px]"></i>
+                                        <span class="truncate">{{ $credential->login }}</span>
+                                    </p>
                                 @endif
 
-                                {{-- Password dots --}}
-                                <div class="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-700 flex items-center gap-1.5">
-                                    <svg class="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-                                    </svg>
-                                    <span class="text-xs text-slate-400 dark:text-slate-500 tracking-widest">••••••••</span>
-                                </div>
-                            </button>
+                                @if($credential->provider_url)
+                                    <p class="text-[11px] font-mono text-sky-600 dark:text-sky-400 truncate flex items-center gap-1.5">
+                                        <i class="fa-solid fa-link text-[10px]"></i>
+                                        <span class="truncate">{{ $credential->provider_url }}</span>
+                                    </p>
+                                @endif
+                            </div>
                         @endforeach
                     </div>
+
                 </div>
             @endforeach
         </div>
     @endif
 
     {{-- ═══════════════════════════════════════════════════════════
-         MODAL
+         VIEW CREDENTIAL MODAL
     ═══════════════════════════════════════════════════════════ --}}
     @if($showModal && $selectedCredential)
-        <div class="fixed inset-0 z-50 flex items-center justify-center p-4"
-             wire:click.self="closeModal">
+        <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+            <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                <div class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm transition-opacity" aria-hidden="true" wire:click="closeModal"></div>
+                <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
 
-            {{-- Backdrop --}}
-            <div class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
-
-            {{-- Modal --}}
-            <div class="relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-lg
-                        border border-slate-200 dark:border-slate-700"
-                 x-trap="$el">
-
-                {{-- Header --}}
-                <div class="flex items-center justify-between p-5 border-b border-slate-100 dark:border-slate-800">
-                    <div class="flex items-center gap-3">
-                        @php
-                            $modalTypeColors = [
-                                'Portal' => 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300',
-                                'Email'  => 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300',
-                                'FTP'    => 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
-                                'SSH'    => 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
-                                'Bank'   => 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
-                            ];
-                            $mc = $modalTypeColors[$selectedCredential->type] ?? 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300';
-                        @endphp
-                        <span class="px-2.5 py-1 text-xs font-bold rounded-lg {{ $mc }}">
-                            {{ $selectedCredential->type }}
-                        </span>
-                        <h3 class="text-base font-bold text-slate-800 dark:text-slate-100">
-                            {{ $selectedCredential->name ?: $selectedCredential->type }}
-                        </h3>
-                    </div>
-                    <button wire:click="closeModal"
-                            class="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200
-                                   hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all duration-200 cursor-pointer">
-                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-                        </svg>
-                    </button>
-                </div>
-
-                {{-- Body --}}
-                <div class="p-5 space-y-4">
-
-                    {{-- Company --}}
-                    @if($selectedCredential->project)
-                        <div class="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-xl">
-                            <svg class="w-4 h-4 text-slate-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-                            </svg>
-                            <div>
-                                <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Company</p>
-                                <p class="text-sm font-medium text-slate-800 dark:text-slate-100 mt-0.5">{{ $selectedCredential->project->name }}</p>
-                            </div>
+                <div class="inline-block align-bottom bg-white dark:bg-slate-900 rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-slate-100 dark:border-slate-800/80">
+                    
+                    {{-- Modal Header --}}
+                    <div class="px-6 py-5 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between bg-slate-50/50 dark:bg-slate-950/20">
+                        <div>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400">
+                                {{ str_replace('_', ' ', $selectedCredential->type) }}
+                            </span>
+                            <h3 class="text-base font-bold text-slate-800 dark:text-white font-outfit" id="modal-title">
+                                {{ $selectedCredential->name ?: 'Credential Vault Entry' }}
+                            </h3>
                         </div>
-                    @endif
+                        <button type="button" wire:click="closeModal" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors focus:outline-none cursor-pointer">
+                            <i class="fa-solid fa-xmark text-lg"></i>
+                        </button>
+                    </div>
 
-                    {{-- Website --}}
-                    @if($selectedCredential->website)
-                        <div class="flex items-start gap-3">
-                            <svg class="w-4 h-4 text-slate-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
-                            </svg>
-                            <div class="flex-1 min-w-0">
-                                <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Website</p>
-                                <a href="{{ $selectedCredential->website->url }}" target="_blank"
-                                   class="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:underline truncate block mt-0.5">
-                                    {{ $selectedCredential->website->url }}
+                    {{-- Modal Body --}}
+                    <div class="px-6 py-6 space-y-4">
+                        {{-- Company --}}
+                        @if($selectedCredential->project)
+                            <div>
+                                <span class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">Company</span>
+                                <a href="{{ route('projects.show', $selectedCredential->project_id) }}" class="text-xs font-bold text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-1.5">
+                                    <i class="fa-solid fa-building"></i>
+                                    {{ $selectedCredential->project->name }}
                                 </a>
                             </div>
-                        </div>
-                    @endif
+                        @endif
 
-                    {{-- Login --}}
-                    <div class="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-                        <div class="px-4 py-2 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-                            <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Login</p>
+                        {{-- Provider URL --}}
+                        @if($selectedCredential->provider_url)
+                            <div>
+                                <span class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">Provider URL / Portal</span>
+                                <a href="{{ $selectedCredential->provider_url }}" target="_blank" class="text-xs font-mono text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-1.5 truncate">
+                                    <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                    {{ $selectedCredential->provider_url }}
+                                </a>
+                            </div>
+                        @endif
+
+                        {{-- Login --}}
+                        @if($selectedCredential->login)
+                            <div>
+                                <span class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">Login / Username</span>
+                                <div class="flex items-center justify-between p-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl">
+                                    <span class="font-mono text-xs text-slate-800 dark:text-slate-200 select-all">{{ $selectedCredential->login }}</span>
+                                    <button wire:click="copyToClipboard('login')" class="text-slate-400 hover:text-sky-500 text-xs px-2 py-1 rounded transition-colors" title="Copy Login">
+                                        <i class="fa-solid fa-copy"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        @endif
+
+                        {{-- Password with Reveal --}}
+                        @if($selectedCredential->password)
+                            <div>
+                                <span class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">Password</span>
+                                <div class="flex items-center justify-between p-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl">
+                                    <span class="font-mono text-xs text-slate-800 dark:text-slate-200 select-all">
+                                        {{ $showPassword ? $selectedCredential->password : '••••••••••••••••' }}
+                                    </span>
+                                    <div class="flex items-center space-x-1">
+                                        <button wire:click="togglePassword" class="text-slate-400 hover:text-sky-500 text-xs p-1.5 rounded transition-colors" title="{{ $showPassword ? 'Hide Password' : 'Show Password' }}">
+                                            <i class="fa-solid {{ $showPassword ? 'fa-eye-slash' : 'fa-eye' }}"></i>
+                                        </button>
+                                        <button wire:click="copyToClipboard('password')" class="text-slate-400 hover:text-sky-500 text-xs p-1.5 rounded transition-colors" title="Copy Password">
+                                            <i class="fa-solid fa-copy"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+
+                        {{-- Comments --}}
+                        @if($selectedCredential->comments)
+                            <div>
+                                <span class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">Comments / Notes</span>
+                                <div class="p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
+                                    {{ $selectedCredential->comments }}
+                                </div>
+                            </div>
+                        @endif
+                    </div>
+
+                    {{-- Modal Footer --}}
+                    <div class="px-6 py-4 border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-950/20 flex items-center justify-end">
+                        <button type="button" wire:click="closeModal" class="px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl transition-all duration-150 cursor-pointer">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- ═══════════════════════════════════════════════════════════
+         IMPORT JSON MODAL
+    ═══════════════════════════════════════════════════════════ --}}
+    @if($showImportModal)
+        <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="import-modal-title" role="dialog" aria-modal="true">
+            <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                <div class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm transition-opacity" aria-hidden="true" wire:click="closeImportModal"></div>
+                <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+                <div class="inline-block align-bottom bg-white dark:bg-slate-900 rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-slate-100 dark:border-slate-800/80">
+                    <div class="px-6 py-5 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between bg-slate-50/50 dark:bg-slate-950/20">
+                        <h3 class="text-base font-bold text-slate-800 dark:text-white font-outfit flex items-center gap-2" id="import-modal-title">
+                            <i class="fa-solid fa-file-import text-sky-500"></i> Import Credentials (JSON)
+                        </h3>
+                        <button type="button" wire:click="closeImportModal" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors focus:outline-none cursor-pointer">
+                            <i class="fa-solid fa-xmark text-lg"></i>
+                        </button>
+                    </div>
+
+                    <form wire:submit.prevent="processImport">
+                        <div class="px-6 py-6 space-y-5">
+                            <!-- Option 1: File Upload -->
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">Option 1: Upload JSON File</label>
+                                <input type="file" wire:model="importFile" accept=".json" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100 dark:file:bg-sky-950/40 dark:file:text-sky-400 cursor-pointer">
+                                @error('importFile') <span class="text-xs text-rose-500 block mt-1">{{ $message }}</span> @enderror
+                            </div>
+
+                            <div class="relative flex py-1 items-center">
+                                <div class="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
+                                <span class="flex-shrink mx-4 text-slate-400 text-xs font-semibold uppercase">OR</span>
+                                <div class="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
+                            </div>
+
+                            <!-- Option 2: Paste Raw JSON -->
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">Option 2: Paste JSON Content</label>
+                                <textarea wire:model="rawJsonInput" rows="6" placeholder='[{"company_name": "Company LTD", "name": "CMS Admin", "type": "cms", "login": "admin", "password": "123"}]' class="w-full font-mono text-xs p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"></textarea>
+                            </div>
                         </div>
-                        <div class="flex items-center justify-between px-4 py-3">
-                            <span class="text-sm font-mono text-slate-800 dark:text-slate-100 select-all">
-                                {{ $selectedCredential->login }}
-                            </span>
-                            <button wire:click="copyToClipboard('login')"
-                                    class="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold
-                                           text-indigo-600 dark:text-indigo-400
-                                           bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/50
-                                           rounded-lg transition-all duration-200 cursor-pointer"
-                                    x-data x-on:click="
-                                        $el.innerHTML = '<svg class=\'w-3 h-3\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'currentColor\' stroke-width=\'2.5\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' d=\'M5 13l4 4L19 7\'/></svg> Copied';
-                                        setTimeout(() => $el.innerHTML = '<svg class=\'w-3 h-3\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'currentColor\' stroke-width=\'2\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' d=\'M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z\'/></svg> Copy', 2000);
-                                    ">
-                                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                                </svg>
-                                Copy
+
+                        <div class="px-6 py-4 border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-950/20 flex items-center justify-end space-x-2">
+                            <button type="button" wire:click="closeImportModal" class="px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl transition-all duration-150 cursor-pointer">
+                                Cancel
+                            </button>
+                            <button type="submit" wire:loading.attr="disabled" class="px-4 py-2 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-500 rounded-xl transition-all duration-150 cursor-pointer shadow-sm">
+                                <span wire:loading.remove wire:target="processImport">Start Import</span>
+                                <span wire:loading wire:target="processImport">Importing...</span>
                             </button>
                         </div>
-                    </div>
-
-                    {{-- Password --}}
-                    <div class="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-                        <div class="px-4 py-2 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-                            <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Password</p>
-                        </div>
-                        <div class="flex items-center justify-between px-4 py-3 gap-3">
-                            <span class="text-sm font-mono text-slate-800 dark:text-slate-100 flex-1 truncate select-all">
-                                @if($showPassword)
-                                    {{ $selectedCredential->password }}
-                                @else
-                                    ••••••••••••••••
-                                @endif
-                            </span>
-                            <div class="flex items-center gap-1.5 flex-shrink-0">
-                                <button wire:click="togglePassword"
-                                        class="p-1.5 text-slate-500 hover:text-slate-700 dark:hover:text-slate-200
-                                               hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-all duration-200 cursor-pointer">
-                                    @if($showPassword)
-                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
-                                        </svg>
-                                    @else
-                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                                        </svg>
-                                    @endif
-                                </button>
-                                <button wire:click="copyToClipboard('password')"
-                                        class="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold
-                                               text-indigo-600 dark:text-indigo-400
-                                               bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/50
-                                               rounded-lg transition-all duration-200 cursor-pointer"
-                                        x-data x-on:click="
-                                            $el.innerHTML = '<svg class=\'w-3 h-3\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'currentColor\' stroke-width=\'2.5\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' d=\'M5 13l4 4L19 7\'/></svg> Copied';
-                                            setTimeout(() => $el.innerHTML = '<svg class=\'w-3 h-3\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'currentColor\' stroke-width=\'2\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' d=\'M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z\'/></svg> Copy', 2000);
-                                        ">
-                                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                                    </svg>
-                                    Copy
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Comments --}}
-                    @if($selectedCredential->comments)
-                        <div class="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-                            <div class="px-4 py-2 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-                                <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Comment</p>
-                            </div>
-                            <p class="px-4 py-3 text-sm text-slate-700 dark:text-slate-300">
-                                {{ $selectedCredential->comments }}
-                            </p>
-                        </div>
-                    @endif
-                </div>
-
-                {{-- Footer --}}
-                <div class="px-5 py-4 border-t border-slate-100 dark:border-slate-800">
-                    <button wire:click="closeModal"
-                            class="w-full px-4 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200
-                                   hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl text-sm font-semibold
-                                   transition-all duration-200 cursor-pointer">
-                        Close
-                    </button>
+                    </form>
                 </div>
             </div>
         </div>
     @endif
 </div>
-
-{{-- Copy to clipboard JS --}}
-<script>
-    document.addEventListener('livewire:init', () => {
-        Livewire.on('copy-to-clipboard', (event) => {
-            if (navigator.clipboard && event.value) {
-                navigator.clipboard.writeText(event.value).catch(() => {});
-            }
-        });
-    });
-</script>

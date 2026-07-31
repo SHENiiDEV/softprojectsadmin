@@ -3,15 +3,19 @@
 namespace App\Livewire;
 
 use App\Models\ActivityLog;
+use App\Models\Client;
 use App\Models\Credential;
 use App\Models\Project;
+use App\Models\Website;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 class CredentialVault extends Component
 {
+    use WithFileUploads;
+
     // Filters
     public string $search = '';
 
@@ -28,12 +32,19 @@ class CredentialVault extends Component
 
     public array $types = [];
 
-    // Modal
+    // View Modal
     public ?Credential $selectedCredential = null;
 
     public bool $showModal = false;
 
     public bool $showPassword = false;
+
+    // Import Modal
+    public bool $showImportModal = false;
+
+    public $importFile = null;
+
+    public string $rawJsonInput = '';
 
     public function mount(): void
     {
@@ -64,7 +75,6 @@ class CredentialVault extends Component
 
     protected function loadData(): void
     {
-        $user = Auth::user();
         $query = Credential::with(['project', 'website']);
 
         if ($this->search) {
@@ -115,11 +125,118 @@ class CredentialVault extends Component
         $this->showPassword = false;
     }
 
+    public function openImportModal(): void
+    {
+        $this->importFile = null;
+        $this->rawJsonInput = '';
+        $this->showImportModal = true;
+    }
+
+    public function closeImportModal(): void
+    {
+        $this->showImportModal = false;
+        $this->importFile = null;
+        $this->rawJsonInput = '';
+    }
+
+    public function processImport(): void
+    {
+        $jsonString = '';
+
+        if ($this->importFile) {
+            $jsonString = file_get_contents($this->importFile->getRealPath());
+        } elseif (! empty($this->rawJsonInput)) {
+            $jsonString = $this->rawJsonInput;
+        } else {
+            session()->flash('error', 'Please upload a JSON file or paste JSON content.');
+
+            return;
+        }
+
+        $data = json_decode($jsonString, true);
+        if (! is_array($data)) {
+            session()->flash('error', 'Invalid JSON format. Please check the JSON syntax.');
+
+            return;
+        }
+
+        $imported = 0;
+        $createdProjects = 0;
+        $defaultClient = Client::firstOrCreate(['name' => 'Imported Clients']);
+
+        foreach ($data as $item) {
+            $companyName = trim($item['company_name'] ?? $item['project_name'] ?? $item['company'] ?? $item['project'] ?? '');
+            $websiteUrl = trim($item['website_url'] ?? $item['url'] ?? $item['website'] ?? '');
+            $name = trim($item['name'] ?? $item['title'] ?? $item['label'] ?? 'Access Credential');
+            $type = strtolower(trim($item['type'] ?? 'other'));
+            $providerUrl = trim($item['provider_url'] ?? $item['login_url'] ?? $item['portal'] ?? '');
+            $login = trim($item['login'] ?? $item['username'] ?? $item['email'] ?? $item['user'] ?? '');
+            $password = $item['password'] ?? $item['pass'] ?? $item['secret'] ?? '';
+            $comments = trim($item['comments'] ?? $item['notes'] ?? $item['description'] ?? '');
+            $fields = $item['fields'] ?? null;
+
+            if (empty($companyName) && empty($websiteUrl)) {
+                continue;
+            }
+
+            // Match Project
+            $project = null;
+            if ($companyName) {
+                $project = Project::where('name', 'ilike', $companyName)->first();
+            }
+
+            if (! $project && $websiteUrl) {
+                $host = parse_url($websiteUrl, PHP_URL_HOST) ?? $websiteUrl;
+                $project = Project::whereHas('websites', fn ($q) => $q->where('url', 'ilike', "%{$host}%"))->first();
+            }
+
+            if (! $project) {
+                $projectName = $companyName ?: ($host ?? 'Imported Project');
+                $project = Project::create([
+                    'client_id' => $defaultClient->id,
+                    'name' => $projectName,
+                    'status' => 'active',
+                    'ubo' => 'Imported',
+                ]);
+                $createdProjects++;
+            }
+
+            // Match Website
+            $websiteId = null;
+            if ($websiteUrl) {
+                $website = Website::firstOrCreate(
+                    ['project_id' => $project->id, 'url' => $websiteUrl],
+                    ['name' => 'Main Website']
+                );
+                $websiteId = $website->id;
+            }
+
+            // Save Credential
+            Credential::create([
+                'project_id' => $project->id,
+                'website_id' => $websiteId,
+                'name' => $name,
+                'type' => $type ?: 'other',
+                'provider_url' => $providerUrl ?: null,
+                'login' => $login ?: 'admin',
+                'password' => $password,
+                'comments' => $comments ?: null,
+                'fields' => is_array($fields) ? $fields : null,
+            ]);
+
+            $imported++;
+        }
+
+        $this->closeImportModal();
+        $this->loadData();
+
+        session()->flash('message', "Successfully imported {$imported} credentials ({$createdProjects} new companies created).");
+    }
+
     public function togglePassword(): void
     {
         $this->showPassword = ! $this->showPassword;
 
-        // Log only when the password is being revealed (not when it's being hidden)
         if ($this->showPassword && $this->selectedCredential) {
             ActivityLog::create([
                 'user_id' => auth()->id(),
@@ -137,9 +254,6 @@ class CredentialVault extends Component
         }
     }
 
-    /**
-     * Group credentials by project or type
-     */
     public function getGroupedCredentials(): Collection
     {
         if ($this->groupBy === 'type') {
@@ -150,7 +264,6 @@ class CredentialVault extends Component
                 ->values();
         }
 
-        // group by project
         return $this->credentials
             ->groupBy(fn ($c) => $c->project?->name ?? 'Without Company')
             ->map(fn ($items, $key) => ['label' => $key, 'items' => $items])
