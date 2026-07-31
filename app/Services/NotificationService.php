@@ -5,14 +5,12 @@ namespace App\Services;
 use App\Jobs\SendTelegramMessageJob;
 use App\Mail\TaskAssignedMail;
 use App\Models\Client;
-use App\Models\Comment;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
 use App\Notifications\AppNotification;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Str;
 
 class NotificationService
 {
@@ -63,87 +61,48 @@ class NotificationService
         $message = "Task '{$task->title}' status was changed to '{$readableStatus}' by {$actorName}.";
         $url = route('tasks.kanban', ['task_id' => $task->id]);
 
-        // Determine recipients (assignee and creator if different from actor)
-        $recipients = collect();
-        if ($task->assigned_to && (! $actor || $task->assigned_to !== $actor->id)) {
-            $recipients->push($task->assignee);
-        }
-        if ($task->creator_id && (! $actor || $task->creator_id !== $actor->id) && $task->creator_id !== $task->assigned_to) {
-            $recipients->push($task->creator);
+        // 1. In-app
+        if ($task->assigned_to && ($actor === null || $task->assigned_to !== $actor->id)) {
+            $task->assignee?->notify(new AppNotification($title, $message, $url, 'task_status_updated'));
         }
 
-        foreach ($recipients as $user) {
-            // 1. In-app
-            $user->notify(new AppNotification($title, $message, $url, 'task_status_updated'));
+        // 2. Telegram
+        if ($task->assignee && $task->assignee->telegram_id && $task->assignee->getNotificationSetting('tg_notify_task_status', true)) {
+            $escapedTitle = TelegramService::escapeMarkdownV2($task->title);
+            $escapedStatus = TelegramService::escapeMarkdownV2($readableStatus);
 
-            // 2. Telegram
-            if ($user->telegram_id && $user->getNotificationSetting('tg_notify_task_status_updated', true)) {
-                $escapedTitle = TelegramService::escapeMarkdownV2($task->title);
-                $escapedStatus = TelegramService::escapeMarkdownV2($readableStatus);
-                $escapedActor = TelegramService::escapeMarkdownV2($actorName);
-                $text = "🔄 *Task status updated to '{$escapedStatus}' by {$escapedActor}:*\n*Title:* {$escapedTitle}";
+            $text = "🔄 *Task status updated:*\n*Task:* {$escapedTitle}\n*New Status:* {$escapedStatus}";
 
-                SendTelegramMessageJob::dispatch($user->telegram_id, $text, self::getTelegramButtons($task));
-            }
+            SendTelegramMessageJob::dispatch($task->assignee->telegram_id, $text, self::getTelegramButtons($task));
         }
     }
 
     /**
-     * Notify about task creation.
-     */
-    public static function sendTaskCreated(Task $task, ?User $actor = null): void
-    {
-        $actorName = $actor ? $actor->name : 'System';
-        $title = 'New Task Created';
-        $message = "Task '{$task->title}' was created by {$actorName}.";
-        $url = route('tasks.kanban', ['task_id' => $task->id]);
-
-        $usersQuery = User::whereHas('roles', function ($q) {
-            $q->whereIn('name', ['admin', 'manager', 'curator']);
-        });
-
-        if ($actor) {
-            $usersQuery->where('id', '!=', $actor->id);
-        }
-
-        $users = $usersQuery->get();
-
-        foreach ($users as $user) {
-            // Only send if they explicitly turned on tg_notify_task_created (default false)
-            if ($user->telegram_id && $user->getNotificationSetting('tg_notify_task_created', false)) {
-                $escapedTitle = TelegramService::escapeMarkdownV2($task->title);
-                $escapedActor = TelegramService::escapeMarkdownV2($actorName);
-                $text = "🆕 *New task created by {$escapedActor}:*\n*Title:* {$escapedTitle}";
-
-                SendTelegramMessageJob::dispatch($user->telegram_id, $text, self::getTelegramButtons($task));
-            }
-        }
-    }
-
-    /**
-     * Notify about client portal task creation.
+     * Notify when task created via client portal.
      */
     public static function sendClientPortalTaskCreated(Task $task, Client $client, Project $company): void
     {
-        $title = 'New Support Ticket';
-        $message = "Client '{$client->name}' submitted a support ticket: '{$task->title}' for company '{$company->name}'.";
+        $title = 'New Client Portal Request';
+        $message = "New request from client '{$client->name}' ({$company->name}): '{$task->title}'.";
         $url = route('tasks.kanban', ['task_id' => $task->id]);
 
-        // Support tickets go to curators and managers, plus admins
-        $users = User::whereHas('roles', function ($q) {
-            $q->whereIn('name', ['admin', 'manager', 'curator']);
+        // Send to admins or assigned manager
+        $recipients = User::whereIn('id', function ($q) {
+            $q->select('user_id')->from('activity_logs')->limit(10);
         })->get();
 
-        foreach ($users as $user) {
-            // 1. In-app
-            $user->notify(new AppNotification($title, $message, $url, 'client_portal_task_created'));
+        if ($recipients->isEmpty()) {
+            $recipients = User::all();
+        }
 
-            // 2. Telegram (default true for client portal task updates)
-            if ($user->telegram_id && $user->getNotificationSetting('tg_notify_task_created', true)) {
+        foreach ($recipients as $user) {
+            $user->notify(new AppNotification($title, $message, $url, 'client_portal_task'));
+
+            if ($user->telegram_id && $user->getNotificationSetting('tg_notify_client_portal', true)) {
                 $escapedTitle = TelegramService::escapeMarkdownV2($task->title);
-                $escapedClient = TelegramService::escapeMarkdownV2($client->name);
                 $escapedCompany = TelegramService::escapeMarkdownV2($company->name);
-                $text = "🌐 *New support ticket from client {$escapedClient} ({$escapedCompany}):*\n*Title:* {$escapedTitle}";
+
+                $text = "📥 *New Client Portal Request:*\n*Company:* {$escapedCompany}\n*Task:* {$escapedTitle}";
 
                 SendTelegramMessageJob::dispatch($user->telegram_id, $text, self::getTelegramButtons($task));
             }
@@ -151,96 +110,29 @@ class NotificationService
     }
 
     /**
-     * Notify about new task comment.
+     * Notify when a comment is added to a task.
      */
-    public static function sendNewCommentNotification(Comment $comment): void
+    public static function sendNewCommentNotification($comment): void
     {
-        $comment->load('task', 'user', 'client', 'project');
         $task = $comment->task;
-        $project = $comment->project ?: ($task ? $task->project : null);
+        $actor = $comment->user;
+        $actorName = $actor ? $actor->name : 'System';
 
-        if (! $task && ! $project) {
-            return;
-        }
+        $title = 'New Comment on Task';
+        $message = "{$actorName} commented on '{$task->title}': ".mb_substr($comment->content, 0, 50).'...';
+        $url = route('tasks.kanban', ['task_id' => $task->id]);
 
-        $authorName = 'System';
-        if ($comment->user) {
-            $authorName = $comment->user->name;
-        } elseif ($comment->client) {
-            $authorName = $comment->client->name.' (Client)';
-        }
+        // Notify assignee if not the actor
+        if ($task->assigned_to && ($actor === null || $task->assigned_to !== $actor->id)) {
+            $task->assignee?->notify(new AppNotification($title, $message, $url, 'task_comment'));
 
-        $title = $task ? 'New Task Comment' : 'New Company Comment';
-        $contextName = $task ? $task->title : ($project ? $project->name : 'Company');
-        $message = $task
-            ? "New comment by {$authorName} on task '{$task->title}': \"".Str::limit(strip_tags($comment->content), 50).'"'
-            : "New comment by {$authorName} on company '{$project->name}': \"".Str::limit(strip_tags($comment->content), 50).'"';
+            if ($task->assignee && $task->assignee->telegram_id && $task->assignee->getNotificationSetting('tg_notify_comments', true)) {
+                $escapedTitle = TelegramService::escapeMarkdownV2($task->title);
+                $escapedComment = TelegramService::escapeMarkdownV2(mb_substr($comment->content, 0, 100));
 
-        $url = $task
-            ? route('tasks.kanban', ['task_id' => $task->id])
-            : ($project ? route('projects.show', $project->id).'?tab=comments' : '#');
+                $text = "💬 *New Comment on Task:*\n*Task:* {$escapedTitle}\n*Comment:* {$escapedComment}";
 
-        $recipients = collect();
-
-        if ($task) {
-            // 1. Task Assignee
-            if ($task->assigned_to) {
-                $isAuthor = ($comment->user_id && $task->assigned_to === $comment->user_id);
-                if (! $isAuthor) {
-                    $recipients->put($task->assigned_to, $task->assignee);
-                }
-            }
-
-            // 2. Task Creator
-            if ($task->creator_id && ! $recipients->has($task->creator_id)) {
-                $isAuthor = ($comment->user_id && $task->creator_id === $comment->user_id);
-                if (! $isAuthor) {
-                    $recipients->put($task->creator_id, $task->creator);
-                }
-            }
-        } elseif ($project) {
-            // 1. Project Manager
-            if ($project->manager_id) {
-                $isAuthor = ($comment->user_id && $project->manager_id === $comment->user_id);
-                if (! $isAuthor) {
-                    $recipients->put($project->manager_id, $project->manager);
-                }
-            }
-        }
-
-        // 3. Mentioned Users
-        $mentionedUsers = $comment->getMentionedUsers();
-        foreach ($mentionedUsers as $mentionedUser) {
-            if ($mentionedUser->id !== $comment->user_id && ! $recipients->has($mentionedUser->id)) {
-                $recipients->put($mentionedUser->id, $mentionedUser);
-            }
-        }
-
-        foreach ($recipients as $user) {
-            $user->notify(new AppNotification($title, $message, $url, 'new_comment'));
-
-            if ($user->telegram_id && $user->getNotificationSetting('tg_notify_new_comment', true)) {
-                $escapedContext = TelegramService::escapeMarkdownV2($contextName);
-                $escapedAuthor = TelegramService::escapeMarkdownV2($authorName);
-                $escapedContent = TelegramService::escapeMarkdownV2($comment->content);
-
-                $privatePrefix = $comment->is_private ? '🔒 *[Private]* ' : '';
-
-                $text = $task
-                    ? "💬 {$privatePrefix}*New comment by {$escapedAuthor} on:*\n*Task:* {$escapedContext}\n\n*Comment:* {$escapedContent}"
-                    : "💬 {$privatePrefix}*New comment by {$escapedAuthor} on:*\n*Company:* {$escapedContext}\n\n*Comment:* {$escapedContent}";
-
-                $buttons = $task
-                    ? self::getTelegramButtons($task)
-                    : [
-                        'inline_keyboard' => [
-                            [
-                                ['text' => '🔗 Open company', 'url' => route('projects.show', $project->id).'?tab=comments'],
-                            ],
-                        ],
-                    ];
-
-                SendTelegramMessageJob::dispatch($user->telegram_id, $text, $buttons);
+                SendTelegramMessageJob::dispatch($task->assignee->telegram_id, $text, self::getTelegramButtons($task));
             }
         }
     }
@@ -250,7 +142,6 @@ class NotificationService
      */
     public static function sendTimerAction(Task $task, string $actionType, int $durationSeconds, ?User $actor = null): void
     {
-        // Notify the creator of the task when a worker starts/stops a timer on it (if they want)
         if (! $task->creator_id || ($actor && $task->creator_id === $actor->id)) {
             return;
         }
@@ -319,6 +210,39 @@ class NotificationService
             ];
 
             SendTelegramMessageJob::dispatch($manager->telegram_id, $text, $buttons);
+        }
+    }
+
+    /**
+     * Notify user when assigned as Curator/Manager for a company.
+     */
+    public static function sendCompanyManagerAssigned(Project $project, User $newManager, ?User $actor = null): void
+    {
+        $actorName = $actor ? $actor->name : 'System';
+        $title = '🏢 Assigned as Company Manager';
+        $message = "You have been assigned as Manager for company '{$project->name}' by {$actorName}.";
+        $url = route('projects.show', $project->id);
+
+        // 1. In-app notification
+        $newManager->notify(new AppNotification($title, $message, $url, 'company_manager_assigned'));
+
+        // 2. Telegram notification
+        if ($newManager->telegram_id) {
+            $escapedProject = TelegramService::escapeMarkdownV2($project->name);
+            $escapedActor = TelegramService::escapeMarkdownV2($actorName);
+
+            $text = "🏢 *Company Assigned\\!*\n\n"
+                  ."You have been assigned as Manager for company *{$escapedProject}* by {$escapedActor}\\.";
+
+            $buttons = [
+                'inline_keyboard' => [
+                    [
+                        ['text' => '🏢 Open Company', 'url' => $url],
+                    ],
+                ],
+            ];
+
+            SendTelegramMessageJob::dispatch($newManager->telegram_id, $text, $buttons);
         }
     }
 

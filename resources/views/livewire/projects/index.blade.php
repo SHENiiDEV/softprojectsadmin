@@ -79,13 +79,13 @@
             <!-- Search & Basic filters -->
             <div class="flex-1 grid grid-cols-1 md:grid-cols-12 gap-3">
                 <!-- Search Input -->
-                <div class="relative md:col-span-4">
+                <div class="relative md:col-span-3">
                     <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                         <i class="fa-solid fa-magnifying-glass text-xs"></i>
                     </span>
                     <input type="text" 
                            wire:model.live.debounce.300ms="search" 
-                           placeholder="Search by name, UBO, MCC..." 
+                           placeholder="Search by name, UBO..." 
                            class="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800/80 rounded-xl text-sm text-slate-850 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-200">
                 </div>
 
@@ -101,25 +101,26 @@
                     </select>
                 </div>
 
+                <!-- Manager Filter -->
+                <div class="md:col-span-3">
+                    <select wire:model.live="filterManager" 
+                            class="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800/80 rounded-xl text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-200">
+                        <option value="">All Managers</option>
+                        <option value="none">No Manager</option>
+                        @foreach($managers as $m)
+                            <option value="{{ $m->id }}">{{ $m->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
                 <!-- Status Filter -->
-                <div class="md:col-span-2">
+                <div class="md:col-span-3">
                     <select wire:model.live="status" 
                             class="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800/80 rounded-xl text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-200">
                         <option value="">All Statuses</option>
                         <option value="active">Active</option>
                         <option value="onboarding">Onboarding</option>
                         <option value="suspended">Suspended</option>
-                    </select>
-                </div>
-
-                <!-- Integration Status Filter -->
-                <div class="md:col-span-3">
-                    <select wire:model.live="integrationStatus" 
-                            class="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800/80 rounded-xl text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-200">
-                        <option value="">All Integration Statuses</option>
-                        <option value="completed">Completed</option>
-                        <option value="in_progress">In Progress</option>
-                        <option value="pending">Pending</option>
                     </select>
                 </div>
             </div>
@@ -141,8 +142,8 @@
                 </button>
 
                 <!-- Clear Filters Button -->
-                @if($search || $status || $integrationStatus || $filterClient || $myCompaniesOnly === '1')
-                    <button type="button" wire:click="$set('search', ''); $set('status', ''); $set('integrationStatus', ''); $set('filterClient', ''); $set('myCompaniesOnly', '0')" class="px-4 py-2.5 text-xs font-semibold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 dark:text-rose-400 border border-rose-200/30 dark:border-rose-900/30 rounded-xl transition-all">
+                @if($search || $status || $integrationStatus || $filterClient || $filterManager || $myCompaniesOnly === '1')
+                    <button type="button" wire:click="$set('search', ''); $set('status', ''); $set('integrationStatus', ''); $set('filterClient', ''); $set('filterManager', ''); $set('myCompaniesOnly', '0')" class="px-4 py-2.5 text-xs font-semibold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 dark:text-rose-400 border border-rose-200/30 dark:border-rose-900/30 rounded-xl transition-all">
                         <i class="fa-solid fa-filter-circle-xmark mr-1.5"></i> Clear
                     </button>
                 @endif

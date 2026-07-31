@@ -5,6 +5,7 @@ namespace App\Livewire\Projects;
 use App\Models\Client;
 use App\Models\Project;
 use App\Models\ProjectNote;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -20,6 +21,8 @@ class Index extends Component
     public string $integrationStatus = '';
 
     public string $filterClient = '';
+
+    public string $filterManager = '';
 
     public string $showArchived = '0'; // 0 = active, 1 = archived
 
@@ -40,6 +43,7 @@ class Index extends Component
         'status' => ['except' => ''],
         'integrationStatus' => ['except' => ''],
         'filterClient' => ['except' => ''],
+        'filterManager' => ['except' => ''],
         'showArchived' => ['except' => '0'],
         'myCompaniesOnly' => ['except' => '0'],
         'layout' => ['except' => 'table'],
@@ -61,6 +65,11 @@ class Index extends Component
     }
 
     public function updatingFilterClient(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatingFilterManager(): void
     {
         $this->resetPage();
     }
@@ -159,6 +168,13 @@ class Index extends Component
                     $query->where('client_id', $this->filterClient);
                 }
             })
+            ->when($this->filterManager, function ($query) {
+                if ($this->filterManager === 'none') {
+                    $query->whereNull('manager_id');
+                } else {
+                    $query->where('manager_id', $this->filterManager);
+                }
+            })
             ->when($this->myCompaniesOnly === '1', function ($query) {
                 $query->where('manager_id', auth()->id());
             })
@@ -171,6 +187,7 @@ class Index extends Component
             ->paginate(12);
 
         $clients = Client::orderBy('name')->get();
+        $managers = User::orderBy('name')->get();
 
         $stats = [
             'total' => Project::notArchived()->count(),
@@ -183,6 +200,7 @@ class Index extends Component
         return view('livewire.projects.index', [
             'projects' => $projects,
             'clients' => $clients,
+            'managers' => $managers,
             'stats' => $stats,
         ]);
     }
