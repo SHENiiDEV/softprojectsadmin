@@ -12,9 +12,14 @@
         </div>
 
         <div class="flex items-center gap-3">
+            {{-- Add Credential Action --}}
+            <button wire:click="openCreateModal(null)" class="inline-flex items-center justify-center px-4 py-2 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-500 rounded-xl shadow-sm transition-all duration-150 cursor-pointer">
+                <i class="fa-solid fa-plus mr-1.5"></i> Add Credential
+            </button>
+
             {{-- Import JSON Action --}}
-            <button wire:click="openImportModal" class="inline-flex items-center justify-center px-4 py-2 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-500 rounded-xl shadow-sm transition-all duration-150 cursor-pointer">
-                <i class="fa-solid fa-file-import mr-1.5"></i> Import JSON
+            <button wire:click="openImportModal" class="inline-flex items-center justify-center px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl shadow-sm transition-all duration-150 cursor-pointer">
+                <i class="fa-solid fa-file-import mr-1.5 text-sky-500"></i> Import JSON
             </button>
 
             {{-- Group by toggle --}}
@@ -118,7 +123,7 @@
         <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-2xl p-12 text-center shadow-sm">
             <i class="fa-solid fa-key text-3xl text-slate-300 dark:text-slate-700 mb-3"></i>
             <p class="text-sm font-semibold text-slate-600 dark:text-slate-400">No credentials found</p>
-            <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">Try adjusting your filters or import new credentials via JSON.</p>
+            <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">Try adjusting your filters or add new credentials.</p>
         </div>
     @else
         <div class="space-y-6">
@@ -140,9 +145,20 @@
                                 </h3>
                             @endif
                         </div>
-                        <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-200/60 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                            {{ $group['items']->count() }} {{ Str::plural('record', $group['items']->count()) }}
-                        </span>
+
+                        {{-- Action & Counter Badge --}}
+                        <div class="flex items-center space-x-2">
+                            @if($groupBy === 'project' && !empty($group['project_id']))
+                                <button wire:click="openCreateModal({{ $group['project_id'] }})"
+                                        class="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold text-sky-600 dark:text-sky-400 bg-sky-50 hover:bg-sky-100 dark:bg-sky-950/40 dark:hover:bg-sky-900/60 border border-sky-200 dark:border-sky-800 rounded-xl transition-all duration-150 cursor-pointer shadow-sm">
+                                    <i class="fa-solid fa-plus text-[10px]"></i> Add New
+                                </button>
+                            @endif
+
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-200/60 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                                {{ $group['items']->count() }} {{ Str::plural('record', $group['items']->count()) }}
+                            </span>
+                        </div>
                     </div>
 
                     {{-- Items Grid --}}
@@ -196,6 +212,125 @@
 
                 </div>
             @endforeach
+        </div>
+    @endif
+
+    {{-- ═══════════════════════════════════════════════════════════
+         CREATE CREDENTIAL MODAL
+    ═══════════════════════════════════════════════════════════ --}}
+    @if($showCreateModal)
+        <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="create-modal-title" role="dialog" aria-modal="true">
+            <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                <div class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm transition-opacity" aria-hidden="true" wire:click="closeCreateModal"></div>
+                <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+                <div class="inline-block align-bottom bg-white dark:bg-slate-900 rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-slate-100 dark:border-slate-800/80">
+                    
+                    {{-- Modal Header --}}
+                    <div class="px-6 py-5 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between bg-slate-50/50 dark:bg-slate-950/20">
+                        <div>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400">
+                                Vault Management
+                            </span>
+                            <h3 class="text-base font-bold text-slate-800 dark:text-white font-outfit" id="create-modal-title">
+                                Add New Credential {{ $newProjectName ? "for {$newProjectName}" : '' }}
+                            </h3>
+                        </div>
+                        <button type="button" wire:click="closeCreateModal" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors focus:outline-none cursor-pointer">
+                            <i class="fa-solid fa-xmark text-lg"></i>
+                        </button>
+                    </div>
+
+                    {{-- Modal Body Form --}}
+                    <form wire:submit.prevent="saveNewCredential">
+                        <div class="px-6 py-6 space-y-4">
+                            
+                            {{-- Company Selection --}}
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Company</label>
+                                <select wire:model.live="newProjectId" class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500">
+                                    @foreach($projects as $p)
+                                        <option value="{{ $p->id }}">{{ $p->name }}</option>
+                                    @endforeach
+                                </select>
+                                @error('newProjectId') <span class="text-xs text-rose-500 block mt-1">{{ $message }}</span> @enderror
+                            </div>
+
+                            {{-- Credential Name & Type --}}
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Name</label>
+                                    <input type="text" wire:model="newName" placeholder="e.g. WordPress CMS Admin" class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500">
+                                    @error('newName') <span class="text-xs text-rose-500 block mt-1">{{ $message }}</span> @enderror
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Type</label>
+                                    <select wire:model="newType" class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500">
+                                        @foreach(['cms', 'hosting', 'db', 'payment_gateway', 'ssh', 'email', 'other'] as $t)
+                                            <option value="{{ $t }}">{{ ucfirst(str_replace('_', ' ', $t)) }}</option>
+                                        @endforeach
+                                    </select>
+                                    @error('newType') <span class="text-xs text-rose-500 block mt-1">{{ $message }}</span> @enderror
+                                </div>
+                            </div>
+
+                            {{-- Provider URL --}}
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Provider URL / Portal (Optional)</label>
+                                <input type="url" wire:model="newProviderUrl" placeholder="https://example.com/login" class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-mono text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500">
+                                @error('newProviderUrl') <span class="text-xs text-rose-500 block mt-1">{{ $message }}</span> @enderror
+                            </div>
+
+                            {{-- Website Link (Optional) --}}
+                            @if($companyWebsites->isNotEmpty())
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Associated Website (Optional)</label>
+                                    <select wire:model="newWebsiteId" class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500">
+                                        <option value="">None</option>
+                                        @foreach($companyWebsites as $w)
+                                            <option value="{{ $w->id }}">{{ $w->name }} ({{ $w->url }})</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            @endif
+
+                            {{-- Login & Password --}}
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Login / Username</label>
+                                    <input type="text" wire:model="newLogin" placeholder="admin@company.com" class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-mono text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500">
+                                    @error('newLogin') <span class="text-xs text-rose-500 block mt-1">{{ $message }}</span> @enderror
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Password</label>
+                                    <input type="text" wire:model="newPassword" placeholder="••••••••" class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-mono text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500">
+                                    @error('newPassword') <span class="text-xs text-rose-500 block mt-1">{{ $message }}</span> @enderror
+                                </div>
+                            </div>
+
+                            {{-- Comments --}}
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">Comments / Notes (Optional)</label>
+                                <textarea wire:model="newComments" rows="3" placeholder="2FA backup codes, IP restrictions..." class="w-full text-xs p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"></textarea>
+                                @error('newComments') <span class="text-xs text-rose-500 block mt-1">{{ $message }}</span> @enderror
+                            </div>
+                        </div>
+
+                        {{-- Modal Footer --}}
+                        <div class="px-6 py-4 border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-950/20 flex items-center justify-end space-x-2">
+                            <button type="button" wire:click="closeCreateModal" class="px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl transition-all duration-150 cursor-pointer">
+                                Cancel
+                            </button>
+                            <button type="submit" wire:loading.attr="disabled" class="px-4 py-2 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-500 rounded-xl transition-all duration-150 cursor-pointer shadow-sm">
+                                <span wire:loading.remove wire:target="saveNewCredential">Save Credential</span>
+                                <span wire:loading wire:target="saveNewCredential">Saving...</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
     @endif
 

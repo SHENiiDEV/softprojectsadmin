@@ -46,10 +46,34 @@ class CredentialVault extends Component
 
     public string $rawJsonInput = '';
 
+    // Create Modal
+    public bool $showCreateModal = false;
+
+    public ?int $newProjectId = null;
+
+    public string $newProjectName = '';
+
+    public string $newName = '';
+
+    public string $newType = 'cms';
+
+    public ?string $newWebsiteId = null;
+
+    public string $newProviderUrl = '';
+
+    public string $newLogin = '';
+
+    public string $newPassword = '';
+
+    public string $newComments = '';
+
+    public Collection $companyWebsites;
+
     public function mount(): void
     {
         $this->credentials = collect();
         $this->projects = collect();
+        $this->companyWebsites = collect();
         $this->loadData();
     }
 
@@ -71,6 +95,15 @@ class CredentialVault extends Component
     public function updatedGroupBy(): void
     {
         $this->loadData();
+    }
+
+    public function updatedNewProjectId(): void
+    {
+        if ($this->newProjectId) {
+            $this->companyWebsites = Website::where('project_id', $this->newProjectId)->orderBy('name')->get();
+        } else {
+            $this->companyWebsites = collect();
+        }
     }
 
     protected function loadData(): void
@@ -123,6 +156,71 @@ class CredentialVault extends Component
         $this->showModal = false;
         $this->selectedCredential = null;
         $this->showPassword = false;
+    }
+
+    public function openCreateModal(?int $projectId = null): void
+    {
+        $this->resetErrorBag();
+        $this->newName = '';
+        $this->newType = 'cms';
+        $this->newWebsiteId = null;
+        $this->newProviderUrl = '';
+        $this->newLogin = '';
+        $this->newPassword = '';
+        $this->newComments = '';
+
+        $this->newProjectId = $projectId ?: ($this->projects->first()?->id ?? null);
+        if ($this->newProjectId) {
+            $project = Project::find($this->newProjectId);
+            $this->newProjectName = $project?->name ?? '';
+            $this->companyWebsites = Website::where('project_id', $this->newProjectId)->orderBy('name')->get();
+        } else {
+            $this->newProjectName = '';
+            $this->companyWebsites = collect();
+        }
+
+        $this->showCreateModal = true;
+    }
+
+    public function closeCreateModal(): void
+    {
+        $this->showCreateModal = false;
+    }
+
+    public function saveNewCredential(): void
+    {
+        $this->validate([
+            'newProjectId' => 'required|exists:projects,id',
+            'newName' => 'required|string|max:255',
+            'newType' => 'required|string',
+            'newProviderUrl' => 'nullable|url|max:500',
+            'newLogin' => 'nullable|string|max:255',
+            'newPassword' => 'nullable|string',
+            'newComments' => 'nullable|string|max:2000',
+        ]);
+
+        $credential = Credential::create([
+            'project_id' => $this->newProjectId,
+            'website_id' => $this->newWebsiteId ?: null,
+            'name' => $this->newName,
+            'type' => $this->newType,
+            'provider_url' => $this->newProviderUrl ?: null,
+            'login' => $this->newLogin ?? '',
+            'password' => $this->newPassword !== null ? (string) $this->newPassword : '',
+            'comments' => $this->newComments ?: null,
+        ]);
+
+        ActivityLog::create([
+            'user_id' => auth()->id(),
+            'project_id' => $this->newProjectId,
+            'action' => 'credential_created',
+            'description' => 'Credential "'.$credential->name.'" was added by '.(auth()->user()?->name ?? 'System'),
+        ]);
+
+        $this->closeCreateModal();
+        $this->loadData();
+
+        session()->flash('message', "Credential '{$credential->name}' successfully added.");
     }
 
     public function openImportModal(): void
@@ -265,14 +363,26 @@ class CredentialVault extends Component
         if ($this->groupBy === 'type') {
             return $this->credentials
                 ->groupBy('type')
-                ->map(fn ($items, $key) => ['label' => $key ?: 'Other', 'items' => $items])
+                ->map(fn ($items, $key) => [
+                    'label' => $key ?: 'Other',
+                    'project_id' => null,
+                    'items' => $items,
+                ])
                 ->sortKeys()
                 ->values();
         }
 
         return $this->credentials
             ->groupBy(fn ($c) => $c->project?->name ?? 'Without Company')
-            ->map(fn ($items, $key) => ['label' => $key, 'items' => $items])
+            ->map(function ($items, $key) {
+                $first = $items->first();
+
+                return [
+                    'label' => $key,
+                    'project_id' => $first?->project_id,
+                    'items' => $items,
+                ];
+            })
             ->sortKeys()
             ->values();
     }
