@@ -2,21 +2,22 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-
-use App\Models\ActivityLog;
 
 #[Fillable([
     'project_id',
+    'provider_name',
     'kyb_completed_at',
     'boarding_completed_at',
+    'provider_boarding_completed_at',
     'cfs_verification',
     'cardaq_sumsub',
+    'provider_verification_status',
     'bank_verification',
-    'companies_house_verification'
+    'companies_house_verification',
 ])]
 class Boarding extends Model
 {
@@ -25,7 +26,7 @@ class Boarding extends Model
     protected static function booted(): void
     {
         static::updated(function (Boarding $boarding) {
-            if (!config('features.company_changelog', true)) {
+            if (! config('features.company_changelog', true)) {
                 return;
             }
 
@@ -37,7 +38,7 @@ class Boarding extends Model
                 $original = $boarding->getOriginal($key);
 
                 $formattedKey = str_replace('_', ' ', $key);
-                $changes[] = "Compliance checklist '" . strtoupper($formattedKey) . "' updated from '" . ($original ?? 'none') . "' to '" . ($value ?? 'none') . "'";
+                $changes[] = "Compliance checklist '".strtoupper($formattedKey)."' updated from '".($original ?? 'none')."' to '".($value ?? 'none')."'";
             }
 
             foreach ($changes as $change) {
@@ -69,6 +70,7 @@ class Boarding extends Model
         return [
             'kyb_completed_at' => 'date',
             'boarding_completed_at' => 'date',
+            'provider_boarding_completed_at' => 'date',
         ];
     }
 }
