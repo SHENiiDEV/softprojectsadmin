@@ -23,6 +23,8 @@ class Index extends Component
 
     public string $showArchived = '0'; // 0 = active, 1 = archived
 
+    public string $myCompaniesOnly = '0'; // 0 = all companies, 1 = my companies only (curator/manager)
+
     public string $layout = 'table'; // table | grid
 
     public bool $showNoteModal = false;
@@ -39,6 +41,7 @@ class Index extends Component
         'integrationStatus' => ['except' => ''],
         'filterClient' => ['except' => ''],
         'showArchived' => ['except' => '0'],
+        'myCompaniesOnly' => ['except' => '0'],
         'layout' => ['except' => 'table'],
     ];
 
@@ -63,6 +66,11 @@ class Index extends Component
     }
 
     public function updatingShowArchived(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatingMyCompaniesOnly(): void
     {
         $this->resetPage();
     }
@@ -151,13 +159,16 @@ class Index extends Component
                     $query->where('client_id', $this->filterClient);
                 }
             })
+            ->when($this->myCompaniesOnly === '1', function ($query) {
+                $query->where('manager_id', auth()->id());
+            })
             ->when(
                 $this->showArchived === '1',
                 fn ($q) => $q->archived(),
                 fn ($q) => $q->notArchived()
             )
             ->orderBy('id', 'desc')
-            ->paginate(12); // Upped to 12 as it splits better for 2/3/4 grid columns
+            ->paginate(12);
 
         $clients = Client::orderBy('name')->get();
 
@@ -166,6 +177,7 @@ class Index extends Component
             'active' => Project::notArchived()->where('status', 'active')->count(),
             'onboarding' => Project::notArchived()->where('status', 'onboarding')->count(),
             'suspended' => Project::notArchived()->where('status', 'suspended')->count(),
+            'my_count' => Project::notArchived()->where('manager_id', auth()->id())->count(),
         ];
 
         return view('livewire.projects.index', [

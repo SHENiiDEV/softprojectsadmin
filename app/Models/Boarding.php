@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'cfs_verification',
     'cardaq_sumsub',
     'provider_verification_status',
+    'providers_data',
     'bank_verification',
     'companies_house_verification',
 ])]
@@ -37,8 +38,12 @@ class Boarding extends Model
                 }
                 $original = $boarding->getOriginal($key);
 
-                $formattedKey = str_replace('_', ' ', $key);
-                $changes[] = "Compliance checklist '".strtoupper($formattedKey)."' updated from '".($original ?? 'none')."' to '".($value ?? 'none')."'";
+                if ($key === 'providers_data') {
+                    $changes[] = 'Multi-provider compliance details were updated';
+                } else {
+                    $formattedKey = str_replace('_', ' ', $key);
+                    $changes[] = "Compliance checklist '".strtoupper($formattedKey)."' updated from '".($original ?? 'none')."' to '".($value ?? 'none')."'";
+                }
             }
 
             foreach ($changes as $change) {
@@ -71,6 +76,7 @@ class Boarding extends Model
             'kyb_completed_at' => 'date',
             'boarding_completed_at' => 'date',
             'provider_boarding_completed_at' => 'date',
+            'providers_data' => 'array',
         ];
     }
 }

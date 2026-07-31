@@ -19,20 +19,44 @@
     <!-- Header Section -->
     <div class="pb-4 border-b border-slate-100 dark:border-slate-800/60 flex items-center justify-between">
         <div>
-            <h3 class="font-outfit font-bold text-lg text-slate-800 dark:text-white">Compliance KYB / KYC & Provider Control</h3>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Management of legal procedures, bank verifications, and provider onboarding.</p>
+            <h3 class="font-outfit font-bold text-lg text-slate-800 dark:text-white">Compliance KYB / KYC & Multi-Provider Control</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Management of legal procedures, bank verifications, and multi-provider onboarding.</p>
         </div>
 
-        <div class="inline-flex items-center gap-2 bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200/60 dark:border-slate-700">
-            <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 pl-2">Active Provider:</span>
-            <span class="px-2.5 py-1 text-xs font-bold rounded-lg bg-sky-600 text-white shadow-sm">
-                {{ $provider_name ?: 'Cardaq' }}
-            </span>
-        </div>
+        <button type="button" wire:click="addProvider" class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-500 rounded-xl transition-all shadow-sm cursor-pointer">
+            <i class="fa-solid fa-plus text-xs"></i>
+            <span>Add Provider</span>
+        </button>
     </div>
 
-    <!-- Main Visual Status Cards -->
+    <!-- Active Providers Visual Badges Grid -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        @foreach($providers as $idx => $p)
+            @php
+                $pName = $p['name'] ?: 'Provider '.($idx + 1);
+                $pStatus = $p['verification_status'] ?? $p['boarding_status'] ?? 'pending';
+            @endphp
+            <div class="p-4 bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800/60 rounded-2xl flex flex-col justify-between space-y-2">
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <i class="fa-solid fa-credit-card text-sky-500"></i>
+                    {{ $pName }} Status
+                </span>
+                <div class="flex items-center text-sm font-bold mt-1">
+                    @if($pStatus === 'verified')
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">Verified</span>
+                    @elseif($pStatus === 'boarding_completed' || $pStatus === 'completed')
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400">Boarding Completed</span>
+                    @elseif($pStatus === 'in_progress')
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400">In Progress</span>
+                    @elseif($pStatus === 'need_to_upload')
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400">Need to Upload</span>
+                    @else
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400">Pending</span>
+                    @endif
+                </div>
+            </div>
+        @endforeach
+
         <!-- CFS Status Card -->
         <div class="p-4 bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800/60 rounded-2xl flex flex-col justify-between space-y-2">
             <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">CFS Verification</span>
@@ -48,190 +72,160 @@
                 @endif
             </div>
         </div>
-
-        <!-- Provider Verification Card -->
-        <div class="p-4 bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800/60 rounded-2xl flex flex-col justify-between space-y-2">
-            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{{ $provider_name ?: 'Provider' }} Verification</span>
-            <div class="flex items-center text-sm font-bold mt-1">
-                @if($provider_verification_status === 'verified')
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">Verified</span>
-                @elseif($provider_verification_status === 'boarding_completed' || $provider_verification_status === 'completed')
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400">Boarding Completed</span>
-                @elseif($provider_verification_status === 'pending' || $provider_verification_status === 'in_progress')
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400">Pending</span>
-                @elseif($provider_verification_status === 'need_to_upload')
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400">Need to Upload</span>
-                @else
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400">Rejected</span>
-                @endif
-            </div>
-        </div>
-
-        <!-- Bank Verification Card -->
-        <div class="p-4 bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800/60 rounded-2xl flex flex-col justify-between space-y-2">
-            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Bank Verification</span>
-            <div class="flex items-center text-sm font-bold mt-1">
-                @if($bank_verification === 'verified')
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">Verified</span>
-                @elseif($bank_verification === 'boarding_completed' || $bank_verification === 'completed')
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400">Boarding Completed</span>
-                @elseif($bank_verification === 'pending')
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400">Pending</span>
-                @elseif($bank_verification === 'declined')
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400">Declined</span>
-                @else
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400">Not Started</span>
-                @endif
-            </div>
-        </div>
-
-        <!-- Companies House Verification Card -->
-        <div class="p-4 bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800/60 rounded-2xl flex flex-col justify-between space-y-2">
-            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Companies House</span>
-            <div class="flex items-center text-sm font-bold mt-1">
-                @if($companies_house_verification === 'verified')
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">Verified</span>
-                @elseif($companies_house_verification === 'boarding_completed' || $companies_house_verification === 'completed')
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400">Boarding Completed</span>
-                @elseif($companies_house_verification === 'pending')
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400">Pending</span>
-                @elseif($companies_house_verification === 'failed')
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400">Failed</span>
-                @else
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400">Not Started</span>
-                @endif
-            </div>
-        </div>
     </div>
 
-    <!-- Edit Form -->
-    <form wire:submit.prevent="save" class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-2xl p-6 shadow-sm space-y-6">
-        <h4 class="font-semibold text-sm text-slate-800 dark:text-white pb-3 border-b border-slate-100 dark:border-slate-800/40 flex items-center justify-between">
-            <span class="flex items-center">
-                <svg class="w-4 h-4 text-sky-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                </svg>
-                Update Compliance Statuses & Provider Dates
-            </span>
-        </h4>
+    <!-- Edit Form with Multi-Providers -->
+    <form wire:submit.prevent="save" class="space-y-6">
+        
+        {{-- Loop for Each Provider --}}
+        @foreach($providers as $index => $provider)
+            @php
+                $currentName = $provider['name'] ?: 'Provider '.($index + 1);
+            @endphp
+            <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-6 shadow-sm space-y-5">
+                
+                {{-- Provider Section Header --}}
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800/60">
+                    <div class="flex items-center space-x-3">
+                        <span class="p-2 rounded-xl bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400">
+                            <i class="fa-solid fa-building-columns text-sm"></i>
+                        </span>
+                        <div>
+                            <h4 class="font-outfit font-bold text-sm text-slate-800 dark:text-white">
+                                Provider #{{ $index + 1 }}: {{ $currentName }}
+                            </h4>
+                            <span class="text-[11px] text-slate-400">Dedicated compliance and boarding control</span>
+                        </div>
+                    </div>
 
-        <!-- Provider Selection Row -->
-        <div class="bg-slate-50 dark:bg-slate-950/40 p-4 rounded-xl border border-slate-100 dark:border-slate-800/60">
-            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">Select Provider</label>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <select wire:model.live="provider_name" class="w-full px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
-                    <option value="Cardaq">Cardaq</option>
-                    <option value="Madfin">Madfin</option>
-                    <option value="SumSub">SumSub</option>
-                    <option value="Stripe">Stripe</option>
-                    <option value="Revolut">Revolut</option>
-                    <option value="Wirecard">Wirecard</option>
-                </select>
-                <input type="text" wire:model.live="provider_name" placeholder="Or enter custom provider name..." class="w-full px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
+                    @if(count($providers) > 1)
+                        <button type="button" wire:click="removeProvider({{ $index }})" class="text-xs text-rose-500 hover:text-rose-700 dark:hover:text-rose-400 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/30 rounded-xl transition-all cursor-pointer">
+                            <i class="fa-solid fa-trash-can mr-1"></i> Remove Provider
+                        </button>
+                    @endif
+                </div>
+
+                {{-- Provider Name Selector & Custom Input --}}
+                <div class="bg-slate-50 dark:bg-slate-950/40 p-4 rounded-xl border border-slate-100 dark:border-slate-800/60">
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">Provider Name</label>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <select wire:model.live="providers.{{ $index }}.name" class="w-full px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
+                            <option value="Cardaq">Cardaq</option>
+                            <option value="Madfin">Madfin</option>
+                            <option value="SumSub">SumSub</option>
+                            <option value="Stripe">Stripe</option>
+                            <option value="Revolut">Revolut</option>
+                            <option value="Wirecard">Wirecard</option>
+                        </select>
+                        <input type="text" wire:model.live="providers.{{ $index }}.name" placeholder="Or type custom provider name..." class="w-full px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
+                    </div>
+                </div>
+
+                {{-- Dedicated Fields Grid for Provider --}}
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    
+                    <!-- {Provider} Boarding Completed Date -->
+                    <div>
+                        <label class="block text-xs font-bold text-sky-600 dark:text-sky-400 mb-1.5 truncate" title="{{ $currentName }} Boarding Completed Date">
+                            {{ $currentName }} Boarding Completed Date
+                        </label>
+                        <input type="date" onclick="this.showPicker()" wire:model="providers.{{ $index }}.boarding_completed_at" class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-950 border border-sky-300 dark:border-sky-800 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
+                    </div>
+
+                    <!-- {Provider} KYB Send Date / Status -->
+                    <div>
+                        <label class="block text-xs font-bold text-sky-600 dark:text-sky-400 mb-1.5 truncate" title="{{ $currentName }} KYB Send">
+                            {{ $currentName }} KYB Send
+                        </label>
+                        <select wire:model="providers.{{ $index }}.kyb_status" class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-950 border border-sky-300 dark:border-sky-800 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
+                            <option value="sent">Sent to {{ $currentName }}</option>
+                            <option value="in_progress">KYB In Review</option>
+                            <option value="need_to_send">Need to Send</option>
+                            <option value="verified">KYB Verified (Верфай)</option>
+                        </select>
+                    </div>
+
+                    <!-- {Provider} Boarding Complete -->
+                    <div>
+                        <label class="block text-xs font-bold text-sky-600 dark:text-sky-400 mb-1.5 truncate" title="{{ $currentName }} Boarding Complete">
+                            {{ $currentName }} Boarding Complete
+                        </label>
+                        <select wire:model="providers.{{ $index }}.boarding_status" class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-950 border border-sky-300 dark:border-sky-800 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
+                            <option value="boarding_completed">Boarding Completed (Боард комплит)</option>
+                            <option value="verified">Verified (Верфай)</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="pending">Pending</option>
+                            <option value="need_to_complete">Need to Complete</option>
+                        </select>
+                    </div>
+
+                    <!-- {Provider} Verification Status -->
+                    <div>
+                        <label class="block text-xs font-bold text-sky-600 dark:text-sky-400 mb-1.5 truncate" title="{{ $currentName }} Verification Status">
+                            {{ $currentName }} Verification Status
+                        </label>
+                        <select wire:model="providers.{{ $index }}.verification_status" class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-950 border border-sky-300 dark:border-sky-800 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
+                            <option value="verified">Verified (Верфай)</option>
+                            <option value="boarding_completed">Boarding Completed (Боард комплит)</option>
+                            <option value="completed">Completed</option>
+                            <option value="pending">Pending</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="need_to_upload">Need to Upload</option>
+                            <option value="rejected">Rejected / Declined</option>
+                        </select>
+                    </div>
+
+                </div>
+            </div>
+        @endforeach
+
+        {{-- Add Another Provider Action Bar --}}
+        <div class="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-950/40 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
+            <span class="text-xs text-slate-500 dark:text-slate-400">Need to add another provider for this company?</span>
+            <button type="button" wire:click="addProvider" class="px-4 py-2 text-xs font-semibold text-sky-600 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-950/30 border border-sky-200 dark:border-sky-800 rounded-xl transition-all cursor-pointer">
+                <i class="fa-solid fa-plus mr-1"></i> Add Another Provider
+            </button>
+        </div>
+
+        {{-- Additional Compliance Checks --}}
+        <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-2xl p-6 shadow-sm space-y-4">
+            <h4 class="font-semibold text-sm text-slate-800 dark:text-white pb-3 border-b border-slate-100 dark:border-slate-800/40 flex items-center">
+                <i class="fa-solid fa-clipboard-check text-sky-500 mr-2"></i>
+                General Legal & KYB Dates
+            </h4>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- KYB Completed At -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">KYB Completed Date</label>
+                    <input type="date" onclick="this.showPicker()" wire:model="kyb_completed_at" class="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-150">
+                    @error('kyb_completed_at') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
+                </div>
+
+                <!-- Global Boarding Completed At -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">Global Boarding Completed Date</label>
+                    <input type="date" onclick="this.showPicker()" wire:model="boarding_completed_at" class="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-150">
+                    @error('boarding_completed_at') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
+                </div>
+
+                <!-- CFS Verification Status -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">CFS Verification Status</label>
+                    <select wire:model="cfs_verification" class="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-150">
+                        <option value="verified">Verified (Верфай)</option>
+                        <option value="boarding_completed">Boarding Completed (Боард комплит)</option>
+                        <option value="need_to_complete">Need to Complete</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                    </select>
+                    @error('cfs_verification') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
+                </div>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <!-- KYB Completed At -->
-            <div>
-                <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">KYB Completed Date</label>
-                <input type="date" onclick="this.showPicker()" wire:model="kyb_completed_at" class="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-150">
-                @error('kyb_completed_at') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
-            </div>
-
-            <!-- Global Boarding Completed At -->
-            <div>
-                <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">Boarding Completed Date</label>
-                <input type="date" onclick="this.showPicker()" wire:model="boarding_completed_at" class="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-150">
-                @error('boarding_completed_at') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
-            </div>
-
-            <!-- {Provider} Boarding Completed Date -->
-            <div>
-                <label class="block text-xs font-bold text-sky-600 dark:text-sky-400 mb-1.5 flex items-center gap-1.5">
-                    <i class="fa-solid fa-calendar-check text-xs"></i>
-                    {{ $provider_name ?: 'Provider' }} Boarding Completed Date
-                </label>
-                <input type="date" onclick="this.showPicker()" wire:model="provider_boarding_completed_at" class="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-sky-300 dark:border-sky-800 rounded-xl text-sm font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-150">
-                @error('provider_boarding_completed_at') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
-            </div>
-
-            <!-- {Provider} Verification Status -->
-            <div>
-                <label class="block text-xs font-bold text-sky-600 dark:text-sky-400 mb-1.5 flex items-center gap-1.5">
-                    <i class="fa-solid fa-shield-check text-xs"></i>
-                    {{ $provider_name ?: 'Provider' }} Verification Status
-                </label>
-                <select wire:model="provider_verification_status" class="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-sky-300 dark:border-sky-800 rounded-xl text-sm font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-150">
-                    <option value="verified">Verified (Верфай)</option>
-                    <option value="boarding_completed">Boarding Completed (Боард комплит)</option>
-                    <option value="completed">Completed</option>
-                    <option value="pending">Pending</option>
-                    <option value="in_progress">In Progress</option>
-                    <option value="need_to_upload">Need to Upload</option>
-                    <option value="rejected">Rejected / Declined</option>
-                </select>
-                @error('provider_verification_status') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
-            </div>
-
-            <!-- CFS Verification Status -->
-            <div>
-                <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">CFS Verification Status</label>
-                <select wire:model="cfs_verification" class="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-150">
-                    <option value="verified">Verified (Верфай)</option>
-                    <option value="boarding_completed">Boarding Completed (Боард комплит)</option>
-                    <option value="need_to_complete">Need to Complete</option>
-                    <option value="in_progress">In Progress</option>
-                    <option value="completed">Completed</option>
-                </select>
-                @error('cfs_verification') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
-            </div>
-
-            <!-- Cardaq / Sumsub Status (Legacy Field) -->
-            <div>
-                <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">Cardaq / Sumsub Legacy Status</label>
-                <select wire:model="cardaq_sumsub" class="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-150">
-                    <option value="verified">Verified (Верфай)</option>
-                    <option value="boarding_completed">Boarding Completed (Боард комплит)</option>
-                    <option value="pending">Pending</option>
-                    <option value="need_to_upload">Need to Upload</option>
-                    <option value="completed">Completed</option>
-                    <option value="rejected">Rejected</option>
-                </select>
-                @error('cardaq_sumsub') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
-            </div>
-
-            <!-- Bank Verification -->
-            <div>
-                <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">Bank Verification</label>
-                <select wire:model="bank_verification" class="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-150">
-                    <option value="verified">Verified (Верфай)</option>
-                    <option value="boarding_completed">Boarding Completed (Боард комплит)</option>
-                    <option value="not_started">Not Started</option>
-                    <option value="pending">Pending</option>
-                    <option value="completed">Completed</option>
-                    <option value="declined">Declined</option>
-                </select>
-                @error('bank_verification') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
-            </div>
-
-            <!-- Companies House Verification -->
-            <div>
-                <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">Companies House Registry</label>
-                <select wire:model="companies_house_verification" class="w-full px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-150">
-                    <option value="verified">Verified (Верфай)</option>
-                    <option value="boarding_completed">Boarding Completed (Боард комплит)</option>
-                    <option value="not_started">Not Started</option>
-                    <option value="pending">Pending</option>
-                    <option value="completed">Completed</option>
-                    <option value="failed">Failed</option>
-                </select>
-                @error('companies_house_verification') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
-            </div>
-        </div>
-
-        <div class="flex justify-end pt-4 border-t border-slate-100 dark:border-slate-800/40">
-            <button type="submit" class="px-5 py-2.5 bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold rounded-xl transition-all duration-150 shadow-sm cursor-pointer hover:shadow-sky-500/25">
+        <div class="flex justify-end">
+            <button type="submit" class="px-6 py-3 bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold rounded-xl transition-all duration-150 shadow-md cursor-pointer hover:shadow-sky-500/25">
                 Save Compliance & Provider Changes
             </button>
         </div>

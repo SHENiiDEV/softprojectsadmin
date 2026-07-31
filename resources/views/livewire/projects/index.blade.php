@@ -124,11 +124,25 @@
                 </div>
             </div>
 
-            <!-- Toggles (Archive + Layout View) -->
+            <!-- Toggles (My Companies + Archive + Layout View) -->
             <div class="flex items-center space-x-3 self-end lg:self-center">
+                <!-- My Companies Filter Toggle Button -->
+                <button type="button" 
+                        wire:click="$set('myCompaniesOnly', '{{ $myCompaniesOnly === '0' ? '1' : '0' }}')"
+                        class="inline-flex items-center gap-2 px-3.5 py-2.5 text-xs font-semibold rounded-xl border transition-all duration-150 cursor-pointer shadow-sm
+                               {{ $myCompaniesOnly === '1' 
+                                  ? 'bg-sky-600 border-sky-600 text-white shadow-sky-500/20' 
+                                  : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800' }}">
+                    <i class="fa-solid fa-user-shield text-sm"></i>
+                    <span>My Companies</span>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold {{ $myCompaniesOnly === '1' ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400' }}">
+                        {{ $stats['my_count'] }}
+                    </span>
+                </button>
+
                 <!-- Clear Filters Button -->
-                @if($search || $status || $integrationStatus || $filterClient)
-                    <button type="button" wire:click="$set('search', ''); $set('status', ''); $set('integrationStatus', ''); $set('filterClient', '')" class="px-4 py-2.5 text-xs font-semibold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 dark:text-rose-400 border border-rose-200/30 dark:border-rose-900/30 rounded-xl transition-all">
+                @if($search || $status || $integrationStatus || $filterClient || $myCompaniesOnly === '1')
+                    <button type="button" wire:click="$set('search', ''); $set('status', ''); $set('integrationStatus', ''); $set('filterClient', ''); $set('myCompaniesOnly', '0')" class="px-4 py-2.5 text-xs font-semibold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 dark:text-rose-400 border border-rose-200/30 dark:border-rose-900/30 rounded-xl transition-all">
                         <i class="fa-solid fa-filter-circle-xmark mr-1.5"></i> Clear
                     </button>
                 @endif
