@@ -17,29 +17,33 @@
     @endif
 
     <!-- Header Section -->
-    <div class="pb-4 border-b border-slate-100 dark:border-slate-800/60 flex items-center justify-between">
+    <div class="pb-4 border-b border-slate-100 dark:border-slate-800/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-            <h3 class="font-outfit font-bold text-lg text-slate-800 dark:text-white">Compliance KYB / KYC & Multi-Provider Control</h3>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Management of legal procedures, bank verifications, and multi-provider onboarding.</p>
+            <h3 class="font-outfit font-bold text-lg text-slate-800 dark:text-white">Compliance KYB / KYC Control</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Management of legal procedures, bank verifications, and provider onboarding.</p>
         </div>
 
-        <button type="button" wire:click="addProvider" class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-500 rounded-xl transition-all shadow-sm cursor-pointer">
-            <i class="fa-solid fa-plus text-xs"></i>
-            <span>Add Provider</span>
-        </button>
+        <div class="flex items-center gap-1.5 flex-wrap">
+            <span class="text-xs font-semibold text-slate-400">Website Gateways:</span>
+            @foreach($activeGateways as $gw)
+                <span class="px-2.5 py-1 text-xs font-bold rounded-lg bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
+                    <i class="fa-solid fa-credit-card text-[10px] mr-1"></i> {{ $gw }}
+                </span>
+            @endforeach
+        </div>
     </div>
 
-    <!-- Active Providers Visual Badges Grid -->
+    <!-- Active Providers Visual Status Badges Grid -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        @foreach($providers as $idx => $p)
+        @foreach($activeGateways as $gName)
             @php
-                $pName = $p['name'] ?: 'Provider '.($idx + 1);
-                $pStatus = $p['verification_status'] ?? $p['boarding_status'] ?? 'pending';
+                $pData = $providers[$gName] ?? [];
+                $pStatus = $pData['verification_status'] ?? $pData['boarding_status'] ?? 'pending';
             @endphp
             <div class="p-4 bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800/60 rounded-2xl flex flex-col justify-between space-y-2">
                 <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <i class="fa-solid fa-credit-card text-sky-500"></i>
-                    {{ $pName }} Status
+                    <i class="fa-solid fa-shield-halved text-sky-500"></i>
+                    {{ $gName }} Status
                 </span>
                 <div class="flex items-center text-sm font-bold mt-1">
                     @if($pStatus === 'verified')
@@ -74,71 +78,50 @@
         </div>
     </div>
 
-    <!-- Edit Form with Multi-Providers -->
+    <!-- Edit Form (Automatically synced per provider) -->
     <form wire:submit.prevent="save" class="space-y-6">
         
-        {{-- Loop for Each Provider --}}
-        @foreach($providers as $index => $provider)
-            @php
-                $currentName = $provider['name'] ?: 'Provider '.($index + 1);
-            @endphp
+        {{-- Loop for Each Gateway from Company Websites --}}
+        @foreach($activeGateways as $gName)
             <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-6 shadow-sm space-y-5">
                 
-                {{-- Provider Section Header --}}
+                {{-- Provider Header (Clean & Minimal without redundant inputs) --}}
                 <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800/60">
                     <div class="flex items-center space-x-3">
-                        <span class="p-2 rounded-xl bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400">
-                            <i class="fa-solid fa-building-columns text-sm"></i>
+                        <span class="p-2.5 rounded-xl bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400 border border-sky-100 dark:border-sky-800/60">
+                            <i class="fa-solid fa-building-columns text-base"></i>
                         </span>
                         <div>
-                            <h4 class="font-outfit font-bold text-sm text-slate-800 dark:text-white">
-                                Provider #{{ $index + 1 }}: {{ $currentName }}
+                            <h4 class="font-outfit font-bold text-base text-slate-800 dark:text-white">
+                                Provider: {{ $gName }}
                             </h4>
-                            <span class="text-[11px] text-slate-400">Dedicated compliance and boarding control</span>
+                            <span class="text-xs text-slate-400">Compliance & boarding control for {{ $gName }}</span>
                         </div>
                     </div>
 
-                    @if(count($providers) > 1)
-                        <button type="button" wire:click="removeProvider({{ $index }})" class="text-xs text-rose-500 hover:text-rose-700 dark:hover:text-rose-400 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/30 rounded-xl transition-all cursor-pointer">
-                            <i class="fa-solid fa-trash-can mr-1"></i> Remove Provider
-                        </button>
-                    @endif
+                    <span class="text-[11px] font-bold text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/40 px-3 py-1 rounded-lg border border-sky-200/60 dark:border-sky-800/60">
+                        <i class="fa-solid fa-link text-[10px] mr-1"></i> Synced from Company Websites
+                    </span>
                 </div>
 
-                {{-- Provider Name Selector & Custom Input --}}
-                <div class="bg-slate-50 dark:bg-slate-950/40 p-4 rounded-xl border border-slate-100 dark:border-slate-800/60">
-                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">Provider Name</label>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <select wire:model.live="providers.{{ $index }}.name" class="w-full px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
-                            <option value="Cardaq">Cardaq</option>
-                            <option value="Madfin">Madfin</option>
-                            <option value="SumSub">SumSub</option>
-                            <option value="Stripe">Stripe</option>
-                            <option value="Revolut">Revolut</option>
-                            <option value="Wirecard">Wirecard</option>
-                        </select>
-                        <input type="text" wire:model.live="providers.{{ $index }}.name" placeholder="Or type custom provider name..." class="w-full px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
-                    </div>
-                </div>
-
-                {{-- Dedicated Fields Grid for Provider --}}
+                {{-- Clean 4 Fields Grid per Provider --}}
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     
                     <!-- {Provider} Boarding Completed Date -->
                     <div>
-                        <label class="block text-xs font-bold text-sky-600 dark:text-sky-400 mb-1.5 truncate" title="{{ $currentName }} Boarding Completed Date">
-                            {{ $currentName }} Boarding Completed Date
+                        <label class="block text-xs font-bold text-sky-600 dark:text-sky-400 mb-1.5 truncate" title="{{ $gName }} Boarding Completed Date">
+                            {{ $gName }} Boarding Completed Date
                         </label>
-                        <input type="date" onclick="this.showPicker()" wire:model="providers.{{ $index }}.boarding_completed_at" class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-950 border border-sky-300 dark:border-sky-800 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
+                        <input type="date" onclick="this.showPicker()" wire:model="providers.{{ $gName }}.boarding_completed_at" class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-950 border border-sky-300 dark:border-sky-800/80 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
                     </div>
 
-                    <!-- {Provider} KYB Send Date / Status -->
+                    <!-- {Provider} KYB Send -->
                     <div>
-                        <label class="block text-xs font-bold text-sky-600 dark:text-sky-400 mb-1.5 truncate" title="{{ $currentName }} KYB Send">
-                            {{ $currentName }} KYB Send
+                        <label class="block text-xs font-bold text-sky-600 dark:text-sky-400 mb-1.5 truncate" title="{{ $gName }} KYB Send">
+                            {{ $gName }} KYB Send
                         </label>
-                        <select wire:model="providers.{{ $index }}.kyb_status" class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-950 border border-sky-300 dark:border-sky-800 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
-                            <option value="sent">Sent to {{ $currentName }}</option>
+                        <select wire:model="providers.{{ $gName }}.kyb_status" class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-950 border border-sky-300 dark:border-sky-800/80 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
+                            <option value="sent">Sent to {{ $gName }}</option>
                             <option value="in_progress">KYB In Review</option>
                             <option value="need_to_send">Need to Send</option>
                             <option value="verified">KYB Verified (Верфай)</option>
@@ -147,10 +130,10 @@
 
                     <!-- {Provider} Boarding Complete -->
                     <div>
-                        <label class="block text-xs font-bold text-sky-600 dark:text-sky-400 mb-1.5 truncate" title="{{ $currentName }} Boarding Complete">
-                            {{ $currentName }} Boarding Complete
+                        <label class="block text-xs font-bold text-sky-600 dark:text-sky-400 mb-1.5 truncate" title="{{ $gName }} Boarding Complete">
+                            {{ $gName }} Boarding Complete
                         </label>
-                        <select wire:model="providers.{{ $index }}.boarding_status" class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-950 border border-sky-300 dark:border-sky-800 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
+                        <select wire:model="providers.{{ $gName }}.boarding_status" class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-950 border border-sky-300 dark:border-sky-800/80 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
                             <option value="boarding_completed">Boarding Completed (Боард комплит)</option>
                             <option value="verified">Verified (Верфай)</option>
                             <option value="in_progress">In Progress</option>
@@ -161,10 +144,10 @@
 
                     <!-- {Provider} Verification Status -->
                     <div>
-                        <label class="block text-xs font-bold text-sky-600 dark:text-sky-400 mb-1.5 truncate" title="{{ $currentName }} Verification Status">
-                            {{ $currentName }} Verification Status
+                        <label class="block text-xs font-bold text-sky-600 dark:text-sky-400 mb-1.5 truncate" title="{{ $gName }} Verification Status">
+                            {{ $gName }} Verification Status
                         </label>
-                        <select wire:model="providers.{{ $index }}.verification_status" class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-950 border border-sky-300 dark:border-sky-800 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
+                        <select wire:model="providers.{{ $gName }}.verification_status" class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-950 border border-sky-300 dark:border-sky-800/80 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
                             <option value="verified">Verified (Верфай)</option>
                             <option value="boarding_completed">Boarding Completed (Боард комплит)</option>
                             <option value="completed">Completed</option>
@@ -179,19 +162,11 @@
             </div>
         @endforeach
 
-        {{-- Add Another Provider Action Bar --}}
-        <div class="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-950/40 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
-            <span class="text-xs text-slate-500 dark:text-slate-400">Need to add another provider for this company?</span>
-            <button type="button" wire:click="addProvider" class="px-4 py-2 text-xs font-semibold text-sky-600 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-950/30 border border-sky-200 dark:border-sky-800 rounded-xl transition-all cursor-pointer">
-                <i class="fa-solid fa-plus mr-1"></i> Add Another Provider
-            </button>
-        </div>
-
-        {{-- Additional Compliance Checks --}}
+        {{-- Additional Legal & KYB Checks --}}
         <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-2xl p-6 shadow-sm space-y-4">
             <h4 class="font-semibold text-sm text-slate-800 dark:text-white pb-3 border-b border-slate-100 dark:border-slate-800/40 flex items-center">
                 <i class="fa-solid fa-clipboard-check text-sky-500 mr-2"></i>
-                General Legal & KYB Dates
+                General Legal Procedures & Registry Checks
             </h4>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
