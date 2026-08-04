@@ -53,6 +53,15 @@ class WebsitesSection extends Component
 
     public string $mastercard_status = 'Stopped';
 
+    // Transfer Modal
+    public bool $showTransferModal = false;
+
+    public ?int $transferWebsiteId = null;
+
+    public string $transferWebsiteName = '';
+
+    public ?int $transferToProjectId = null;
+
     protected function rules(): array
     {
         return [
@@ -133,6 +142,43 @@ class WebsitesSection extends Component
         $this->resetForm();
     }
 
+    public function openTransferModal(int $websiteId): void
+    {
+        $website = Website::findOrFail($websiteId);
+        $this->transferWebsiteId = $website->id;
+        $this->transferWebsiteName = $website->name.' ('.$website->url.')';
+        $this->transferToProjectId = null;
+        $this->showTransferModal = true;
+        $this->resetErrorBag();
+    }
+
+    public function closeTransferModal(): void
+    {
+        $this->showTransferModal = false;
+        $this->transferWebsiteId = null;
+        $this->transferWebsiteName = '';
+        $this->transferToProjectId = null;
+    }
+
+    public function transferWebsite(): void
+    {
+        $this->validate([
+            'transferToProjectId' => 'required|exists:projects,id|different:project.id',
+        ], [
+            'transferToProjectId.required' => 'Please select a target company.',
+            'transferToProjectId.different' => 'The target company must be different from the current one.',
+        ]);
+
+        $website = Website::findOrFail($this->transferWebsiteId);
+        $targetProject = Project::findOrFail($this->transferToProjectId);
+
+        $website->update(['project_id' => $this->transferToProjectId]);
+
+        $this->closeTransferModal();
+
+        session()->flash('message', "Website '{$website->name}' successfully transferred to '{$targetProject->name}'.");
+    }
+
     private function resetForm(): void
     {
         $this->showForm = false;
@@ -150,8 +196,14 @@ class WebsitesSection extends Component
     {
         $websites = $this->project->websites()->orderBy('id', 'desc')->get();
 
+        $allProjects = Project::where('id', '!=', $this->project->id)
+            ->notArchived()
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
         return view('livewire.projects.websites-section', [
             'websites' => $websites,
+            'allProjects' => $allProjects,
         ]);
     }
 }

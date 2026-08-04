@@ -214,6 +214,11 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                                     </svg>
                                 </button>
+                                <button type="button" wire:click="openTransferModal({{ $web->id }})" class="p-1 rounded text-slate-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/20 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all duration-150" title="Transfer to another company">
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                                    </svg>
+                                </button>
                                 <button type="button" wire:click="delete({{ $web->id }})" wire:confirm="Are you sure you want to delete this website? All linked credentials will be unlinked." class="p-1 rounded text-slate-400 hover:bg-rose-50 dark:hover:bg-rose-950/20 hover:text-rose-600 dark:hover:text-rose-400 transition-all duration-150" title="Delete">
                                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -232,4 +237,90 @@
             </table>
         </div>
     </div>
+
+    {{-- Transfer Website Modal --}}
+    @if($showTransferModal)
+        <div class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
+            <div class="flex items-center justify-center min-h-screen px-4">
+                <div class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm" wire:click="closeTransferModal"></div>
+
+                <div class="relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-800/80 w-full max-w-md overflow-hidden">
+
+                    {{-- Header --}}
+                    <div class="px-6 py-5 border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-950/20 flex items-center justify-between">
+                        <div>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                                Website Management
+                            </span>
+                            <h3 class="text-base font-bold text-slate-800 dark:text-white font-outfit mt-0.5">
+                                Transfer to Another Company
+                            </h3>
+                        </div>
+                        <button type="button" wire:click="closeTransferModal" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer">
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    {{-- Body --}}
+                    <form wire:submit.prevent="transferWebsite">
+                        <div class="px-6 py-6 space-y-5">
+
+                            {{-- Website being transferred --}}
+                            <div class="p-3 bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200/60 dark:border-indigo-800/60 rounded-xl flex items-center gap-3">
+                                <span class="p-2 bg-indigo-100 dark:bg-indigo-900/40 rounded-lg text-indigo-600 dark:text-indigo-400">
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                                    </svg>
+                                </span>
+                                <div>
+                                    <p class="text-[10px] font-bold uppercase tracking-wider text-indigo-500 dark:text-indigo-400">Website to Transfer</p>
+                                    <p class="text-xs font-semibold text-slate-800 dark:text-white mt-0.5">{{ $transferWebsiteName }}</p>
+                                </div>
+                            </div>
+
+                            {{-- Target Company --}}
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
+                                    Transfer To <span class="text-rose-500">*</span>
+                                </label>
+                                <select wire:model="transferToProjectId"
+                                        class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all">
+                                    <option value="">— Select Company —</option>
+                                    @foreach($allProjects as $p)
+                                        <option value="{{ $p->id }}">{{ $p->name }}</option>
+                                    @endforeach
+                                </select>
+                                @error('transferToProjectId')
+                                    <span class="text-[11px] text-rose-500 block mt-1.5">{{ $message }}</span>
+                                @enderror
+                            </div>
+
+                            <p class="text-[11px] text-slate-400 dark:text-slate-500 leading-relaxed">
+                                <i class="fa-solid fa-circle-info text-sky-400 mr-1"></i>
+                                The website and its settings will be moved to the selected company. Credentials linked to this website will also be re-associated.
+                            </p>
+                        </div>
+
+                        {{-- Footer --}}
+                        <div class="px-6 py-4 border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-950/20 flex items-center justify-end space-x-2">
+                            <button type="button" wire:click="closeTransferModal"
+                                    class="px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl transition-all duration-150 cursor-pointer">
+                                Cancel
+                            </button>
+                            <button type="submit" wire:loading.attr="disabled"
+                                    class="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition-all duration-150 cursor-pointer shadow-sm disabled:opacity-60">
+                                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                                </svg>
+                                <span wire:loading.remove wire:target="transferWebsite">Transfer Website</span>
+                                <span wire:loading wire:target="transferWebsite">Transferring...</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    @endif
 </div>
