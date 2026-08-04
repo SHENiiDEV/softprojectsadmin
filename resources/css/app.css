@@ -5,3 +5,60 @@
 [x-cloak] {
     display: none !important;
 }
+
+/* ── Tom Select custom theme ───────────────────────────────── */
+.ts-wrapper .ts-control {
+    @apply w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 shadow-none cursor-pointer min-h-0 gap-1;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.ts-wrapper.focus .ts-control {
+    @apply border-indigo-500 ring-2 ring-indigo-500/20 outline-none;
+}
+.ts-wrapper .ts-control input {
+    @apply text-xs text-slate-800 bg-transparent;
+}
+.ts-wrapper .ts-control input::placeholder {
+    @apply text-slate-400;
+}
+.ts-wrapper .ts-dropdown {
+    @apply bg-white border border-slate-200 rounded-xl shadow-xl text-xs mt-1 overflow-hidden;
+    z-index: 9999;
+}
+.ts-wrapper .ts-dropdown .ts-dropdown-content {
+    @apply max-h-60 overflow-y-auto;
+}
+.ts-wrapper .ts-dropdown [data-selectable] {
+    @apply px-3.5 py-2.5 text-slate-700 cursor-pointer transition-colors;
+}
+.ts-wrapper .ts-dropdown [data-selectable]:hover,
+.ts-wrapper .ts-dropdown .active {
+    @apply bg-indigo-50 text-indigo-700;
+}
+.ts-wrapper .ts-dropdown .selected {
+    @apply bg-indigo-100 text-indigo-800 font-semibold;
+}
+
+/* Dark mode */
+.dark .ts-wrapper .ts-control {
+    @apply bg-slate-950 border-slate-800 text-slate-100;
+}
+.dark .ts-wrapper.focus .ts-control {
+    @apply border-indigo-500;
+}
+.dark .ts-wrapper .ts-control input {
+    @apply text-slate-100;
+}
+.dark .ts-wrapper .ts-dropdown {
+    @apply bg-slate-900 border-slate-700 shadow-slate-950/60;
+}
+.dark .ts-wrapper .ts-dropdown [data-selectable] {
+    @apply text-slate-200;
+}
+.dark .ts-wrapper .ts-dropdown [data-selectable]:hover,
+.dark .ts-wrapper .ts-dropdown .active {
+    @apply bg-indigo-950/60 text-indigo-300;
+}
+.dark .ts-wrapper .ts-dropdown .selected {
+    @apply bg-indigo-900/40 text-indigo-200;
+}
+/* ── End Tom Select ────────────────────────────────────────── */
