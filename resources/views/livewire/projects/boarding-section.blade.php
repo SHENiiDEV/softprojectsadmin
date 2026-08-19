@@ -35,16 +35,24 @@
 
     <!-- Active Providers Visual Status Badges Grid -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        @foreach($activeGateways as $gName)
+        @foreach($providers as $cKey => $pData)
             @php
-                $pData = $providers[$gName] ?? [];
                 $pStatus = $pData['verification_status'] ?? $pData['boarding_status'] ?? 'pending';
+                $gName = $pData['name'] ?? 'Provider';
+                $siteName = $pData['website_name'] ?? '';
             @endphp
             <div class="p-4 bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800/60 rounded-2xl flex flex-col justify-between space-y-2">
-                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <i class="fa-solid fa-shield-halved text-sky-500"></i>
-                    {{ $gName }} Status
-                </span>
+                <div>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5 truncate" title="{{ $siteName }} - {{ $gName }}">
+                        <i class="fa-solid fa-shield-halved text-sky-500"></i>
+                        {{ $gName }} Status
+                    </span>
+                    @if($siteName)
+                        <div class="text-xs font-semibold text-slate-600 dark:text-slate-300 truncate mt-0.5" title="{{ $siteName }}">
+                            <i class="fa-solid fa-globe text-[10px] text-slate-400 mr-1"></i>{{ $siteName }}
+                        </div>
+                    @endif
+                </div>
                 <div class="flex items-center text-sm font-bold mt-1">
                     @if($pStatus === 'verified')
                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">Verified</span>
@@ -81,21 +89,32 @@
     <!-- Edit Form (Automatically synced per provider) -->
     <form wire:submit.prevent="save" class="space-y-6">
         
-        {{-- Loop for Each Gateway from Company Websites --}}
-        @foreach($activeGateways as $gName)
+        {{-- Loop for Each Gateway per Website --}}
+        @foreach($providers as $cKey => $pData)
+            @php
+                $gName = $pData['name'] ?? 'Provider';
+                $siteName = $pData['website_name'] ?? '';
+            @endphp
             <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-6 shadow-sm space-y-5">
                 
-                {{-- Provider Header (Clean & Minimal without redundant inputs) --}}
-                <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800/60">
+                {{-- Provider Header --}}
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800/60 flex-wrap gap-2">
                     <div class="flex items-center space-x-3">
                         <span class="p-2.5 rounded-xl bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400 border border-sky-100 dark:border-sky-800/60">
                             <i class="fa-solid fa-building-columns text-base"></i>
                         </span>
                         <div>
-                            <h4 class="font-outfit font-bold text-base text-slate-800 dark:text-white">
-                                Provider: {{ $gName }}
-                            </h4>
-                            <span class="text-xs text-slate-400">Compliance & boarding control for {{ $gName }}</span>
+                            <div class="flex items-center gap-2">
+                                <h4 class="font-outfit font-bold text-base text-slate-800 dark:text-white">
+                                    Provider: {{ $gName }}
+                                </h4>
+                                @if($siteName)
+                                    <span class="px-2.5 py-0.5 text-xs font-bold rounded-md bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800/60">
+                                        <i class="fa-solid fa-globe text-[10px] mr-1"></i> {{ $siteName }}
+                                    </span>
+                                @endif
+                            </div>
+                            <span class="text-xs text-slate-400">Compliance & boarding control for {{ $gName }} @if($siteName) on {{ $siteName }} @endif</span>
                         </div>
                     </div>
 
@@ -112,7 +131,7 @@
                         <label class="block text-xs font-bold text-sky-600 dark:text-sky-400 mb-1.5 truncate" title="{{ $gName }} Boarding Completed Date">
                             {{ $gName }} Boarding Completed Date
                         </label>
-                        <input type="date" onclick="this.showPicker()" wire:model="providers.{{ $gName }}.boarding_completed_at" class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-950 border border-sky-300 dark:border-sky-800/80 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
+                        <input type="date" onclick="this.showPicker()" wire:model="providers.{{ $cKey }}.boarding_completed_at" class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-950 border border-sky-300 dark:border-sky-800/80 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
                     </div>
 
                     <!-- {Provider} KYB Send -->
@@ -120,7 +139,7 @@
                         <label class="block text-xs font-bold text-sky-600 dark:text-sky-400 mb-1.5 truncate" title="{{ $gName }} KYB Send">
                             {{ $gName }} KYB Send
                         </label>
-                        <select wire:model="providers.{{ $gName }}.kyb_status" class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-950 border border-sky-300 dark:border-sky-800/80 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
+                        <select wire:model="providers.{{ $cKey }}.kyb_status" class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-950 border border-sky-300 dark:border-sky-800/80 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
                             <option value="sent">Sent to {{ $gName }}</option>
                             <option value="in_progress">KYB In Review</option>
                             <option value="need_to_send">Need to Send</option>
@@ -133,7 +152,7 @@
                         <label class="block text-xs font-bold text-sky-600 dark:text-sky-400 mb-1.5 truncate" title="{{ $gName }} Boarding Complete">
                             {{ $gName }} Boarding Complete
                         </label>
-                        <select wire:model="providers.{{ $gName }}.boarding_status" class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-950 border border-sky-300 dark:border-sky-800/80 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
+                        <select wire:model="providers.{{ $cKey }}.boarding_status" class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-950 border border-sky-300 dark:border-sky-800/80 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
                             <option value="boarding_completed">Boarding Completed</option>
                             <option value="verified">Verified</option>
                             <option value="in_progress">In Progress</option>
@@ -147,7 +166,7 @@
                         <label class="block text-xs font-bold text-sky-600 dark:text-sky-400 mb-1.5 truncate" title="{{ $gName }} Verification Status">
                             {{ $gName }} Verification Status
                         </label>
-                        <select wire:model="providers.{{ $gName }}.verification_status" class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-950 border border-sky-300 dark:border-sky-800/80 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
+                        <select wire:model="providers.{{ $cKey }}.verification_status" class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-950 border border-sky-300 dark:border-sky-800/80 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
                             <option value="verified">Verified</option>
                             <option value="boarding_completed">Boarding Completed</option>
                             <option value="completed">Completed</option>

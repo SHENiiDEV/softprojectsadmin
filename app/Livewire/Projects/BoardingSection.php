@@ -26,7 +26,7 @@ class BoardingSection extends Component
 
     public string $companies_house_verification = 'not_started';
 
-    // Multi-Provider data (Keyed by provider name: 'Cardaq', 'Rapyd', etc.)
+    // Multi-Provider data keyed by composite key: "{websiteId}_{gatewayName}"
     public array $providers = [];
 
     public array $activeGateways = [];
@@ -53,58 +53,82 @@ class BoardingSection extends Component
         $this->loadProviders();
     }
 
+    /**
+     * Build providers list keyed by "{websiteId}_{gateway}" so each
+     * website + gateway combination gets its own compliance entry.
+     */
     public function loadProviders(): void
     {
-        // Automatically fetch unique gateways from Company Websites
-        $gateways = $this->project->websites()
-            ->get()
-            ->pluck('gateways')
-            ->filter()
-            ->flatten()
-            ->map(fn ($g) => is_string($g) ? trim($g) : '')
-            ->filter()
-            ->unique()
-            ->values()
-            ->toArray();
-
-        if (empty($gateways)) {
-            $gateways = [$this->boarding->provider_name ?: 'Cardaq'];
-        }
-
-        $this->activeGateways = $gateways;
-
-        $savedData = $this->boarding->providers_data;
-        if (! is_array($savedData)) {
-            $savedData = [];
-        }
+        $websites = $this->project->websites()->get();
+        $savedData = is_array($this->boarding->providers_data) ? $this->boarding->providers_data : [];
 
         $providersMap = [];
 
-        foreach ($this->activeGateways as $gName) {
-            $existing = $savedData[$gName] ?? null;
+        foreach ($websites as $website) {
+            $gateways = is_array($website->gateways) ? array_filter(array_map('trim', $website->gateways)) : [];
 
-            // Fallback for legacy data format (numerically indexed array or single record)
-            if (! $existing && is_array($savedData)) {
-                foreach ($savedData as $item) {
-                    if (is_array($item) && ($item['name'] ?? '') === $gName) {
-                        $existing = $item;
-                        break;
+            foreach ($gateways as $gName) {
+                if (empty($gName)) {
+                    continue;
+                }
+
+                $compositeKey = "{$website->id}_{$gName}";
+
+                // Try composite key first, then legacy global gateway key
+                $existing = $savedData[$compositeKey] ?? $savedData[$gName] ?? null;
+
+                // Fallback: search numerically-indexed legacy entries
+                if (! is_array($existing) && is_array($savedData)) {
+                    foreach ($savedData as $item) {
+                        if (is_array($item) && ($item['name'] ?? '') === $gName) {
+                            $existing = $item;
+                            break;
+                        }
                     }
                 }
-            }
 
-            if (! $existing && $gName === ($this->boarding->provider_name ?: 'Cardaq')) {
-                $existing = [
-                    'boarding_completed_at' => $this->boarding->provider_boarding_completed_at?->format('Y-m-d'),
-                    'kyb_sent_at' => null,
-                    'kyb_status' => 'sent',
-                    'boarding_status' => $this->boarding->provider_verification_status ?: 'pending',
-                    'verification_status' => $this->boarding->provider_verification_status ?: 'pending',
+                // Fallback for primary provider from boarding record
+                if (! is_array($existing) && $gName === ($this->boarding->provider_name ?: 'Cardaq')) {
+                    $existing = [
+                        'boarding_completed_at' => $this->boarding->provider_boarding_completed_at?->format('Y-m-d'),
+                        'kyb_sent_at' => null,
+                        'kyb_status' => 'sent',
+                        'boarding_status' => $this->boarding->provider_verification_status ?: 'pending',
+                        'verification_status' => $this->boarding->provider_verification_status ?: 'pending',
+                    ];
+                }
+
+                if (! is_array($existing)) {
+                    $existing = [];
+                }
+
+                $providersMap[$compositeKey] = [
+                    'composite_key' => $compositeKey,
+                    'website_id' => $website->id,
+                    'website_name' => $website->name ?: $website->url,
+                    'website_url' => $website->url,
+                    'name' => $gName,
+                    'boarding_completed_at' => $existing['boarding_completed_at'] ?? null,
+                    'kyb_sent_at' => $existing['kyb_sent_at'] ?? null,
+                    'kyb_status' => $existing['kyb_status'] ?? 'sent',
+                    'boarding_status' => $existing['boarding_status'] ?? 'pending',
+                    'verification_status' => $existing['verification_status'] ?? 'pending',
                 ];
             }
+        }
 
-            $providersMap[$gName] = [
-                'name' => $gName,
+        // Fallback if no websites have gateways
+        if (empty($providersMap)) {
+            $fallback = $this->boarding->provider_name ?: 'Cardaq';
+            $key = "0_{$fallback}";
+            $existing = $savedData[$fallback] ?? $savedData[$key] ?? [];
+
+            $providersMap[$key] = [
+                'composite_key' => $key,
+                'website_id' => 0,
+                'website_name' => 'Company',
+                'website_url' => '',
+                'name' => $fallback,
                 'boarding_completed_at' => $existing['boarding_completed_at'] ?? null,
                 'kyb_sent_at' => $existing['kyb_sent_at'] ?? null,
                 'kyb_status' => $existing['kyb_status'] ?? 'sent',
@@ -114,6 +138,7 @@ class BoardingSection extends Component
         }
 
         $this->providers = $providersMap;
+        $this->activeGateways = collect($providersMap)->pluck('name')->unique()->values()->toArray();
     }
 
     public function save(): void

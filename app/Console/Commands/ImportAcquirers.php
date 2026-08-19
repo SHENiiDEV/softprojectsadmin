@@ -118,7 +118,24 @@ class ImportAcquirers extends Command
                 'companies_house_verification' => 'not_started',
             ]);
 
-            // Update Website records & Gateways array
+            // Update Boarding providers_data JSON for each website + bank combination
+            $providersData = is_array($boarding->providers_data) ? $boarding->providers_data : [];
+
+            $boardingStatus = match ($status) {
+                'Working' => 'completed',
+                'In process' => 'in_progress',
+                'Stopped' => 'stopped',
+                default => 'pending',
+            };
+
+            $verificationStatus = match ($status) {
+                'Working' => 'boarding_complete',
+                'In process' => 'pending',
+                'Stopped' => 'stopped',
+                default => 'pending',
+            };
+
+            // Update Website records & Gateways array & Boarding providers_data
             foreach ($domains as $domain) {
                 $cleanUrl = str_starts_with($domain, 'http') ? $domain : "https://{$domain}";
                 $website = Website::where('project_id', $project->id)
@@ -148,33 +165,24 @@ class ImportAcquirers extends Command
                         $website->save();
                     }
                 }
+
+                $compositeKey = "{$website->id}_{$bank}";
+                $providersData[$compositeKey] = [
+                    'composite_key' => $compositeKey,
+                    'website_id' => $website->id,
+                    'website_name' => $website->name ?: $website->url,
+                    'website_url' => $website->url,
+                    'name' => $bank,
+                    'boarding_completed_at' => $status === 'Working' ? now()->format('Y-m-d') : ($providersData[$compositeKey]['boarding_completed_at'] ?? null),
+                    'kyb_sent_at' => $providersData[$compositeKey]['kyb_sent_at'] ?? null,
+                    'kyb_status' => 'sent',
+                    'boarding_status' => $boardingStatus,
+                    'verification_status' => $verificationStatus,
+                ];
+
+                // Legacy fallback key
+                $providersData[$bank] = $providersData[$compositeKey];
             }
-
-            // Update Boarding providers_data JSON for this bank
-            $providersData = is_array($boarding->providers_data) ? $boarding->providers_data : [];
-
-            $boardingStatus = match ($status) {
-                'Working' => 'completed',
-                'In process' => 'in_progress',
-                'Stopped' => 'stopped',
-                default => 'pending',
-            };
-
-            $verificationStatus = match ($status) {
-                'Working' => 'boarding_complete',
-                'In process' => 'pending',
-                'Stopped' => 'stopped',
-                default => 'pending',
-            };
-
-            $providersData[$bank] = [
-                'name' => $bank,
-                'boarding_completed_at' => $status === 'Working' ? now()->format('Y-m-d') : ($providersData[$bank]['boarding_completed_at'] ?? null),
-                'kyb_sent_at' => $providersData[$bank]['kyb_sent_at'] ?? null,
-                'kyb_status' => 'sent',
-                'boarding_status' => $boardingStatus,
-                'verification_status' => $verificationStatus,
-            ];
 
             $boarding->providers_data = $providersData;
             $boarding->save();
