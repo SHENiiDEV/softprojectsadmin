@@ -32,6 +32,10 @@ class WebsitesSection extends Component
         'Pixxles',
         'Syspay',
         'Revolut',
+        'OroPay',
+        'Dimoco',
+        'Moneliq',
+        'Payally',
     ];
 
     public Project $project;
