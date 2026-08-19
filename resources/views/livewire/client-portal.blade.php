@@ -448,8 +448,8 @@
                                     </div>
 
                                     <div>
-                                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Time / Schedule <span class="text-rose-500">*</span></label>
-                                        <input type="text" wire:model="trafficTime" placeholder="e.g. 09:00 - 21:00" class="w-full px-3.5 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
+                                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Time on Page (sec) <span class="text-rose-500">*</span></label>
+                                        <input type="number" min="1" wire:model="trafficTime" placeholder="e.g. 15" class="w-full px-3.5 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
                                         @error('trafficTime') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
                                     </div>
                                 </div>

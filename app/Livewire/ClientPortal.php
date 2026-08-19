@@ -151,7 +151,7 @@ class ClientPortal extends Component
         'trafficGeo.*.percent.required' => 'Please enter a percentage for all GEO entries.',
         'trafficBounceRate.required' => 'Please enter the expected bounce rate.',
         'trafficPages.required' => 'Please enter the number of pages.',
-        'trafficTime.required' => 'Please enter the time / schedule.',
+        'trafficTime.required' => 'Please enter time on page (e.g. 15).',
         'attachments.*.max' => 'Each file must be no larger than 10MB.',
     ];
 
@@ -399,7 +399,7 @@ class ClientPortal extends Component
             $descParts[] = '📊 **Parameters:**';
             $descParts[] = "• **Bounce Rate:** {$this->trafficBounceRate}";
             $descParts[] = "• **Pages:** {$this->trafficPages}";
-            $descParts[] = "• **Time:** {$this->trafficTime}";
+            $descParts[] = "• **Time on Page:** {$this->trafficTime} sec";
             $descParts[] = '';
             $descParts[] = '🚦 **Traffic Channels Breakdown:**';
 
