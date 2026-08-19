@@ -215,6 +215,9 @@ class ImportAcquirers extends Command
 
         foreach ($parts as $part) {
             $domain = trim($part);
+            if (str_starts_with($domain, 'http')) {
+                $domain = parse_url($domain, PHP_URL_HOST) ?? $domain;
+            }
             if (! empty($domain) && $domain !== '-') {
                 $domains[] = $domain;
             }

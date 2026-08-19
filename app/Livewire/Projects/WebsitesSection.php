@@ -36,6 +36,10 @@ class WebsitesSection extends Component
         'Dimoco',
         'Moneliq',
         'Payally',
+        'Ex-Payments',
+        'GuruPay',
+        'Paynt',
+        'Colibrix',
     ];
 
     public Project $project;
