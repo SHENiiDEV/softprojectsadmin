@@ -377,63 +377,148 @@ class ClientPortal extends Component
 
             $taskTitle = "{$this->trafficMonth} Traffic";
 
-            $geoLines = [];
+            $geoRowsHtml = '';
             foreach ($this->trafficGeo as $geo) {
-                $code = $geo['code'] ?? '';
-                $percent = $geo['percent'] ?? 0;
+                $code = e($geo['code'] ?? '');
+                $percent = e($geo['percent'] ?? 0);
+                $countryName = e($this->getCountriesList()[$code] ?? $code);
                 if ($code) {
-                    $geoLines[] = "• **{$code}:** {$percent}%";
+                    $geoRowsHtml .= "
+                    <tr style='border-bottom: 1px solid #f1f5f9;'>
+                        <td style='padding: 8px 12px; font-weight: 600; color: #1e293b;'>{$countryName}</td>
+                        <td style='padding: 8px 12px; text-align: right; font-weight: 800; color: #0284c7;'>{$percent}%</td>
+                    </tr>";
                 }
             }
-            $geoFormatted = implode("\n", $geoLines);
 
-            $descParts = [];
-            $descParts[] = '🚀 **Traffic Launch Plan**';
-            $descParts[] = '';
-            $descParts[] = "📌 **Plan:** {$this->trafficPlan}";
-            $descParts[] = "📅 **Month:** {$this->trafficMonth}";
-            $descParts[] = "🌐 **Website:** {$website->name} ({$website->url})";
-            $descParts[] = '';
-            $descParts[] = "📍 **GEO Distribution (100% Total):**\n".$geoFormatted;
-            $descParts[] = '';
-            $descParts[] = '📊 **Parameters:**';
-            $descParts[] = "• **Bounce Rate:** {$this->trafficBounceRate}";
-            $descParts[] = "• **Pages:** {$this->trafficPages}";
-            $descParts[] = "• **Time on Page:** {$this->trafficTime} sec";
-            $descParts[] = '';
-            $descParts[] = '🚦 **Traffic Channels Breakdown:**';
-
+            $channelsHtml = '';
             if ($this->trafficReferralPercent !== '') {
-                $descParts[] = "• **Referral Traffic:** {$this->trafficReferralPercent}%";
+                $refPercent = e($this->trafficReferralPercent);
+                $refLinksHtml = '';
                 if (! empty($this->trafficReferralLinks)) {
-                    $descParts[] = "  **Referral Links:**\n".trim($this->trafficReferralLinks);
+                    $links = array_filter(explode("\n", trim($this->trafficReferralLinks)));
+                    $linksList = implode('', array_map(function ($l) {
+                        $cleanL = e(trim($l));
+
+                        return "<li style='margin-bottom: 2px;'><a href='{$cleanL}' target='_blank' style='color: #0284c7; text-decoration: underline;'>{$cleanL}</a></li>";
+                    }, $links));
+                    $refLinksHtml = "<ul style='margin: 6px 0 0 0; padding-left: 18px; font-size: 11px; font-family: monospace;'>{$linksList}</ul>";
                 }
+                $channelsHtml .= "
+                <div style='padding: 10px 12px; background: #ffffff; border-radius: 8px; margin-bottom: 8px; border: 1px solid #e2e8f0;'>
+                    <div style='display: flex; justify-content: space-between; align-items: center;'>
+                        <span style='font-weight: 700; color: #334155; font-size: 12px;'>🔗 Referral Traffic</span>
+                        <span style='font-weight: 800; color: #0284c7; font-size: 13px;'>{$refPercent}%</span>
+                    </div>
+                    {$refLinksHtml}
+                </div>";
             }
 
             if ($this->trafficSocialPercent !== '') {
-                $descParts[] = "• **Social Traffic:** {$this->trafficSocialPercent}%";
+                $socPercent = e($this->trafficSocialPercent);
+                $socialSubHtml = '';
                 if ($this->trafficSocialFbPercent !== '' || ! empty($this->trafficSocialFbLink)) {
-                    $descParts[] = "  - **Facebook:** {$this->trafficSocialFbPercent}% ".($this->trafficSocialFbLink ? "({$this->trafficSocialFbLink})" : '');
+                    $fbPercent = e($this->trafficSocialFbPercent);
+                    $fbLink = ! empty($this->trafficSocialFbLink) ? " — <a href='".e($this->trafficSocialFbLink)."' target='_blank' style='color: #0284c7;'>Link</a>" : '';
+                    $socialSubHtml .= "<div style='font-size: 11px; color: #475569; margin-top: 4px;'>• <strong>Facebook:</strong> {$fbPercent}%{$fbLink}</div>";
                 }
                 if ($this->trafficSocialInstPercent !== '' || ! empty($this->trafficSocialInstLink)) {
-                    $descParts[] = "  - **Instagram:** {$this->trafficSocialInstPercent}% ".($this->trafficSocialInstLink ? "({$this->trafficSocialInstLink})" : '');
+                    $instPercent = e($this->trafficSocialInstPercent);
+                    $instLink = ! empty($this->trafficSocialInstLink) ? " — <a href='".e($this->trafficSocialInstLink)."' target='_blank' style='color: #0284c7;'>Link</a>" : '';
+                    $socialSubHtml .= "<div style='font-size: 11px; color: #475569; margin-top: 2px;'>• <strong>Instagram:</strong> {$instPercent}%{$instLink}</div>";
                 }
+                $channelsHtml .= "
+                <div style='padding: 10px 12px; background: #ffffff; border-radius: 8px; margin-bottom: 8px; border: 1px solid #e2e8f0;'>
+                    <div style='display: flex; justify-content: space-between; align-items: center;'>
+                        <span style='font-weight: 700; color: #334155; font-size: 12px;'>📱 Social Traffic</span>
+                        <span style='font-weight: 800; color: #0284c7; font-size: 13px;'>{$socPercent}%</span>
+                    </div>
+                    {$socialSubHtml}
+                </div>";
             }
 
             if ($this->trafficOrganicPercent !== '') {
-                $descParts[] = "• **Organic Traffic:** {$this->trafficOrganicPercent}%";
+                $orgPercent = e($this->trafficOrganicPercent);
+                $channelsHtml .= "
+                <div style='padding: 10px 12px; background: #ffffff; border-radius: 8px; margin-bottom: 8px; border: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;'>
+                    <span style='font-weight: 700; color: #334155; font-size: 12px;'>🔍 Organic Traffic</span>
+                    <span style='font-weight: 800; color: #0284c7; font-size: 13px;'>{$orgPercent}%</span>
+                </div>";
             }
 
             if ($this->trafficDirectPercent !== '') {
-                $descParts[] = "• **Direct Traffic:** {$this->trafficDirectPercent}%";
+                $dirPercent = e($this->trafficDirectPercent);
+                $channelsHtml .= "
+                <div style='padding: 10px 12px; background: #ffffff; border-radius: 8px; margin-bottom: 8px; border: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;'>
+                    <span style='font-weight: 700; color: #334155; font-size: 12px;'>🎯 Direct Traffic</span>
+                    <span style='font-weight: 800; color: #0284c7; font-size: 13px;'>{$dirPercent}%</span>
+                </div>";
             }
 
+            $commentHtml = '';
             if (! empty($this->trafficComment)) {
-                $descParts[] = '';
-                $descParts[] = "💬 **Comment:**\n".trim($this->trafficComment);
+                $commentContent = nl2br(e(trim($this->trafficComment)));
+                $commentHtml = "
+                <div style='margin-top: 14px; background: #fffbe6; border: 1px solid #ffe58f; border-radius: 10px; padding: 12px 14px;'>
+                    <div style='font-size: 11px; font-weight: 800; color: #d48806; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;'>💬 Client Comment</div>
+                    <div style='font-size: 12px; color: #595959; line-height: 1.5;'>{$commentContent}</div>
+                </div>";
             }
 
-            $taskDescription = implode("\n", $descParts);
+            $trafficMonth = e($this->trafficMonth);
+            $trafficPlan = e($this->trafficPlan);
+            $bounceRate = e($this->trafficBounceRate);
+            $pages = e($this->trafficPages);
+            $timeOnPage = e($this->trafficTime);
+            $websiteName = e($website->name);
+            $websiteUrl = e($website->url);
+
+            $taskDescription = "<div style='font-family: system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif; color: #1e293b; max-width: 100%;'>
+    <div style='background: linear-gradient(135deg, #0284c7 0%, #4f46e5 100%); color: #ffffff; padding: 16px 20px; border-radius: 12px; margin-bottom: 16px;'>
+        <div style='font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.9;'>🚀 TRAFFIC LAUNCH CAMPAIGN</div>
+        <div style='font-size: 18px; font-weight: 800; margin-top: 4px;'>{$trafficMonth} Traffic</div>
+        <div style='font-size: 12px; opacity: 0.95; margin-top: 6px;'>
+            Plan: <strong>{$trafficPlan}</strong> &bull; Website: <a href='{$websiteUrl}' target='_blank' style='color: #ffffff; text-decoration: underline;'>{$websiteName}</a>
+        </div>
+    </div>
+
+    <div style='display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px;'>
+        <div style='background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; text-align: center;'>
+            <div style='font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase;'>Bounce Rate</div>
+            <div style='font-size: 16px; font-weight: 800; color: #0284c7; margin-top: 2px;'>{$bounceRate}</div>
+        </div>
+        <div style='background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; text-align: center;'>
+            <div style='font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase;'>Pages</div>
+            <div style='font-size: 16px; font-weight: 800; color: #0284c7; margin-top: 2px;'>{$pages}</div>
+        </div>
+        <div style='background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; text-align: center;'>
+            <div style='font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase;'>Time on Page</div>
+            <div style='font-size: 16px; font-weight: 800; color: #0284c7; margin-top: 2px;'>{$timeOnPage} sec</div>
+        </div>
+    </div>
+
+    <div style='background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; margin-bottom: 16px;'>
+        <div style='font-size: 11px; font-weight: 800; text-transform: uppercase; color: #475569; letter-spacing: 0.05em; margin-bottom: 8px;'>📍 GEO Distribution (100% Total)</div>
+        <table style='width: 100%; border-collapse: collapse; font-size: 12px;'>
+            <thead>
+                <tr style='border-bottom: 2px solid #cbd5e1; color: #64748b; font-size: 10px; text-transform: uppercase; font-weight: 800;'>
+                    <th style='text-align: left; padding: 6px 12px;'>Country</th>
+                    <th style='text-align: right; padding: 6px 12px;'>Percentage</th>
+                </tr>
+            </thead>
+            <tbody>
+                {$geoRowsHtml}
+            </tbody>
+        </table>
+    </div>
+
+    <div style='background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px;'>
+        <div style='font-size: 11px; font-weight: 800; text-transform: uppercase; color: #475569; letter-spacing: 0.05em; margin-bottom: 10px;'>🚦 Traffic Sources</div>
+        {$channelsHtml}
+    </div>
+
+    {$commentHtml}
+</div>";
 
         } else {
             // Map request type translation

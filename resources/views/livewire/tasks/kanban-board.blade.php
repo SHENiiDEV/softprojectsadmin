@@ -405,11 +405,27 @@
                                         <input type="text" wire:model="taskTitle" placeholder="What needs to be done?" class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-150">
                                         @error('taskTitle') <span class="text-[10px] text-rose-500 mt-1 block">{{ $message }}</span> @enderror
                                     </div>
-
                                     <!-- Description -->
                                     <div>
-                                        <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">Description</label>
-                                        <textarea wire:model="taskDescription" rows="6" placeholder="Describe the task in detail..." class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-150"></textarea>
+                                        <div class="flex items-center justify-between mb-1.5">
+                                            <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Description</label>
+                                            @if(str_contains($taskDescription ?? '', '<div'))
+                                                <span class="text-[10px] font-bold text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/40 border border-sky-200/50 dark:border-sky-800/50 px-2 py-0.5 rounded-md">
+                                                    <i class="fa-solid fa-sparkles mr-1"></i> Formatted Campaign Card
+                                                </span>
+                                            @endif
+                                        </div>
+                                        @if(str_contains($taskDescription ?? '', '<div'))
+                                            <div class="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-h-[420px] overflow-y-auto mb-3 shadow-inner">
+                                                {!! $taskDescription !!}
+                                            </div>
+                                            <details class="text-[11px] text-slate-400">
+                                                <summary class="cursor-pointer hover:text-slate-600 dark:hover:text-slate-200 font-semibold mb-1">Edit Raw HTML Code</summary>
+                                                <textarea wire:model="taskDescription" rows="5" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-mono text-slate-800 dark:text-slate-100 focus:outline-none"></textarea>
+                                            </details>
+                                        @else
+                                            <textarea wire:model="taskDescription" rows="6" placeholder="Describe the task in detail..." class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-150"></textarea>
+                                        @endif
                                         @error('taskDescription') <span class="text-[10px] text-rose-500 mt-1 block">{{ $message }}</span> @enderror
                                     </div>
 

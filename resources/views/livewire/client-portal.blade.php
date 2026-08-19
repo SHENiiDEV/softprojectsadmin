@@ -766,7 +766,7 @@
                                     <h4 class="text-xs uppercase font-bold text-slate-400 dark:text-slate-500 tracking-wider flex items-center gap-1.5">
                                         <i class="fa-solid fa-align-left text-[10px]"></i> Description
                                     </h4>
-                                    <div class="text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">{{ $viewTask->description ?: 'No description provided.' }}</div>
+                                    <div class="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{!! $viewTask->description ?: 'No description provided.' !!}</div>
                                 </div>
 
                                 {{-- Attachments --}}
