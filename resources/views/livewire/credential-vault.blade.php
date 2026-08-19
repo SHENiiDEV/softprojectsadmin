@@ -1,4 +1,4 @@
-<div class="space-y-6">
+<div class="space-y-6" @copy-to-clipboard.window="if ($event.detail && $event.detail.value) { navigator.clipboard.writeText($event.detail.value); }">
 
     {{-- ═══════════════════════════════════════════════════════════
          HEADER
@@ -390,8 +390,13 @@
                                 <span class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">Login / Username</span>
                                 <div class="flex items-center justify-between p-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl">
                                     <span class="font-mono text-xs text-slate-800 dark:text-slate-200 select-all">{{ $selectedCredential->login }}</span>
-                                    <button wire:click="copyToClipboard('login')" class="text-slate-400 hover:text-sky-500 text-xs px-2 py-1 rounded transition-colors" title="Copy Login">
-                                        <i class="fa-solid fa-copy"></i>
+                                    <button type="button"
+                                            x-data="{ copied: false }"
+                                            @click="navigator.clipboard.writeText('{{ addslashes($selectedCredential->login) }}'); copied = true; setTimeout(() => copied = false, 2000); $wire.copyToClipboard('login')"
+                                            class="text-slate-400 hover:text-sky-500 text-xs px-2 py-1 rounded transition-colors flex items-center gap-1 cursor-pointer"
+                                            title="Copy Login">
+                                        <i class="fa-solid" :class="copied ? 'fa-check text-emerald-500' : 'fa-copy'"></i>
+                                        <span x-show="copied" x-cloak class="text-[10px] text-emerald-500 font-semibold">Copied!</span>
                                     </button>
                                 </div>
                             </div>
@@ -406,11 +411,16 @@
                                         {{ $showPassword ? $selectedCredential->password : '••••••••••••••••' }}
                                     </span>
                                     <div class="flex items-center space-x-1">
-                                        <button wire:click="togglePassword" class="text-slate-400 hover:text-sky-500 text-xs p-1.5 rounded transition-colors" title="{{ $showPassword ? 'Hide Password' : 'Show Password' }}">
+                                        <button wire:click="togglePassword" class="text-slate-400 hover:text-sky-500 text-xs p-1.5 rounded transition-colors cursor-pointer" title="{{ $showPassword ? 'Hide Password' : 'Show Password' }}">
                                             <i class="fa-solid {{ $showPassword ? 'fa-eye-slash' : 'fa-eye' }}"></i>
                                         </button>
-                                        <button wire:click="copyToClipboard('password')" class="text-slate-400 hover:text-sky-500 text-xs p-1.5 rounded transition-colors" title="Copy Password">
-                                            <i class="fa-solid fa-copy"></i>
+                                        <button type="button"
+                                                x-data="{ copied: false }"
+                                                @click="navigator.clipboard.writeText('{{ addslashes($selectedCredential->password) }}'); copied = true; setTimeout(() => copied = false, 2000); $wire.copyToClipboard('password')"
+                                                class="text-slate-400 hover:text-sky-500 text-xs p-1.5 rounded transition-colors flex items-center gap-1 cursor-pointer"
+                                                title="Copy Password">
+                                            <i class="fa-solid" :class="copied ? 'fa-check text-emerald-500' : 'fa-copy'"></i>
+                                            <span x-show="copied" x-cloak class="text-[10px] text-emerald-500 font-semibold">Copied!</span>
                                         </button>
                                     </div>
                                 </div>
