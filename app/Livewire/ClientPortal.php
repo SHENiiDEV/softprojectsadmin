@@ -56,9 +56,7 @@ class ClientPortal extends Component
     public string $trafficPlan = '';
 
     public array $trafficGeo = [
-        ['code' => 'CHE', 'percent' => 70],
-        ['code' => 'POL', 'percent' => 15],
-        ['code' => 'DNK', 'percent' => 15],
+        ['code' => '', 'percent' => ''],
     ];
 
     public string $trafficBounceRate = '';
@@ -161,9 +159,6 @@ class ClientPortal extends Component
     {
         $this->hash = $hash;
         $this->client = Client::where('hash', $hash)->firstOrFail();
-        if (empty($this->trafficMonth)) {
-            $this->trafficMonth = now()->format('F Y');
-        }
     }
 
     public function getMonthOptions(): array
@@ -476,11 +471,10 @@ class ClientPortal extends Component
         $this->requestType = 'General Question';
         $this->urgency = 'medium';
 
+        $this->trafficMonth = '';
         $this->trafficPlan = '';
         $this->trafficGeo = [
-            ['code' => 'CHE', 'percent' => 70],
-            ['code' => 'POL', 'percent' => 15],
-            ['code' => 'DNK', 'percent' => 15],
+            ['code' => '', 'percent' => ''],
         ];
         $this->trafficBounceRate = '';
         $this->trafficPages = '';
