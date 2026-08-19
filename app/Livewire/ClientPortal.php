@@ -2,10 +2,13 @@
 
 namespace App\Livewire;
 
+use App\Models\ActivityLog;
 use App\Models\Client;
+use App\Models\Comment;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\Website;
+use App\Services\NotificationService;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
@@ -16,6 +19,7 @@ class ClientPortal extends Component
     use WithPagination;
 
     public string $hash;
+
     public Client $client;
 
     // Navigation
@@ -23,29 +27,78 @@ class ClientPortal extends Component
 
     // View task modal properties
     public ?int $viewTaskId = null;
+
     public bool $showTaskModal = false;
+
     public string $newCommentContent = '';
+
     public array $replyCommentContent = [];
 
     // Selections
     public ?int $selectedCompanyId = null;
+
     public ?int $selectedWebsiteId = null;
+
     public ?Website $selectedWebsite = null;
 
     // Form fields
     public string $requestType = 'General Question';
+
     public string $urgency = 'medium'; // low | medium | high | critical
+
     public string $description = '';
+
     public $attachments = [];
+
+    // Traffic Launch Specific Fields
+    public string $trafficMonth = '';
+
+    public string $trafficPlan = '';
+
+    public array $trafficGeo = [
+        ['code' => 'CHE', 'percent' => 70],
+        ['code' => 'POL', 'percent' => 15],
+        ['code' => 'DNK', 'percent' => 15],
+    ];
+
+    public string $trafficBounceRate = '';
+
+    public string $trafficPages = '';
+
+    public string $trafficTime = '';
+
+    public string $trafficReferralPercent = '';
+
+    public string $trafficReferralLinks = '';
+
+    public string $trafficSocialPercent = '';
+
+    public string $trafficSocialFbPercent = '';
+
+    public string $trafficSocialFbLink = '';
+
+    public string $trafficSocialInstPercent = '';
+
+    public string $trafficSocialInstLink = '';
+
+    public string $trafficOrganicPercent = '';
+
+    public string $trafficDirectPercent = '';
+
+    public string $trafficComment = '';
 
     // Success state
     public bool $submitted = false;
+
     public ?string $createdTaskTitle = null;
+
     public ?int $createdTaskId = null;
 
     // Filters (My Tickets tab)
     public string $searchQuery = '';
+
     public string $statusFilter = 'all'; // all | open | in_progress | review | done
+
     public string $sortDirection = 'desc';
 
     protected array $queryString = [
@@ -54,14 +107,39 @@ class ClientPortal extends Component
         'searchQuery' => ['except' => ''],
     ];
 
-    protected array $rules = [
-        'selectedCompanyId' => 'required|exists:projects,id',
-        'selectedWebsiteId' => 'required|exists:websites,id',
-        'requestType' => 'required|in:General Question,Design Changes,Integration Changes,Bug Report,Other',
-        'urgency' => 'required|in:low,medium,high,critical',
-        'description' => 'required|string|min:10',
-        'attachments.*' => 'nullable|file|max:10240', // 10MB max
-    ];
+    protected function rules(): array
+    {
+        if ($this->requestType === 'Traffic Launch') {
+            return [
+                'selectedCompanyId' => 'required|exists:projects,id',
+                'selectedWebsiteId' => 'required|exists:websites,id',
+                'requestType' => 'required',
+                'urgency' => 'required|in:low,medium,high,critical',
+                'trafficMonth' => 'required|string',
+                'trafficPlan' => 'required|string',
+                'trafficGeo' => 'required|array|min:1',
+                'trafficGeo.*.code' => 'required|string',
+                'trafficGeo.*.percent' => 'required|numeric|min:1|max:100',
+                'trafficBounceRate' => 'required|string',
+                'trafficPages' => 'required|string',
+                'trafficTime' => 'required|string',
+                'trafficReferralPercent' => 'nullable|numeric|min:0|max:100',
+                'trafficSocialPercent' => 'nullable|numeric|min:0|max:100',
+                'trafficOrganicPercent' => 'nullable|numeric|min:0|max:100',
+                'trafficDirectPercent' => 'nullable|numeric|min:0|max:100',
+                'attachments.*' => 'nullable|file|max:10240', // 10MB max
+            ];
+        }
+
+        return [
+            'selectedCompanyId' => 'required|exists:projects,id',
+            'selectedWebsiteId' => 'required|exists:websites,id',
+            'requestType' => 'required|in:General Question,Traffic Launch,Design Changes,Integration Changes,Bug Report,Other',
+            'urgency' => 'required|in:low,medium,high,critical',
+            'description' => 'required|string|min:10',
+            'attachments.*' => 'nullable|file|max:10240', // 10MB max
+        ];
+    }
 
     protected array $messages = [
         'selectedCompanyId.required' => 'Please select a company.',
@@ -69,6 +147,13 @@ class ClientPortal extends Component
         'requestType.required' => 'Please select a request type.',
         'description.required' => 'Please enter a description.',
         'description.min' => 'Description must be at least 10 characters.',
+        'trafficMonth.required' => 'Please select a target month.',
+        'trafficPlan.required' => 'Please enter a plan name.',
+        'trafficGeo.*.code.required' => 'Please select a country for all GEO entries.',
+        'trafficGeo.*.percent.required' => 'Please enter a percentage for all GEO entries.',
+        'trafficBounceRate.required' => 'Please enter the expected bounce rate.',
+        'trafficPages.required' => 'Please enter the number of pages.',
+        'trafficTime.required' => 'Please enter the time / schedule.',
         'attachments.*.max' => 'Each file must be no larger than 10MB.',
     ];
 
@@ -76,6 +161,111 @@ class ClientPortal extends Component
     {
         $this->hash = $hash;
         $this->client = Client::where('hash', $hash)->firstOrFail();
+        if (empty($this->trafficMonth)) {
+            $this->trafficMonth = now()->format('F Y');
+        }
+    }
+
+    public function getMonthOptions(): array
+    {
+        $months = [];
+        $date = now();
+        for ($i = 0; $i < 12; $i++) {
+            $key = $date->format('F Y');
+            $months[$key] = $key;
+            $date->addMonth();
+        }
+
+        return $months;
+    }
+
+    public function getCountriesList(): array
+    {
+        return [
+            'CHE' => 'CHE — Switzerland (Швейцария)',
+            'POL' => 'POL — Poland (Польша)',
+            'DNK' => 'DNK — Denmark (Дания)',
+            'GBR' => 'GBR — United Kingdom (Великобритания / UK)',
+            'USA' => 'USA — United States (США)',
+            'DEU' => 'DEU — Germany (Германия)',
+            'FRA' => 'FRA — France (Франция)',
+            'ESP' => 'ESP — Spain (Испания)',
+            'ITA' => 'ITA — Italy (Италия)',
+            'NLD' => 'NLD — Netherlands (Нидерланды)',
+            'AUT' => 'AUT — Austria (Австрия)',
+            'BEL' => 'BEL — Belgium (Бельгия)',
+            'SWE' => 'SWE — Sweden (Швеция)',
+            'NOR' => 'NOR — Norway (Норвегия)',
+            'FIN' => 'FIN — Finland (Финляндия)',
+            'CAN' => 'CAN — Canada (Канада)',
+            'AUS' => 'AUS — Australia (Австралия)',
+            'NZL' => 'NZL — New Zealand (Новая Зеландия)',
+            'BRA' => 'BRA — Brazil (Бразилия)',
+            'MEX' => 'MEX — Mexico (Мексика)',
+            'ARG' => 'ARG — Argentina (Аргентина)',
+            'CHL' => 'CHL — Chile (Чили)',
+            'COL' => 'COL — Colombia (Колумбия)',
+            'PER' => 'PER — Peru (Перу)',
+            'SGP' => 'SGP — Singapore (Сингапур)',
+            'JPN' => 'JPN — Japan (Япония)',
+            'KOR' => 'KOR — South Korea (Южная Корея)',
+            'TWN' => 'TWN — Taiwan (Тайвань)',
+            'HKG' => 'HKG — Hong Kong (Гонконг)',
+            'ARE' => 'ARE — United Arab Emirates (ОАЭ)',
+            'SAU' => 'SAU — Saudi Arabia (Саудовская Аравия)',
+            'TUR' => 'TUR — Turkey (Турция)',
+            'ISR' => 'ISR — Israel (Израиль)',
+            'ZAF' => 'ZAF — South Africa (ЮАР)',
+            'PRT' => 'PRT — Portugal (Португалия)',
+            'GRC' => 'GRC — Greece (Греция)',
+            'CZE' => 'CZE — Czech Republic (Чехия)',
+            'HUN' => 'HUN — Hungary (Венгрия)',
+            'ROU' => 'ROU — Romania (Румыния)',
+            'IRL' => 'IRL — Ireland (Ирландия)',
+            'EST' => 'EST — Estonia (Эстония)',
+            'LVA' => 'LVA — Latvia (Латвия)',
+            'LTU' => 'LTU — Lithuania (Литва)',
+            'SVK' => 'SVK — Slovakia (Словакия)',
+            'SVN' => 'SVN — Slovenia (Словения)',
+            'HRV' => 'HRV — Croatia (Хорватия)',
+            'CYP' => 'CYP — Cyprus (Кипр)',
+            'MLT' => 'MLT — Malta (Мальта)',
+            'ISL' => 'ISL — Iceland (Исландия)',
+            'LUX' => 'LUX — Luxembourg (Люксембург)',
+            'THA' => 'THA — Thailand (Таиланд)',
+            'MYS' => 'MYS — Malaysia (Малайзия)',
+            'IDN' => 'IDN — Indonesia (Индонезия)',
+            'PHL' => 'PHL — Philippines (Филиппины)',
+            'VNM' => 'VNM — Vietnam (Вьетнам)',
+            'IND' => 'IND — India (Индия)',
+            'EGY' => 'EGY — Egypt (Египет)',
+            'MAR' => 'MAR — Morocco (Марокко)',
+            'GEO' => 'GEO — Georgia (Грузия)',
+            'ARM' => 'ARM — Armenia (Армения)',
+            'KAZ' => 'KAZ — Kazakhstan (Казахстан)',
+            'UZB' => 'UZB — Uzbekistan (Узбекистан)',
+            'AZE' => 'AZE — Azerbaijan (Азербайджан)',
+            'MDA' => 'MDA — Moldova (Молдова)',
+            'KGZ' => 'KGZ — Kyrgyzstan (Киргизия)',
+        ];
+    }
+
+    public function addGeoRow(): void
+    {
+        $this->trafficGeo[] = ['code' => '', 'percent' => 0];
+    }
+
+    public function removeGeoRow(int $index): void
+    {
+        if (count($this->trafficGeo) > 1) {
+            unset($this->trafficGeo[$index]);
+            $this->trafficGeo = array_values($this->trafficGeo);
+        }
+    }
+
+    public function getGeoTotalPercentProperty(): int
+    {
+        return (int) collect($this->trafficGeo)->sum(fn ($item) => (int) ($item['percent'] ?? 0));
     }
 
     public function updatedActiveTab(): void
@@ -158,17 +348,88 @@ class ClientPortal extends Component
         $website = Website::findOrFail($this->selectedWebsiteId);
         $company = Project::findOrFail($this->selectedCompanyId);
 
-        // Map request type translation
-        $typeTranslations = [
-            'General Question' => 'General Question',
-            'Design Changes' => 'Design Changes',
-            'Integration Changes' => 'Integration Changes',
-            'Bug Report' => 'Bug Report',
-            'Other' => 'Other',
-        ];
+        if ($this->requestType === 'Traffic Launch') {
+            $totalGeo = $this->geoTotalPercent;
+            if ($totalGeo !== 100) {
+                $this->addError('trafficGeo', "Total GEO percentage must equal 100% (currently {$totalGeo}%).");
 
-        $translatedType = $typeTranslations[$this->requestType] ?? $this->requestType;
-        $taskTitle = "[Portal] {$translatedType}: {$website->name}";
+                return;
+            }
+
+            $taskTitle = "{$this->trafficMonth} Traffic";
+
+            $geoLines = [];
+            foreach ($this->trafficGeo as $geo) {
+                $code = $geo['code'] ?? '';
+                $percent = $geo['percent'] ?? 0;
+                if ($code) {
+                    $geoLines[] = "• **{$code}:** {$percent}%";
+                }
+            }
+            $geoFormatted = implode("\n", $geoLines);
+
+            $descParts = [];
+            $descParts[] = '🚀 **Traffic Launch Plan**';
+            $descParts[] = '';
+            $descParts[] = "📌 **Plan:** {$this->trafficPlan}";
+            $descParts[] = "📅 **Month:** {$this->trafficMonth}";
+            $descParts[] = "🌐 **Website:** {$website->name} ({$website->url})";
+            $descParts[] = '';
+            $descParts[] = "📍 **GEO Distribution (100% Total):**\n".$geoFormatted;
+            $descParts[] = '';
+            $descParts[] = '📊 **Parameters:**';
+            $descParts[] = "• **Bounce Rate:** {$this->trafficBounceRate}";
+            $descParts[] = "• **Pages:** {$this->trafficPages}";
+            $descParts[] = "• **Time:** {$this->trafficTime}";
+            $descParts[] = '';
+            $descParts[] = '🚦 **Traffic Channels Breakdown:**';
+
+            if ($this->trafficReferralPercent !== '') {
+                $descParts[] = "• **Referral Traffic:** {$this->trafficReferralPercent}%";
+                if (! empty($this->trafficReferralLinks)) {
+                    $descParts[] = "  **Referral Links:**\n".trim($this->trafficReferralLinks);
+                }
+            }
+
+            if ($this->trafficSocialPercent !== '') {
+                $descParts[] = "• **Social Traffic:** {$this->trafficSocialPercent}%";
+                if ($this->trafficSocialFbPercent !== '' || ! empty($this->trafficSocialFbLink)) {
+                    $descParts[] = "  - **Facebook:** {$this->trafficSocialFbPercent}% ".($this->trafficSocialFbLink ? "({$this->trafficSocialFbLink})" : '');
+                }
+                if ($this->trafficSocialInstPercent !== '' || ! empty($this->trafficSocialInstLink)) {
+                    $descParts[] = "  - **Instagram:** {$this->trafficSocialInstPercent}% ".($this->trafficSocialInstLink ? "({$this->trafficSocialInstLink})" : '');
+                }
+            }
+
+            if ($this->trafficOrganicPercent !== '') {
+                $descParts[] = "• **Organic Traffic:** {$this->trafficOrganicPercent}%";
+            }
+
+            if ($this->trafficDirectPercent !== '') {
+                $descParts[] = "• **Direct Traffic:** {$this->trafficDirectPercent}%";
+            }
+
+            if (! empty($this->trafficComment)) {
+                $descParts[] = '';
+                $descParts[] = "💬 **Comment:**\n".trim($this->trafficComment);
+            }
+
+            $taskDescription = implode("\n", $descParts);
+
+        } else {
+            // Map request type translation
+            $typeTranslations = [
+                'General Question' => 'General Question',
+                'Design Changes' => 'Design Changes',
+                'Integration Changes' => 'Integration Changes',
+                'Bug Report' => 'Bug Report',
+                'Other' => 'Other',
+            ];
+
+            $translatedType = $typeTranslations[$this->requestType] ?? $this->requestType;
+            $taskTitle = "[Portal] {$translatedType}: {$website->name}";
+            $taskDescription = $this->description;
+        }
 
         // Create the task on Kanban Board
         $priority = $this->urgency;
@@ -176,13 +437,13 @@ class ClientPortal extends Component
             'project_id' => $company->id,
             'creator_id' => null, // Anonymous client submission
             'title' => $taskTitle,
-            'description' => $this->description,
+            'description' => $taskDescription,
             'status' => 'todo',
             'priority' => $priority,
         ]);
 
         // Log to ActivityLog
-        \App\Models\ActivityLog::create([
+        ActivityLog::create([
             'user_id' => null,
             'client_id' => $this->client->id,
             'task_id' => $task->id,
@@ -192,7 +453,7 @@ class ClientPortal extends Component
         ]);
 
         // Dispatch in-app and Telegram notification
-        \App\Services\NotificationService::sendClientPortalTaskCreated($task, $this->client, $company);
+        NotificationService::sendClientPortalTaskCreated($task, $this->client, $company);
 
         // Upload attachments
         if (! empty($this->attachments)) {
@@ -214,6 +475,26 @@ class ClientPortal extends Component
         $this->attachments = [];
         $this->requestType = 'General Question';
         $this->urgency = 'medium';
+
+        $this->trafficPlan = '';
+        $this->trafficGeo = [
+            ['code' => 'CHE', 'percent' => 70],
+            ['code' => 'POL', 'percent' => 15],
+            ['code' => 'DNK', 'percent' => 15],
+        ];
+        $this->trafficBounceRate = '';
+        $this->trafficPages = '';
+        $this->trafficTime = '';
+        $this->trafficReferralPercent = '';
+        $this->trafficReferralLinks = '';
+        $this->trafficSocialPercent = '';
+        $this->trafficSocialFbPercent = '';
+        $this->trafficSocialFbLink = '';
+        $this->trafficSocialInstPercent = '';
+        $this->trafficSocialInstLink = '';
+        $this->trafficOrganicPercent = '';
+        $this->trafficDirectPercent = '';
+        $this->trafficComment = '';
     }
 
     public function resetFormState(): void
@@ -260,7 +541,7 @@ class ClientPortal extends Component
 
         $task = Task::findOrFail($this->viewTaskId);
 
-        $comment = \App\Models\Comment::create([
+        $comment = Comment::create([
             'task_id' => $task->id,
             'client_id' => $this->client->id,
             'content' => $this->newCommentContent,
@@ -268,16 +549,16 @@ class ClientPortal extends Component
         ]);
 
         // Log to ActivityLog
-        \App\Models\ActivityLog::create([
+        ActivityLog::create([
             'client_id' => $this->client->id,
             'task_id' => $task->id,
             'project_id' => $task->project_id,
             'action' => 'task_updated',
-            'description' => "Comment was added to task '{$task->title}' by client " . $this->client->name,
+            'description' => "Comment was added to task '{$task->title}' by client ".$this->client->name,
         ]);
 
         // Send notifications
-        \App\Services\NotificationService::sendNewCommentNotification($comment);
+        NotificationService::sendNewCommentNotification($comment);
 
         $this->newCommentContent = '';
     }
@@ -294,13 +575,13 @@ class ClientPortal extends Component
         }
 
         $task = Task::findOrFail($this->viewTaskId);
-        $parent = \App\Models\Comment::findOrFail($parentId);
+        $parent = Comment::findOrFail($parentId);
 
         if ($parent->is_private) {
             return;
         }
 
-        $comment = \App\Models\Comment::create([
+        $comment = Comment::create([
             'task_id' => $task->id,
             'client_id' => $this->client->id,
             'parent_id' => $parentId,
@@ -309,7 +590,7 @@ class ClientPortal extends Component
         ]);
 
         // Send notifications
-        \App\Services\NotificationService::sendNewCommentNotification($comment);
+        NotificationService::sendNewCommentNotification($comment);
 
         unset($this->replyCommentContent[$parentId]);
     }

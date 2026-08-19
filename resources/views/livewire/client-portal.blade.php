@@ -307,6 +307,7 @@
                                 <select wire:model.live="requestType"
                                         class="w-full px-4 py-3 bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all duration-200">
                                     <option value="General Question">General Question</option>
+                                    <option value="Traffic Launch">🚀 Traffic Launch</option>
                                     <option value="Design Changes">Design Changes</option>
                                     <option value="Integration Changes">Integration Changes</option>
                                     <option value="Bug Report">Bug Report</option>
@@ -327,16 +328,212 @@
                             </div>
                         </div>
 
-                        <!-- Description -->
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">Description <span class="text-rose-500">*</span></label>
-                            <textarea wire:model="description"
-                                      x-on:input="localStorage.setItem('portal_draft_description', $event.target.value)"
-                                      rows="5"
-                                      placeholder="Describe your issue or request in detail. The more details you provide, the faster we can help..."
-                                      class="w-full px-4 py-3 bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all duration-200 resize-none"></textarea>
-                            @error('description') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
-                        </div>
+                        {{-- TRAFFIC LAUNCH FORM FIELDS --}}
+                        @if($requestType === 'Traffic Launch')
+                            <div class="space-y-6 bg-slate-50/50 dark:bg-white/3 border border-slate-200/80 dark:border-white/10 rounded-2xl p-5 animate-fade-in">
+                                <div class="flex items-center space-x-2 pb-3 border-b border-slate-200/60 dark:border-white/10">
+                                    <span class="p-2 rounded-xl bg-sky-500/10 text-sky-500">
+                                        <i class="fa-solid fa-rocket text-base"></i>
+                                    </span>
+                                    <div>
+                                        <h4 class="text-sm font-bold text-slate-800 dark:text-white">Traffic Launch Campaign Details</h4>
+                                        <p class="text-xs text-slate-500 dark:text-slate-400">Configure target metrics, GEO distribution, and traffic sources for the campaign.</p>
+                                    </div>
+                                </div>
+
+                                <!-- Month & Plan -->
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Target Month <span class="text-rose-500">*</span></label>
+                                        <select wire:model="trafficMonth" class="w-full px-3.5 py-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
+                                            @foreach($this->getMonthOptions() as $mKey => $mLabel)
+                                                <option value="{{ $mKey }}">{{ $mLabel }}</option>
+                                            @endforeach
+                                        </select>
+                                        @error('trafficMonth') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Plan Name <span class="text-rose-500">*</span></label>
+                                        <input type="text" wire:model="trafficPlan" placeholder="e.g. Main Traffic Launch Plan" class="w-full px-3.5 py-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
+                                        @error('trafficPlan') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
+                                    </div>
+                                </div>
+
+                                <!-- GEO Distribution Header & Total Counter -->
+                                <div class="space-y-3">
+                                    <div class="flex items-center justify-between">
+                                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                            GEO Distribution (Must equal 100%) <span class="text-rose-500">*</span>
+                                        </label>
+                                        <div class="flex items-center space-x-2">
+                                            @php $geoTotal = $this->geoTotalPercent; @endphp
+                                            <span class="px-2.5 py-1 rounded-full text-xs font-bold {{ $geoTotal === 100 ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400' : 'bg-rose-100 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400' }}">
+                                                Total: {{ $geoTotal }}% / 100%
+                                            </span>
+                                            <button type="button" wire:click="addGeoRow" class="px-2.5 py-1 bg-sky-500/10 hover:bg-sky-500/20 text-sky-600 dark:text-sky-400 rounded-lg text-xs font-semibold transition-all">
+                                                <i class="fa-solid fa-plus text-[10px] mr-1"></i> Add Country
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- GEO Rows -->
+                                    <div class="space-y-2">
+                                        @foreach($trafficGeo as $index => $geo)
+                                            <div class="flex items-center gap-2">
+                                                <!-- Country Select -->
+                                                <div class="flex-1">
+                                                    <select wire:model="trafficGeo.{{ $index }}.code" class="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
+                                                        <option value="">Select Country...</option>
+                                                        @foreach($this->getCountriesList() as $cCode => $cName)
+                                                            <option value="{{ $cCode }}">{{ $cName }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+
+                                                <!-- Percentage Input -->
+                                                <div class="w-28 relative">
+                                                    <input type="number" wire:model.live="trafficGeo.{{ $index }}.percent" min="1" max="100" placeholder="70" class="w-full pl-3 pr-7 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
+                                                    <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">%</span>
+                                                </div>
+
+                                                <!-- Remove Button -->
+                                                @if(count($trafficGeo) > 1)
+                                                    <button type="button" wire:click="removeGeoRow({{ $index }})" class="p-2 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer">
+                                                        <i class="fa-solid fa-trash-can text-xs"></i>
+                                                    </button>
+                                                @endif
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                    @error('trafficGeo') <span class="text-xs text-rose-500 block">{{ $message }}</span> @enderror
+                                </div>
+
+                                <!-- Bounce Rate, Pages, Time -->
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    <div>
+                                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Bounce Rate <span class="text-rose-500">*</span></label>
+                                        <input type="text" wire:model="trafficBounceRate" placeholder="e.g. 25-30%" class="w-full px-3.5 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
+                                        @error('trafficBounceRate') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Pages <span class="text-rose-500">*</span></label>
+                                        <input type="text" wire:model="trafficPages" placeholder="e.g. 3-5 pages" class="w-full px-3.5 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
+                                        @error('trafficPages') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Time / Schedule <span class="text-rose-500">*</span></label>
+                                        <input type="text" wire:model="trafficTime" placeholder="e.g. 09:00 - 21:00" class="w-full px-3.5 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
+                                        @error('trafficTime') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
+                                    </div>
+                                </div>
+
+                                <!-- Channels Breakdown -->
+                                <div class="space-y-4 pt-2 border-t border-slate-200/60 dark:border-white/10">
+                                    <h5 class="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider">Traffic Channels Breakdown</h5>
+
+                                    <!-- Referral Traffic -->
+                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                        <div class="sm:col-span-1">
+                                            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Referral Traffic (%)</label>
+                                            <div class="relative">
+                                                <input type="number" wire:model="trafficReferralPercent" min="0" max="100" placeholder="15" class="w-full pl-3 pr-7 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
+                                                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">%</span>
+                                            </div>
+                                        </div>
+                                        <div class="sm:col-span-2">
+                                            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Referral Links (One per line)</label>
+                                            <textarea wire:model="trafficReferralLinks" rows="2" placeholder="https://example1.com&#10;https://example2.com" class="w-full px-3 py-1.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-mono text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 resize-none"></textarea>
+                                        </div>
+                                    </div>
+
+                                    <!-- Social Traffic -->
+                                    <div class="p-3 bg-white/60 dark:bg-slate-900/60 border border-slate-200/60 dark:border-white/10 rounded-xl space-y-3">
+                                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
+                                            <div>
+                                                <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Social Traffic Total (%)</label>
+                                                <div class="relative">
+                                                    <input type="number" wire:model="trafficSocialPercent" min="0" max="100" placeholder="20" class="w-full pl-3 pr-7 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
+                                                    <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">%</span>
+                                                </div>
+                                            </div>
+                                            <div class="sm:col-span-2">
+                                                <p class="text-[11px] text-slate-500 dark:text-slate-400">Specify Facebook & Instagram links and breakdown percentages below.</p>
+                                            </div>
+                                        </div>
+
+                                        <!-- Facebook & Instagram breakdown -->
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-100 dark:border-white/5">
+                                            <!-- Facebook -->
+                                            <div class="space-y-1.5">
+                                                <span class="text-xs font-semibold text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
+                                                    <i class="fa-brands fa-facebook"></i> Facebook
+                                                </span>
+                                                <div class="flex items-center gap-2">
+                                                    <div class="w-24 relative flex-shrink-0">
+                                                        <input type="number" wire:model="trafficSocialFbPercent" min="0" max="100" placeholder="10" class="w-full pl-2.5 pr-6 py-1.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-lg text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
+                                                        <span class="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">%</span>
+                                                    </div>
+                                                    <input type="url" wire:model="trafficSocialFbLink" placeholder="Facebook Link / URL" class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-lg text-xs font-mono text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
+                                                </div>
+                                            </div>
+
+                                            <!-- Instagram -->
+                                            <div class="space-y-1.5">
+                                                <span class="text-xs font-semibold text-pink-600 dark:text-pink-400 flex items-center gap-1.5">
+                                                    <i class="fa-brands fa-instagram"></i> Instagram
+                                                </span>
+                                                <div class="flex items-center gap-2">
+                                                    <div class="w-24 relative flex-shrink-0">
+                                                        <input type="number" wire:model="trafficSocialInstPercent" min="0" max="100" placeholder="10" class="w-full pl-2.5 pr-6 py-1.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-lg text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
+                                                        <span class="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">%</span>
+                                                    </div>
+                                                    <input type="url" wire:model="trafficSocialInstLink" placeholder="Instagram Link / URL" class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-lg text-xs font-mono text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Organic & Direct Traffic -->
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Organic Traffic (%)</label>
+                                            <div class="relative">
+                                                <input type="number" wire:model="trafficOrganicPercent" min="0" max="100" placeholder="35" class="w-full pl-3 pr-7 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
+                                                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">%</span>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Direct Traffic (%)</label>
+                                            <div class="relative">
+                                                <input type="number" wire:model="trafficDirectPercent" min="0" max="100" placeholder="30" class="w-full pl-3 pr-7 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
+                                                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Comment -->
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Comment (Optional)</label>
+                                    <textarea wire:model="trafficComment" rows="3" placeholder="Any additional notes or instructions for the campaign..." class="w-full px-3.5 py-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 resize-none"></textarea>
+                                </div>
+                            </div>
+                        @else
+                            <!-- Description for Standard Request Types -->
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">Description <span class="text-rose-500">*</span></label>
+                                <textarea wire:model="description"
+                                          x-on:input="localStorage.setItem('portal_draft_description', $event.target.value)"
+                                          rows="5"
+                                          placeholder="Describe your issue or request in detail. The more details you provide, the faster we can help..."
+                                          class="w-full px-4 py-3 bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all duration-200 resize-none"></textarea>
+                                @error('description') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
+                            </div>
+                        @endif
 
                         @if(config('features.task_attachments', true))
                             <!-- Attachments -->
