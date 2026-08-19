@@ -28,13 +28,83 @@
             document.addEventListener('livewire:navigated', applyTheme);
         </script>
 
+        <!-- Tom Select (Searchable Selects) -->
+        <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.min.css" rel="stylesheet">
+        <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
         @livewireStyles
         
         <style>
-            body {
-                font-family: 'Plus Jakarta Sans', sans-serif;
+            /* Tom Select Portal Theme */
+            .ts-wrapper .ts-control {
+                background-color: #ffffff;
+                border: 1px solid rgba(226, 232, 240, 1);
+                border-radius: 0.75rem;
+                padding: 0.5rem 0.75rem;
+                font-size: 0.75rem;
+                font-weight: 600;
+                color: #1e293b;
+                box-shadow: none;
+                min-height: 38px;
+                display: flex;
+                align-items: center;
+            }
+            .dark .ts-wrapper .ts-control {
+                background-color: #020617;
+                border-color: rgba(255, 255, 255, 0.1);
+                color: #f1f5f9;
+            }
+            .ts-wrapper.focus .ts-control {
+                border-color: #6366f1;
+                box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+            }
+            .ts-wrapper .ts-control input {
+                color: inherit;
+                font-size: 0.75rem;
+            }
+            .ts-wrapper .ts-dropdown {
+                background-color: #ffffff;
+                border: 1px solid rgba(226, 232, 240, 1);
+                border-radius: 0.75rem;
+                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+                font-size: 0.75rem;
+                overflow: hidden;
+                margin-top: 4px;
+                z-index: 999;
+            }
+            .dark .ts-wrapper .ts-dropdown {
+                background-color: #0f172a;
+                border-color: rgba(255, 255, 255, 0.1);
+                color: #f1f5f9;
+            }
+            .ts-wrapper .ts-dropdown .optgroup-header {
+                font-weight: 800;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                font-size: 0.65rem;
+                padding: 0.5rem 0.75rem;
+                color: #64748b;
+                background-color: #f8fafc;
+            }
+            .dark .ts-wrapper .ts-dropdown .optgroup-header {
+                color: #94a3b8;
+                background-color: rgba(255, 255, 255, 0.05);
+            }
+            .ts-wrapper .ts-dropdown [data-selectable] {
+                padding: 0.5rem 0.75rem;
+                cursor: pointer;
+            }
+            .ts-wrapper .ts-dropdown [data-selectable]:hover,
+            .ts-wrapper .ts-dropdown .active {
+                background-color: #e0e7ff;
+                color: #4338ca;
+            }
+            .dark .ts-wrapper .ts-dropdown [data-selectable]:hover,
+            .dark .ts-wrapper .ts-dropdown .active {
+                background-color: rgba(99, 102, 241, 0.2);
+                color: #818cf8;
             }
             .font-outfit {
                 font-family: 'Outfit', sans-serif;

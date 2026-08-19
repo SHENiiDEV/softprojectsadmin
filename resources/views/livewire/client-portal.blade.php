@@ -382,19 +382,38 @@
                                     <div class="space-y-2">
                                         @foreach($trafficGeo as $index => $geo)
                                             <div class="flex items-center gap-2">
-                                                <!-- Country Select -->
-                                                <div class="flex-1">
-                                                    <select wire:model="trafficGeo.{{ $index }}.code" class="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
-                                                        <option value="">Select Country...</option>
-                                                        @foreach($this->getGroupedCountries() as $regionName => $regionCountries)
-                                                            <optgroup label="{{ $regionName }}">
-                                                                @foreach($regionCountries as $cCode => $cName)
-                                                                    <option value="{{ $cCode }}">{{ $cName }}</option>
-                                                                @endforeach
-                                                            </optgroup>
-                                                        @endforeach
-                                                    </select>
-                                                </div>
+                                                <!-- Country Select (Searchable & Grouped by Region) -->
+                                                <div x-data="{
+                                                         ts: null,
+                                                         init() {
+                                                             this.$nextTick(() => {
+                                                                 const el = this.$refs.countrySelect;
+                                                                 if (!el) return;
+                                                                 if (el.tomselect) { el.tomselect.destroy(); }
+                                                                 this.ts = new TomSelect(el, {
+                                                                     placeholder: 'Search country or region...',
+                                                                     allowEmptyOption: true,
+                                                                     maxOptions: null,
+                                                                     onChange: (val) => {
+                                                                         @this.set('trafficGeo.{{ $index }}.code', val);
+                                                                     }
+                                                                 });
+                                                             });
+                                                         }
+                                                      }"
+                                                      wire:key="geo-country-select-{{ $index }}"
+                                                      class="flex-1">
+                                                     <select x-ref="countrySelect" wire:model="trafficGeo.{{ $index }}.code" class="w-full">
+                                                         <option value="">Search country or region...</option>
+                                                         @foreach($this->getGroupedCountries() as $regionName => $regionCountries)
+                                                             <optgroup label="{{ $regionName }}">
+                                                                 @foreach($regionCountries as $cCode => $cName)
+                                                                     <option value="{{ $cCode }}">{{ $cName }}</option>
+                                                                 @endforeach
+                                                             </optgroup>
+                                                         @endforeach
+                                                     </select>
+                                                 </div>
 
                                                 <!-- Percentage Input -->
                                                 <div class="w-28 relative">
