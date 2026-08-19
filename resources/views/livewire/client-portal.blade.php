@@ -386,8 +386,12 @@
                                                 <div class="flex-1">
                                                     <select wire:model="trafficGeo.{{ $index }}.code" class="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
                                                         <option value="">Select Country...</option>
-                                                        @foreach($this->getCountriesList() as $cCode => $cName)
-                                                            <option value="{{ $cCode }}">{{ $cName }}</option>
+                                                        @foreach($this->getGroupedCountries() as $regionName => $regionCountries)
+                                                            <optgroup label="{{ $regionName }}">
+                                                                @foreach($regionCountries as $cCode => $cName)
+                                                                    <option value="{{ $cCode }}">{{ $cName }}</option>
+                                                                @endforeach
+                                                            </optgroup>
                                                         @endforeach
                                                     </select>
                                                 </div>
