@@ -51,6 +51,28 @@ class NotificationService
     }
 
     /**
+     * Notify about task creation.
+     */
+    public static function sendTaskCreated(Task $task, ?User $actor = null): void
+    {
+        $actorName = $actor ? $actor->name : 'System';
+        $title = 'New Task Created';
+        $message = "Task '{$task->title}' was created by {$actorName}.";
+        $url = route('tasks.kanban', ['task_id' => $task->id]);
+
+        if ($task->assigned_to && ($actor === null || $task->assigned_to !== $actor->id)) {
+            $task->assignee?->notify(new AppNotification($title, $message, $url, 'task_created'));
+
+            if ($task->assignee && $task->assignee->telegram_id && $task->assignee->getNotificationSetting('tg_notify_task_assigned', true)) {
+                $escapedTitle = TelegramService::escapeMarkdownV2($task->title);
+                $text = "📝 *New task created:*\n*Title:* {$escapedTitle}";
+
+                SendTelegramMessageJob::dispatch($task->assignee->telegram_id, $text, self::getTelegramButtons($task));
+            }
+        }
+    }
+
+    /**
      * Notify about task status update.
      */
     public static function sendTaskStatusUpdated(Task $task, string $oldStatus, string $newStatus, ?User $actor = null): void
