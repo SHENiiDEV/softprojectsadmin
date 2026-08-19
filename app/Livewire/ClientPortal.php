@@ -478,7 +478,7 @@ class ClientPortal extends Component
         <div style='font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.9;'>🚀 TRAFFIC LAUNCH CAMPAIGN</div>
         <div style='font-size: 18px; font-weight: 800; margin-top: 4px;'>{$trafficMonth} Traffic</div>
         <div style='font-size: 12px; opacity: 0.95; margin-top: 6px;'>
-            Plan: <strong>{$trafficPlan}</strong> &bull; Website: <a href='{$websiteUrl}' target='_blank' style='color: #ffffff; text-decoration: underline;'>{$websiteName}</a>
+            Plan: <strong>{$trafficPlan}</strong> &bull; Website: <a href='{$websiteUrl}' target='_blank' style='color: #ffffff; text-decoration: underline;'>{$websiteUrl}</a>
         </div>
     </div>
 
