@@ -27,8 +27,9 @@ class TelegramSetWebhook extends Command
     public function handle(): int
     {
         $botToken = config('services.telegram.bot_token');
-        if (!$botToken) {
+        if (! $botToken) {
             $this->error('TELEGRAM_BOT_TOKEN is not set in configuration.');
+
             return 1;
         }
 
@@ -39,21 +40,24 @@ class TelegramSetWebhook extends Command
                 if ($response->successful()) {
                     $this->info('Webhook deleted successfully!');
                     $this->line(json_encode($response->json(), JSON_PRETTY_PRINT));
+
                     return 0;
                 } else {
-                    $this->error('Failed to delete webhook: ' . $response->body());
+                    $this->error('Failed to delete webhook: '.$response->body());
+
                     return 1;
                 }
             } catch (\Exception $e) {
-                $this->error('Error occurred: ' . $e->getMessage());
+                $this->error('Error occurred: '.$e->getMessage());
+
                 return 1;
             }
         }
 
         $url = $this->argument('url');
 
-        if (!$url) {
-            $url = "https://soft-projects.io/telegram/webhook";
+        if (! $url) {
+            $url = 'https://soft-projects.io/telegram/webhook';
         }
 
         $this->info("Setting Telegram Webhook to: {$url} ...");
@@ -73,13 +77,16 @@ class TelegramSetWebhook extends Command
                 if ($infoResponse->successful()) {
                     $this->line(json_encode($infoResponse->json(), JSON_PRETTY_PRINT));
                 }
+
                 return 0;
             } else {
-                $this->error('Failed to set webhook: ' . $response->body());
+                $this->error('Failed to set webhook: '.$response->body());
+
                 return 1;
             }
         } catch (\Exception $e) {
-            $this->error('Error occurred: ' . $e->getMessage());
+            $this->error('Error occurred: '.$e->getMessage());
+
             return 1;
         }
     }

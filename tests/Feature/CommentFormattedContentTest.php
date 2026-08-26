@@ -10,7 +10,7 @@ class CommentFormattedContentTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function testMentionsAreHighlighted(): void
+    public function test_mentions_are_highlighted(): void
     {
         $comment = new Comment(['content' => 'Hello @johndoe how are you?']);
 
@@ -21,7 +21,7 @@ class CommentFormattedContentTest extends TestCase
         $this->assertStringContainsString('<span', $formatted);
     }
 
-    public function testBoldFormattingIsApplied(): void
+    public function test_bold_formatting_is_applied(): void
     {
         $comment = new Comment(['content' => 'This is **important** text']);
 
@@ -32,7 +32,7 @@ class CommentFormattedContentTest extends TestCase
         $this->assertStringNotContainsString('**', $formatted);
     }
 
-    public function testItalicFormattingIsApplied(): void
+    public function test_italic_formatting_is_applied(): void
     {
         $comment = new Comment(['content' => 'This is *emphasized* text']);
 
@@ -42,7 +42,7 @@ class CommentFormattedContentTest extends TestCase
         $this->assertStringContainsString('emphasized', $formatted);
     }
 
-    public function testInlineCodeFormattingIsApplied(): void
+    public function test_inline_code_formatting_is_applied(): void
     {
         $comment = new Comment(['content' => 'Run `composer install` to set up']);
 
@@ -53,7 +53,7 @@ class CommentFormattedContentTest extends TestCase
         $this->assertStringContainsString('font-mono', $formatted);
     }
 
-    public function testHtmlIsEscaped(): void
+    public function test_html_is_escaped(): void
     {
         $comment = new Comment(['content' => '<script>alert("xss")</script>']);
 
@@ -63,7 +63,7 @@ class CommentFormattedContentTest extends TestCase
         $this->assertStringContainsString('&lt;script&gt;', $formatted);
     }
 
-    public function testCombinedFormatting(): void
+    public function test_combined_formatting(): void
     {
         $comment = new Comment(['content' => '@admin please run `deploy` command **now**']);
 
@@ -82,7 +82,7 @@ class CommentFormattedContentTest extends TestCase
         $this->assertStringContainsString('now', $formatted);
     }
 
-    public function testPlainTextRemainsUnchanged(): void
+    public function test_plain_text_remains_unchanged(): void
     {
         $comment = new Comment(['content' => 'Just a normal comment']);
 

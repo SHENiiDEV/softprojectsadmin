@@ -2,22 +2,25 @@
 
 namespace App\Livewire\Reports;
 
-use Livewire\Component;
-use App\Models\User;
 use App\Models\TaskTimeLog;
+use App\Models\User;
 use Carbon\Carbon;
+use Livewire\Component;
 
 class TimeReport extends Component
 {
     public $userId = ''; // Empty string means 'All'
+
     public $fromDate;
+
     public $toDate;
+
     public $chartData = [];
 
     public function mount()
     {
         // Check permissions: view_reports permission required
-        if (!auth()->user()->can('view_reports')) {
+        if (! auth()->user()->can('view_reports')) {
             abort(403, 'Unauthorized.');
         }
 
@@ -58,6 +61,7 @@ class TimeReport extends Component
             $userBreakdown = $logs->groupBy('user_id')->map(function ($userLogs) {
                 $user = $userLogs->first()->user;
                 $seconds = $userLogs->sum('duration_seconds');
+
                 return [
                     'user_name' => $user?->name ?? 'Deleted User',
                     'role' => $user?->roles->first()?->name ?? 'worker',
@@ -72,6 +76,7 @@ class TimeReport extends Component
             $taskBreakdown = $logs->groupBy('task_id')->map(function ($taskLogs) {
                 $task = $taskLogs->first()->task;
                 $seconds = $taskLogs->sum('duration_seconds');
+
                 return [
                     'task_id' => $task?->id,
                     'task_title' => $task?->title ?? 'Deleted Task',
@@ -147,7 +152,7 @@ class TimeReport extends Component
             'star',
             'cross',
             'crossRot',
-            'dash'
+            'dash',
         ];
 
         $datasets = [];
@@ -165,7 +170,7 @@ class TimeReport extends Component
                 foreach ($dateKeys as $dateKey) {
                     $dayStart = Carbon::parse($dateKey)->startOfDay();
                     $dayEnd = Carbon::parse($dateKey)->endOfDay();
-                    $seconds = $userLogs->filter(function($log) use ($dayStart, $dayEnd) {
+                    $seconds = $userLogs->filter(function ($log) use ($dayStart, $dayEnd) {
                         return $log->started_at->between($dayStart, $dayEnd);
                     })->sum('duration_seconds');
                     $data[] = round($seconds / 3600, 2);
@@ -199,7 +204,7 @@ class TimeReport extends Component
                 foreach ($dateKeys as $dateKey) {
                     $dayStart = Carbon::parse($dateKey)->startOfDay();
                     $dayEnd = Carbon::parse($dateKey)->endOfDay();
-                    $seconds = $taskLogs->filter(function($log) use ($dayStart, $dayEnd) {
+                    $seconds = $taskLogs->filter(function ($log) use ($dayStart, $dayEnd) {
                         return $log->started_at->between($dayStart, $dayEnd);
                     })->sum('duration_seconds');
                     $data[] = round($seconds / 3600, 2);

@@ -1,10 +1,11 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Company extends Model
 {
@@ -55,7 +56,7 @@ class Company extends Model
         $score += $this->credentials()->exists() ? 20 : 0;
         // open critical tasks (assume tasks with high priority)
         $criticalOpen = $this->projects()
-            ->whereHas('tasks', fn($q) => $q->where('priority', 'critical')->whereNull('completed_at'))
+            ->whereHas('tasks', fn ($q) => $q->where('priority', 'critical')->whereNull('completed_at'))
             ->count();
         $score += $criticalOpen === 0 ? 20 : 0;
         // unpaid director fee (placeholder, assume no unpaid)
@@ -76,4 +77,3 @@ class Company extends Model
         return ['score' => $score, 'class' => $class];
     }
 }
-?>

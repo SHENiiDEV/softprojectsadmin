@@ -2,11 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Livewire\ClientPortal;
+use App\Livewire\Clients\Index;
 use App\Models\Client;
 use App\Models\Project;
-use App\Models\Website;
 use App\Models\Task;
 use App\Models\User;
+use App\Models\Website;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -45,7 +47,7 @@ class ClientPortalTest extends TestCase
         $admin = User::factory()->create()->assignRole('admin');
         $this->actingAs($admin);
 
-        Livewire::test(\App\Livewire\Clients\Index::class)
+        Livewire::test(Index::class)
             ->set('name', 'APS Group')
             ->call('saveClient')
             ->assertHasNoErrors();
@@ -97,7 +99,7 @@ class ClientPortalTest extends TestCase
         $file1 = UploadedFile::fake()->image('screenshot.png');
         $file2 = UploadedFile::fake()->create('spec.pdf', 100);
 
-        Livewire::test(\App\Livewire\ClientPortal::class, ['hash' => $client->hash])
+        Livewire::test(ClientPortal::class, ['hash' => $client->hash])
             ->set('selectedCompanyId', $company->id)
             ->set('selectedWebsiteId', $website->id)
             ->set('requestType', 'Bug Report')
@@ -147,7 +149,7 @@ class ClientPortalTest extends TestCase
             'status' => 'Live',
         ]);
 
-        Livewire::test(\App\Livewire\ClientPortal::class, ['hash' => $client->hash])
+        Livewire::test(ClientPortal::class, ['hash' => $client->hash])
             ->set('selectedCompanyId', $company->id)
             ->set('selectedWebsiteId', $website->id)
             ->set('requestType', 'General Question')

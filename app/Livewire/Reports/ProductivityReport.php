@@ -2,29 +2,32 @@
 
 namespace App\Livewire\Reports;
 
-use Livewire\Component;
-use App\Models\User;
 use App\Models\Task;
 use App\Models\TaskTimeLog;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use Livewire\Component;
 
 class ProductivityReport extends Component
 {
     public string $period = 'week'; // week, month, quarter
+
     public string $userId = '';
 
     public function updatedPeriod(): void {}
+
     public function updatedUserId(): void {}
 
     private function dateRange(): array
     {
         $now = Carbon::now();
+
         return match ($this->period) {
-            'week'    => [$now->copy()->startOfWeek(), $now->copy()->endOfWeek()],
-            'month'   => [$now->copy()->startOfMonth(), $now->copy()->endOfMonth()],
+            'week' => [$now->copy()->startOfWeek(), $now->copy()->endOfWeek()],
+            'month' => [$now->copy()->startOfMonth(), $now->copy()->endOfMonth()],
             'quarter' => [$now->copy()->startOfQuarter(), $now->copy()->endOfQuarter()],
-            default   => [$now->copy()->startOfWeek(), $now->copy()->endOfWeek()],
+            default => [$now->copy()->startOfWeek(), $now->copy()->endOfWeek()],
         };
     }
 
@@ -64,20 +67,20 @@ class ProductivityReport extends Component
                 : 0;
 
             return [
-                'user'             => $user,
-                'tasks_completed'  => $tasksCompleted,
-                'tasks_total'      => $tasksTotal,
-                'overdue'          => $overdueTasks,
-                'hours_logged'     => round($hoursLogged / 3600, 1),
-                'completion_rate'  => $completionRate,
-                'score'            => $this->calcScore($tasksCompleted, $hoursLogged, $overdueTasks),
+                'user' => $user,
+                'tasks_completed' => $tasksCompleted,
+                'tasks_total' => $tasksTotal,
+                'overdue' => $overdueTasks,
+                'hours_logged' => round($hoursLogged / 3600, 1),
+                'completion_rate' => $completionRate,
+                'score' => $this->calcScore($tasksCompleted, $hoursLogged, $overdueTasks),
             ];
         })->sortByDesc('score')->values();
     }
 
     private function calcScore(int $done, int $seconds, int $overdue): int
     {
-        return max(0, ($done * 10) + (int)($seconds / 360) - ($overdue * 5));
+        return max(0, ($done * 10) + (int) ($seconds / 360) - ($overdue * 5));
     }
 
     public function render()
@@ -88,8 +91,8 @@ class ProductivityReport extends Component
         $users = User::orderBy('name')->get();
 
         $totalTasksDone = $userStats->sum('tasks_completed');
-        $totalHours     = $userStats->sum('hours_logged');
-        $totalOverdue   = $userStats->sum('overdue');
+        $totalHours = $userStats->sum('hours_logged');
+        $totalOverdue = $userStats->sum('overdue');
 
         return view('livewire.reports.productivity-report', compact(
             'userStats', 'users', 'totalTasksDone', 'totalHours', 'totalOverdue', 'from', 'to'

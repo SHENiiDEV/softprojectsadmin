@@ -2,8 +2,10 @@
 
 namespace App\Livewire\Projects;
 
+use App\Models\Client;
 use App\Models\Project;
 use App\Models\ProjectNote;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 
@@ -120,8 +122,8 @@ class NotesSection extends Component
             ->orderByDesc('created_at')
             ->get();
 
-        $users = \App\Models\User::orderBy('name')->get();
-        $clients = \App\Models\Client::orderBy('name')->get();
+        $users = User::orderBy('name')->get();
+        $clients = Client::orderBy('name')->get();
 
         return view('livewire.projects.notes-section', compact('notes', 'users', 'clients'));
     }

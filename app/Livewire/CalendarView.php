@@ -2,8 +2,8 @@
 
 namespace App\Livewire;
 
-use App\Models\Task;
 use App\Models\Report;
+use App\Models\Task;
 use Livewire\Component;
 
 class CalendarView extends Component
@@ -21,9 +21,9 @@ class CalendarView extends Component
 
         // Fetch reports with deadlines
         $reports = Report::where(function ($query) {
-                $query->whereNotNull('accounts_due_by')
-                      ->orWhereNotNull('statements_due_by');
-            })
+            $query->whereNotNull('accounts_due_by')
+                ->orWhereNotNull('statements_due_by');
+        })
             ->with('project')
             ->get();
 
@@ -31,7 +31,7 @@ class CalendarView extends Component
 
         foreach ($tasks as $task) {
             $projectName = $task->project ? $task->project->name : 'No Project';
-            
+
             // Priority-based coloring
             $color = match ($task->priority) {
                 'critical' => '#EF4444', // Red
@@ -41,8 +41,8 @@ class CalendarView extends Component
             };
 
             $events[] = [
-                'id' => 'task_' . $task->id,
-                'title' => '📝 ' . $task->title . ' (' . $projectName . ')',
+                'id' => 'task_'.$task->id,
+                'title' => '📝 '.$task->title.' ('.$projectName.')',
                 'start' => $task->due_date->format('Y-m-d'),
                 'url' => route('tasks.kanban', ['task_id' => $task->id]),
                 'color' => $color,
@@ -51,12 +51,12 @@ class CalendarView extends Component
 
         foreach ($reports as $report) {
             $projectName = $report->project ? $report->project->name : 'Unknown';
-            $url = route('projects.show', $report->project_id) . '?tab=reports';
+            $url = route('projects.show', $report->project_id).'?tab=reports';
 
             if ($report->accounts_due_by) {
                 $events[] = [
-                    'id' => 'accounts_' . $report->id,
-                    'title' => '🏦 Accounts: ' . $projectName,
+                    'id' => 'accounts_'.$report->id,
+                    'title' => '🏦 Accounts: '.$projectName,
                     'start' => $report->accounts_due_by->format('Y-m-d'),
                     'url' => $url,
                     'color' => '#8B5CF6', // Purple
@@ -65,8 +65,8 @@ class CalendarView extends Component
 
             if ($report->statements_due_by) {
                 $events[] = [
-                    'id' => 'statements_' . $report->id,
-                    'title' => '📄 Statement: ' . $projectName,
+                    'id' => 'statements_'.$report->id,
+                    'title' => '📄 Statement: '.$projectName,
                     'start' => $report->statements_due_by->format('Y-m-d'),
                     'url' => $url,
                     'color' => '#EC4899', // Pink

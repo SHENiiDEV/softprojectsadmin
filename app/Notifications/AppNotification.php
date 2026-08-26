@@ -10,8 +10,11 @@ class AppNotification extends Notification
     use Queueable;
 
     public string $title;
+
     public string $message;
+
     public string $url;
+
     public string $type;
 
     public function __construct(string $title, string $message, string $url = '', string $type = 'general')

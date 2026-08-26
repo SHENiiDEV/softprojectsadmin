@@ -2,11 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Livewire\Projects\BoardingSection;
+use App\Livewire\Projects\CredentialsSection;
+use App\Livewire\Projects\ReportsSection;
+use App\Models\Boarding;
+use App\Models\Credential;
 use App\Models\Project;
 use App\Models\User;
-use App\Models\Credential;
-use App\Models\Boarding;
-use App\Models\Report;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +20,7 @@ class CrmModulesTest extends TestCase
     use RefreshDatabase;
 
     protected User $user;
+
     protected Project $project;
 
     protected function setUp(): void
@@ -38,7 +41,7 @@ class CrmModulesTest extends TestCase
         $this->actingAs($this->user);
 
         // 1. Create credential
-        Livewire::test(\App\Livewire\Projects\CredentialsSection::class, ['project' => $this->project])
+        Livewire::test(CredentialsSection::class, ['project' => $this->project])
             ->set('type', 'hosting')
             ->set('provider_url', 'https://hosting.com')
             ->set('login', 'my-login')
@@ -65,7 +68,7 @@ class CrmModulesTest extends TestCase
         $this->assertEquals('secret-password-123', $credential->password);
 
         // 2. Edit credential
-        Livewire::test(\App\Livewire\Projects\CredentialsSection::class, ['project' => $this->project])
+        Livewire::test(CredentialsSection::class, ['project' => $this->project])
             ->call('edit', $credential->id)
             ->assertSet('password', 'secret-password-123')
             ->set('password', 'new-secure-password')
@@ -75,7 +78,7 @@ class CrmModulesTest extends TestCase
         $this->assertEquals('new-secure-password', $credential->refresh()->password);
 
         // 3. Delete credential
-        Livewire::test(\App\Livewire\Projects\CredentialsSection::class, ['project' => $this->project])
+        Livewire::test(CredentialsSection::class, ['project' => $this->project])
             ->call('delete', $credential->id);
 
         $this->assertDatabaseMissing('credentials', [
@@ -92,7 +95,7 @@ class CrmModulesTest extends TestCase
         ]);
 
         // Mounting the component should auto-initialize boarding record
-        Livewire::test(\App\Livewire\Projects\BoardingSection::class, ['project' => $this->project])
+        Livewire::test(BoardingSection::class, ['project' => $this->project])
             ->assertSet('cfs_verification', 'need_to_complete')
             ->set('cfs_verification', 'completed')
             ->set('bank_verification', 'pending')
@@ -117,7 +120,7 @@ class CrmModulesTest extends TestCase
         $accountsDue = $now->copy()->addDays(15)->format('Y-m-d'); // 15 days left (critical: < 30)
         $statementsDue = $now->copy()->addDays(40)->format('Y-m-d'); // 40 days left (normal: > 30)
 
-        Livewire::test(\App\Livewire\Projects\ReportsSection::class, ['project' => $this->project])
+        Livewire::test(ReportsSection::class, ['project' => $this->project])
             ->set('reg_number', '123456')
             ->set('auth_code', 'ABC999')
             ->set('ch_pass', 'pass123')

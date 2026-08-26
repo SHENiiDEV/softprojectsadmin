@@ -2,10 +2,10 @@
 
 namespace App\Console\Commands;
 
+use App\Jobs\SendTelegramMessageJob;
 use App\Models\Report;
 use App\Models\User;
 use App\Services\TelegramService;
-use App\Jobs\SendTelegramMessageJob;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 
@@ -53,6 +53,7 @@ class CheckReportDeadlines extends Command
         }
 
         $this->info('Completed checking report deadlines.');
+
         return 0;
     }
 
@@ -61,7 +62,7 @@ class CheckReportDeadlines extends Command
      */
     protected function notifyForReport(Report $report, string $reportType, string $dueDate): void
     {
-        if (!$report->project) {
+        if (! $report->project) {
             return;
         }
 
@@ -78,9 +79,9 @@ class CheckReportDeadlines extends Command
         $replyMarkup = [
             'inline_keyboard' => [
                 [
-                    ['text' => '🔗 Open Company', 'url' => $url]
-                ]
-            ]
+                    ['text' => '🔗 Open Company', 'url' => $url],
+                ],
+            ],
         ];
 
         // 1. Notify Manager

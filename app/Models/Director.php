@@ -2,25 +2,22 @@
 
 namespace App\Models;
 
+use Database\Factories\DirectorFactory;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-
-use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-
-use App\Models\ActivityLog;
-use App\Models\User;
 
 #[Fillable(['project_id', 'name', 'fee_paid_status', 'managed_by'])]
 class Director extends Model
 {
-    /** @use HasFactory<\Database\Factories\DirectorFactory> */
+    /** @use HasFactory<DirectorFactory> */
     use HasFactory;
 
     protected static function booted(): void
     {
         static::updated(function (Director $director) {
-            if (!config('features.company_changelog', true)) {
+            if (! config('features.company_changelog', true)) {
                 return;
             }
 
@@ -40,7 +37,7 @@ class Director extends Model
                 } elseif ($key === 'name') {
                     $changes[] = "Director name changed from '{$original}' to '{$value}'";
                 } else {
-                    $changes[] = "Director field '{$key}' changed from '" . ($original ?? 'none') . "' to '" . ($value ?? 'none') . "'";
+                    $changes[] = "Director field '{$key}' changed from '".($original ?? 'none')."' to '".($value ?? 'none')."'";
                 }
             }
 

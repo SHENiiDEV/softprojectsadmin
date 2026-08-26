@@ -5,7 +5,6 @@ namespace App\Console\Commands;
 use App\Services\TelegramService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 
 class TelegramPoll extends Command
 {
@@ -29,8 +28,9 @@ class TelegramPoll extends Command
     public function handle(TelegramService $telegramService): int
     {
         $botToken = config('services.telegram.bot_token');
-        if (!$botToken) {
+        if (! $botToken) {
             $this->error('TELEGRAM_BOT_TOKEN is not set in configuration.');
+
             return 1;
         }
 
@@ -46,16 +46,16 @@ class TelegramPoll extends Command
                 if ($response->successful()) {
                     $updates = $response->json('result') ?? [];
                     foreach ($updates as $update) {
-                        $this->info("Processing update ID: " . $update['update_id']);
+                        $this->info('Processing update ID: '.$update['update_id']);
                         $telegramService->handleUpdate($update);
                         $offset = $update['update_id'] + 1;
                     }
                 } else {
-                    $this->error('Failed to fetch updates: ' . $response->body());
+                    $this->error('Failed to fetch updates: '.$response->body());
                     sleep(2);
                 }
             } catch (\Exception $e) {
-                $this->error('Error during polling: ' . $e->getMessage());
+                $this->error('Error during polling: '.$e->getMessage());
                 sleep(2);
             }
 
@@ -67,6 +67,7 @@ class TelegramPoll extends Command
         } while (true);
 
         $this->info('Polling stopped.');
+
         return 0;
     }
 }

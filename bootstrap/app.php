@@ -1,8 +1,11 @@
 <?php
 
+use App\Http\Middleware\CheckFeatureEnabled;
+use App\Http\Middleware\SetUserPreferences;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Spatie\Permission\Middleware\PermissionMiddleware;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -13,15 +16,16 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->validateCsrfTokens(except: [
             'telegram/webhook',
+            'api/v1/webhooks/gmail-alert',
         ]);
 
         $middleware->alias([
-            'feature' => \App\Http\Middleware\CheckFeatureEnabled::class,
-            'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
+            'feature' => CheckFeatureEnabled::class,
+            'permission' => PermissionMiddleware::class,
         ]);
 
         $middleware->web(append: [
-            \App\Http\Middleware\SetUserPreferences::class,
+            SetUserPreferences::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -2,16 +2,17 @@
 
 namespace App\Console\Commands;
 
-use App\Models\User;
-use App\Models\Task;
-use App\Services\TelegramService;
 use App\Jobs\SendTelegramMessageJob;
+use App\Models\Task;
+use App\Models\User;
+use App\Services\TelegramService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 
 class SendDailyDigest extends Command
 {
     protected $signature = 'digest:daily';
+
     protected $description = 'Send daily task digest to all users via Telegram at 9:00 AM';
 
     public function handle(): int
@@ -63,6 +64,7 @@ class SendDailyDigest extends Command
         }
 
         $this->info('Daily digest complete.');
+
         return 0;
     }
 }

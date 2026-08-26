@@ -7,8 +7,8 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
 use Illuminate\Queue\Middleware\RateLimited;
+use Illuminate\Queue\SerializesModels;
 
 class SendTelegramMessageJob implements ShouldQueue
 {
@@ -16,15 +16,11 @@ class SendTelegramMessageJob implements ShouldQueue
 
     /**
      * The number of times the job may be attempted.
-     *
-     * @var int
      */
     public int $tries = 10;
 
     /**
      * The number of seconds to wait before retrying a job that encountered an exception.
-     *
-     * @var int
      */
     public int $backoff = 2;
 

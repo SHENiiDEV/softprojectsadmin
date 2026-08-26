@@ -2,8 +2,8 @@
 
 namespace App\Livewire;
 
-use Livewire\Component;
 use Illuminate\Support\Facades\Auth;
+use Livewire\Component;
 
 class NotificationTray extends Component
 {
@@ -35,6 +35,7 @@ class NotificationTray extends Component
         if ($notification) {
             $notification->markAsRead();
         }
+
         return redirect($url);
     }
 

@@ -2,25 +2,28 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\SendTelegramMessageJob;
+use App\Models\Client;
+use App\Models\Comment;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
-use App\Models\Client;
-use App\Models\Comment;
-use App\Jobs\SendTelegramMessageJob;
+use App\Services\NotificationService;
+use Carbon\Carbon;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
-use Carbon\Carbon;
 
 class TaskEnhancementsTest extends TestCase
 {
     use RefreshDatabase;
 
     protected User $user;
+
     protected Project $project;
+
     protected Client $client;
 
     protected function setUp(): void
@@ -32,17 +35,17 @@ class TaskEnhancementsTest extends TestCase
 
         // Create admin user
         $this->user = User::factory()->create(['telegram_username' => 'admin_tg'])->assignRole('admin');
-        
+
         $this->client = Client::create([
             'name' => 'Acme Corp',
-            'hash' => 'fakehash123'
+            'hash' => 'fakehash123',
         ]);
 
         $this->project = Project::factory()->create([
             'manager_id' => $this->user->id,
             'client_id' => $this->client->id,
         ]);
-        
+
         config([
             'services.telegram.bot_token' => '123456:fake_bot_token',
         ]);
@@ -61,7 +64,7 @@ class TaskEnhancementsTest extends TestCase
         $comment = Comment::create([
             'task_id' => $task->id,
             'user_id' => $this->user->id,
-            'content' => 'This is a root comment'
+            'content' => 'This is a root comment',
         ]);
 
         $this->assertCount(1, $task->comments);
@@ -83,14 +86,14 @@ class TaskEnhancementsTest extends TestCase
         $parentComment = Comment::create([
             'task_id' => $task->id,
             'user_id' => $this->user->id,
-            'content' => 'Root comment'
+            'content' => 'Root comment',
         ]);
 
         $reply = Comment::create([
             'task_id' => $task->id,
             'user_id' => $this->user->id,
             'parent_id' => $parentComment->id,
-            'content' => 'This is a reply'
+            'content' => 'This is a reply',
         ]);
 
         // Root comments list should only contain the parent
@@ -117,18 +120,18 @@ class TaskEnhancementsTest extends TestCase
             'task_id' => $task->id,
             'user_id' => $this->user->id,
             'content' => 'Public comment',
-            'is_private' => false
+            'is_private' => false,
         ]);
 
         $privateComment = Comment::create([
             'task_id' => $task->id,
             'user_id' => $this->user->id,
             'content' => 'Private comment',
-            'is_private' => true
+            'is_private' => true,
         ]);
 
         $this->assertCount(2, Comment::where('task_id', $task->id)->get());
-        
+
         // Client portal checks visibility:
         $clientComments = Comment::where('task_id', $task->id)->where('is_private', false)->get();
         $this->assertCount(1, $clientComments);
@@ -142,7 +145,7 @@ class TaskEnhancementsTest extends TestCase
     {
         $otherUser = User::factory()->create([
             'telegram_username' => 'alex_dev',
-            'telegram_id' => 98765
+            'telegram_id' => 98765,
         ]);
 
         $task = Task::create([
@@ -153,7 +156,7 @@ class TaskEnhancementsTest extends TestCase
         $comment = Comment::create([
             'task_id' => $task->id,
             'user_id' => $this->user->id,
-            'content' => 'Hey @alex_dev please check this task, also tell @unknown_user.'
+            'content' => 'Hey @alex_dev please check this task, also tell @unknown_user.',
         ]);
 
         $mentioned = $comment->getMentionedUsers();
@@ -168,7 +171,7 @@ class TaskEnhancementsTest extends TestCase
     {
         $worker = User::factory()->create([
             'telegram_id' => 999333,
-            'telegram_username' => 'workertg'
+            'telegram_username' => 'workertg',
         ]);
 
         $task = Task::create([
@@ -185,13 +188,13 @@ class TaskEnhancementsTest extends TestCase
         $comment = Comment::create([
             'task_id' => $task->id,
             'user_id' => $this->user->id,
-            'content' => 'Please look at this now'
+            'content' => 'Please look at this now',
         ]);
-        
-        \App\Services\NotificationService::sendNewCommentNotification($comment);
+
+        NotificationService::sendNewCommentNotification($comment);
 
         Queue::assertPushed(SendTelegramMessageJob::class, function ($job) use ($worker) {
-            return $job->chatId === $worker->telegram_id 
+            return $job->chatId === $worker->telegram_id
                 && str_contains($job->text, 'Please look at this now');
         });
 
@@ -199,13 +202,13 @@ class TaskEnhancementsTest extends TestCase
         $comment2 = Comment::create([
             'task_id' => $task->id,
             'user_id' => $this->user->id,
-            'content' => 'Calling @workertg to assist'
+            'content' => 'Calling @workertg to assist',
         ]);
 
-        \App\Services\NotificationService::sendNewCommentNotification($comment2);
+        NotificationService::sendNewCommentNotification($comment2);
 
         Queue::assertPushed(SendTelegramMessageJob::class, function ($job) use ($worker) {
-            return $job->chatId === $worker->telegram_id 
+            return $job->chatId === $worker->telegram_id
                 && str_contains($job->text, 'Calling @workertg');
         });
     }
@@ -226,7 +229,7 @@ class TaskEnhancementsTest extends TestCase
             'assigned_to' => $worker->id,
             'due_date' => Carbon::tomorrow()->toDateString(),
             'status' => 'in_progress',
-            'deadline_reminder_sent' => false
+            'deadline_reminder_sent' => false,
         ]);
 
         // Task due tomorrow but already done (should NOT notify)
@@ -236,7 +239,7 @@ class TaskEnhancementsTest extends TestCase
             'assigned_to' => $worker->id,
             'due_date' => Carbon::tomorrow()->toDateString(),
             'status' => 'done',
-            'deadline_reminder_sent' => false
+            'deadline_reminder_sent' => false,
         ]);
 
         // Start faking queue now
@@ -246,14 +249,14 @@ class TaskEnhancementsTest extends TestCase
 
         // Verify notification for in_progress task is sent
         Queue::assertPushed(SendTelegramMessageJob::class, function ($job) use ($worker) {
-            return $job->chatId === $worker->telegram_id 
+            return $job->chatId === $worker->telegram_id
                 && str_contains($job->text, 'Deadline Task')
                 && str_contains($job->text, 'expires tomorrow');
         });
 
         // Verify doneTask did NOT trigger notification
         Queue::assertNotPushed(SendTelegramMessageJob::class, function ($job) use ($worker) {
-            return $job->chatId === $worker->telegram_id 
+            return $job->chatId === $worker->telegram_id
                 && str_contains($job->text, 'Finished Task');
         });
 

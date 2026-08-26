@@ -29,6 +29,7 @@ class TaskAssignedMail extends Mailable
     public function envelope(): Envelope
     {
         $actorName = $this->actor ? $this->actor->name : 'System';
+
         return new Envelope(
             subject: "New Task Assigned: {$this->task->title} (by {$actorName})",
         );

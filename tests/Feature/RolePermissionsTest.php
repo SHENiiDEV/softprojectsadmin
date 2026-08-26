@@ -2,11 +2,12 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
 use App\Livewire\Settings;
-use Livewire\Livewire;
+use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 class RolePermissionsTest extends TestCase
@@ -14,8 +15,11 @@ class RolePermissionsTest extends TestCase
     use RefreshDatabase;
 
     protected User $admin;
+
     protected User $manager;
+
     protected User $curator;
+
     protected User $worker;
 
     protected function setUp(): void
@@ -116,26 +120,26 @@ class RolePermissionsTest extends TestCase
 
         // 2. Admin toggles permission 'manage_users' for role 'manager'
         $this->actingAs($this->admin);
-        
+
         Livewire::test(Settings::class)
             ->call('togglePermission', 'manager', 'manage_users')
             ->assertHasNoErrors();
 
         // Reset Spatie's permission cache
-        app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         // 3. Manager now has access
         $this->actingAs($this->manager->fresh())->get('/users')->assertStatus(200);
 
         // 4. Admin revokes the permission
         $this->actingAs($this->admin->fresh());
-        
+
         Livewire::test(Settings::class)
             ->call('togglePermission', 'manager', 'manage_users')
             ->assertHasNoErrors();
 
         // Reset Spatie's permission cache
-        app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         // 5. Manager is forbidden again
         $this->actingAs($this->manager->fresh())->get('/users')->assertStatus(403);

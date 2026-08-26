@@ -1,33 +1,49 @@
 <?php
+
 namespace App\Livewire;
 
-use Livewire\Component;
 use App\Models\ActivityLog;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Support\Collection;
+use Livewire\Component;
 
 class ActivityCenter extends Component
 {
     public Collection $activities;
+
     public Collection $projects;
+
     public Collection $users;
 
     public $filterProject = null;
-    public $filterUser    = null;
-    public $filterType    = null;
+
+    public $filterUser = null;
+
+    public $filterType = null;
 
     public function mount(): void
     {
         $this->activities = collect();
-        $this->projects   = Project::orderBy('name')->get(['id', 'name']);
-        $this->users      = User::orderBy('name')->get(['id', 'name']);
+        $this->projects = Project::orderBy('name')->get(['id', 'name']);
+        $this->users = User::orderBy('name')->get(['id', 'name']);
         $this->loadActivities();
     }
 
-    public function updatedFilterProject(): void { $this->loadActivities(); }
-    public function updatedFilterUser(): void    { $this->loadActivities(); }
-    public function updatedFilterType(): void    { $this->loadActivities(); }
+    public function updatedFilterProject(): void
+    {
+        $this->loadActivities();
+    }
+
+    public function updatedFilterUser(): void
+    {
+        $this->loadActivities();
+    }
+
+    public function updatedFilterType(): void
+    {
+        $this->loadActivities();
+    }
 
     protected function loadActivities(): void
     {

@@ -4,16 +4,19 @@ namespace App\Livewire;
 
 use App\Models\Setting;
 use App\Models\User;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
 use Livewire\WithFileUploads;
-use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 class Settings extends Component
 {
     use WithFileUploads;
 
     public string $activeTab = 'general'; // general | roles
+
     public array $rolePermissions = [];
 
     public array $permissionsList = [
@@ -32,20 +35,29 @@ class Settings extends Component
 
     // App fields
     public string $app_name = '';
+
     public $app_logo;
+
     public string $app_logo_path = '';
 
     // SMTP fields
     public string $mail_host = '';
+
     public string $mail_port = '';
+
     public string $mail_username = '';
+
     public string $mail_password = '';
+
     public string $mail_encryption = '';
+
     public string $mail_from_address = '';
+
     public string $mail_from_name = '';
 
     // Telegram fields
     public string $telegram_bot_token = '';
+
     public string $telegram_bot_username = '';
 
     // Default Manager
@@ -71,13 +83,13 @@ class Settings extends Component
      */
     public function mount(): void
     {
-        if (!auth()->user()->hasRole('admin')) {
+        if (! auth()->user()->hasRole('admin')) {
             abort(403);
         }
 
         $this->app_name = Setting::get('app_name', 'SoftProject Hub');
         $this->app_logo_path = Setting::get('app_logo_path', '');
-        
+
         $this->mail_host = Setting::get('mail_host', '');
         $this->mail_port = Setting::get('mail_port', '');
         $this->mail_username = Setting::get('mail_username', '');
@@ -106,7 +118,7 @@ class Settings extends Component
      */
     public function save(): void
     {
-        if (!auth()->user()->hasRole('admin')) {
+        if (! auth()->user()->hasRole('admin')) {
             abort(403);
         }
 
@@ -116,8 +128,8 @@ class Settings extends Component
 
         if ($this->app_logo) {
             // Delete old logo file if exists
-            if ($this->app_logo_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($this->app_logo_path)) {
-                \Illuminate\Support\Facades\Storage::disk('public')->delete($this->app_logo_path);
+            if ($this->app_logo_path && Storage::disk('public')->exists($this->app_logo_path)) {
+                Storage::disk('public')->delete($this->app_logo_path);
             }
             $this->app_logo_path = $this->app_logo->store('logos', 'public');
             Setting::set('app_logo_path', $this->app_logo_path);
@@ -144,35 +156,36 @@ class Settings extends Component
      */
     public function togglePermission(string $roleName, string $permissionName): void
     {
-        if (!auth()->user()->hasRole('admin')) {
+        if (! auth()->user()->hasRole('admin')) {
             abort(403);
         }
 
         $role = Role::findByName($roleName, 'web');
         $currentValue = $this->rolePermissions[$roleName][$permissionName] ?? false;
-        $newValue = !$currentValue;
-        
+        $newValue = ! $currentValue;
+
         if ($newValue) {
             $role->givePermissionTo($permissionName);
         } else {
             $role->revokePermissionTo($permissionName);
         }
-        
+
         $this->rolePermissions[$roleName][$permissionName] = $newValue;
-        
+
         // Reset cached roles and permissions
-        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
-        
+        app()[PermissionRegistrar::class]->forgetCachedPermissions();
+
         $roleTitle = ucfirst($roleName);
         $permTitle = $this->permissionsList[$permissionName];
         $action = $newValue ? 'granted' : 'revoked';
-        
+
         session()->flash('message', "Permission '{$permTitle}' was {$action} for role '{$roleTitle}'.");
     }
 
     public function render()
     {
         $managers = User::role(['admin', 'manager'])->orderBy('name')->get();
+
         return view('livewire.settings', [
             'managers' => $managers,
         ])->layout('layouts.app');

@@ -2,9 +2,11 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Facades\RateLimiter;
+use App\Models\Setting;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -26,29 +28,29 @@ class AppServiceProvider extends ServiceProvider
         });
 
         // Dynamically load settings if table exists
-        if (\Illuminate\Support\Facades\Schema::hasTable('settings')) {
-            $appName = \App\Models\Setting::get('app_name');
+        if (Schema::hasTable('settings')) {
+            $appName = Setting::get('app_name');
             if ($appName) {
                 config(['app.name' => $appName]);
             }
 
             // SMTP settings
-            $smtpHost = \App\Models\Setting::get('mail_host');
+            $smtpHost = Setting::get('mail_host');
             if ($smtpHost) {
                 config([
                     'mail.default' => 'smtp',
                     'mail.mailers.smtp.host' => $smtpHost,
-                    'mail.mailers.smtp.port' => \App\Models\Setting::get('mail_port', config('mail.mailers.smtp.port')),
-                    'mail.mailers.smtp.username' => \App\Models\Setting::get('mail_username', config('mail.mailers.smtp.username')),
-                    'mail.mailers.smtp.password' => \App\Models\Setting::get('mail_password', config('mail.mailers.smtp.password')),
-                    'mail.mailers.smtp.encryption' => \App\Models\Setting::get('mail_encryption', config('mail.mailers.smtp.encryption')),
-                    'mail.from.address' => \App\Models\Setting::get('mail_from_address', config('mail.from.address')),
-                    'mail.from.name' => \App\Models\Setting::get('mail_from_name', config('mail.from.name')),
+                    'mail.mailers.smtp.port' => Setting::get('mail_port', config('mail.mailers.smtp.port')),
+                    'mail.mailers.smtp.username' => Setting::get('mail_username', config('mail.mailers.smtp.username')),
+                    'mail.mailers.smtp.password' => Setting::get('mail_password', config('mail.mailers.smtp.password')),
+                    'mail.mailers.smtp.encryption' => Setting::get('mail_encryption', config('mail.mailers.smtp.encryption')),
+                    'mail.from.address' => Setting::get('mail_from_address', config('mail.from.address')),
+                    'mail.from.name' => Setting::get('mail_from_name', config('mail.from.name')),
                 ]);
             }
 
             // Telegram settings
-            $tgToken = \App\Models\Setting::get('telegram_bot_token');
+            $tgToken = Setting::get('telegram_bot_token');
             if ($tgToken) {
                 config(['services.telegram.bot_token' => $tgToken]);
             }

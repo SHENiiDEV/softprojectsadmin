@@ -7,19 +7,17 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-
 use Spatie\Permission\Traits\HasRoles;
-
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable(['name', 'email', 'password', 'telegram_id', 'telegram_username', 'tg_link_token', 'notification_settings', 'avatar_path', 'timezone', 'language'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, HasRoles;
+    use HasFactory, HasRoles, Notifiable;
 
     /**
      * Get the URL to the user's avatar.
@@ -27,8 +25,8 @@ class User extends Authenticatable
     public function getAvatarUrlAttribute(): string
     {
         return $this->avatar_path
-            ? asset('storage/' . $this->avatar_path)
-            : 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&color=0EA5E9&background=E0F2FE';
+            ? asset('storage/'.$this->avatar_path)
+            : 'https://ui-avatars.com/api/?name='.urlencode($this->name).'&color=0EA5E9&background=E0F2FE';
     }
 
     /**
@@ -68,6 +66,7 @@ class User extends Authenticatable
     public function getNotificationSetting(string $key, bool $default = true): bool
     {
         $settings = $this->notification_settings ?? [];
+
         return filter_var($settings[$key] ?? $default, FILTER_VALIDATE_BOOLEAN);
     }
 
@@ -86,6 +85,7 @@ class User extends Authenticatable
             'from-cyan-400 to-blue-500',
             'from-lime-400 to-green-600',
         ];
+
         return $gradients[$this->id % count($gradients)];
     }
 }

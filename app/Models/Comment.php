@@ -80,7 +80,7 @@ class Comment extends Model
     {
         preg_match_all('/\B@([a-zA-Z0-9_]+)\b/', $this->content, $matches);
         $usernames = $matches[1] ?? [];
-        
+
         if (empty($usernames)) {
             return collect();
         }
@@ -90,7 +90,7 @@ class Comment extends Model
         foreach ($usernames as $uname) {
             $cleanName = strtolower(preg_replace('/[^a-zA-Z0-9_]/', '', $uname));
             $query->orWhereRaw("lower(replace(name, ' ', '')) = ?", [$cleanName])
-                  ->orWhereRaw("lower(replace(name, ' ', '_')) = ?", [$cleanName]);
+                ->orWhereRaw("lower(replace(name, ' ', '_')) = ?", [$cleanName]);
         }
 
         return $query->get();

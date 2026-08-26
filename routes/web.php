@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\GmailWebhookController;
 use App\Http\Controllers\ProjectPdfController;
 use App\Http\Controllers\TelegramWebhookController;
 use App\Livewire\ActivityCenter;
@@ -52,6 +53,9 @@ Route::get('/portal/{hash}', ClientPortal::class)->middleware('feature:client_po
 
 Route::post('/telegram/webhook', TelegramWebhookController::class)
     ->name('telegram.webhook');
+
+Route::post('/api/v1/webhooks/gmail-alert', GmailWebhookController::class)
+    ->name('webhooks.gmail-alert');
 
 require __DIR__.'/auth.php';
 

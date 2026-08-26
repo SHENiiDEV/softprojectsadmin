@@ -2,23 +2,27 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
-use App\Models\User;
+use App\Livewire\Tasks\KanbanBoard;
 use App\Models\Project;
 use App\Models\Task;
-use Livewire\Livewire;
-use Spatie\Permission\Models\Role;
+use App\Models\User;
+use Database\Seeders\RolesAndPermissionsSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Livewire\Livewire;
+use Tests\TestCase;
 
 class KanbanTaskTest extends TestCase
 {
     use RefreshDatabase;
 
     protected $adminUser;
+
     protected $workerUser;
+
     protected $curatorUser;
+
     protected $project;
 
     protected function setUp(): void
@@ -26,7 +30,7 @@ class KanbanTaskTest extends TestCase
         parent::setUp();
 
         // Seed roles & permissions
-        $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
+        $this->seed(RolesAndPermissionsSeeder::class);
 
         // Create users
         $this->adminUser = User::factory()->create();
@@ -54,13 +58,13 @@ class KanbanTaskTest extends TestCase
     {
         $response = $this->actingAs($this->adminUser)->get('/tasks');
         $response->assertStatus(200);
-        $response->assertSeeLivewire(\App\Livewire\Tasks\KanbanBoard::class);
+        $response->assertSeeLivewire(KanbanBoard::class);
     }
 
     public function test_admin_can_create_task(): void
     {
         Livewire::actingAs($this->adminUser)
-            ->test(\App\Livewire\Tasks\KanbanBoard::class)
+            ->test(KanbanBoard::class)
             ->set('taskTitle', 'New Task')
             ->set('taskDescription', 'Task description')
             ->set('taskProject', $this->project->id)
@@ -82,7 +86,7 @@ class KanbanTaskTest extends TestCase
     public function test_admin_can_create_global_task_without_project(): void
     {
         Livewire::actingAs($this->adminUser)
-            ->test(\App\Livewire\Tasks\KanbanBoard::class)
+            ->test(KanbanBoard::class)
             ->set('taskTitle', 'Global Task')
             ->set('taskProject', '') // Nullable
             ->set('taskAssignee', $this->workerUser->id)
@@ -102,7 +106,7 @@ class KanbanTaskTest extends TestCase
     public function test_curator_cannot_create_task(): void
     {
         Livewire::actingAs($this->curatorUser)
-            ->test(\App\Livewire\Tasks\KanbanBoard::class)
+            ->test(KanbanBoard::class)
             ->set('taskTitle', 'Curator Task')
             ->set('taskPriority', 'medium')
             ->set('taskStatus', 'todo')
@@ -124,7 +128,7 @@ class KanbanTaskTest extends TestCase
         ]);
 
         Livewire::actingAs($this->workerUser)
-            ->test(\App\Livewire\Tasks\KanbanBoard::class)
+            ->test(KanbanBoard::class)
             ->call('updateTaskStatus', $task->id, 'in_progress');
 
         $this->assertEquals('in_progress', $task->fresh()->status);
@@ -141,7 +145,7 @@ class KanbanTaskTest extends TestCase
         ]);
 
         Livewire::actingAs($this->workerUser)
-            ->test(\App\Livewire\Tasks\KanbanBoard::class)
+            ->test(KanbanBoard::class)
             ->call('updateTaskStatus', $task->id, 'in_progress');
 
         $this->assertEquals('todo', $task->fresh()->status);
@@ -158,7 +162,7 @@ class KanbanTaskTest extends TestCase
         ]);
 
         Livewire::actingAs($this->adminUser)
-            ->test(\App\Livewire\Tasks\KanbanBoard::class)
+            ->test(KanbanBoard::class)
             ->call('updateTaskStatus', $task->id, 'review');
 
         $this->assertEquals('review', $task->fresh()->status);
@@ -178,7 +182,7 @@ class KanbanTaskTest extends TestCase
         $file = UploadedFile::fake()->create('document.pdf', 500); // 500KB
 
         Livewire::actingAs($this->adminUser)
-            ->test(\App\Livewire\Tasks\KanbanBoard::class)
+            ->test(KanbanBoard::class)
             ->call('openTaskModal', $task->id)
             ->set('attachments', [$file])
             ->call('saveTask')
@@ -209,12 +213,13 @@ class KanbanTaskTest extends TestCase
 
         // 3. Test filterProject set to 'global'
         Livewire::actingAs($this->adminUser)
-            ->test(\App\Livewire\Tasks\KanbanBoard::class)
+            ->test(KanbanBoard::class)
             ->set('filterProject', 'global')
             ->assertHasNoErrors()
             ->assertViewHas('tasks', function ($tasks) {
                 // Ensure only global tasks are returned
                 $todoTasks = $tasks['todo'];
+
                 return $todoTasks->count() === 1 && $todoTasks->first()->title === 'Global Task';
             });
     }
@@ -230,7 +235,7 @@ class KanbanTaskTest extends TestCase
         ]);
 
         Livewire::actingAs($this->workerUser)
-            ->test(\App\Livewire\Tasks\KanbanBoard::class)
+            ->test(KanbanBoard::class)
             ->call('takeTask', $task->id)
             ->assertHasNoErrors();
 
@@ -249,7 +254,7 @@ class KanbanTaskTest extends TestCase
 
         // 1. Start timer
         Livewire::actingAs($this->workerUser)
-            ->test(\App\Livewire\Tasks\KanbanBoard::class)
+            ->test(KanbanBoard::class)
             ->call('toggleTimer', $task->id)
             ->assertHasNoErrors();
 
@@ -261,7 +266,7 @@ class KanbanTaskTest extends TestCase
 
         // 2. Stop timer
         Livewire::actingAs($this->workerUser)
-            ->test(\App\Livewire\Tasks\KanbanBoard::class)
+            ->test(KanbanBoard::class)
             ->call('toggleTimer', $task->id)
             ->assertHasNoErrors();
 
@@ -363,7 +368,7 @@ class KanbanTaskTest extends TestCase
 
         // 1. Worker should see: own task, unassigned task. NOT other tasks.
         Livewire::actingAs($this->workerUser)
-            ->test(\App\Livewire\Tasks\KanbanBoard::class)
+            ->test(KanbanBoard::class)
             ->assertSee('Worker Task')
             ->assertSee('Unassigned Task')
             ->assertDontSee('Admin Task')
@@ -371,7 +376,7 @@ class KanbanTaskTest extends TestCase
 
         // 2. Manager should see: own task, worker task, unassigned task. NOT admin task.
         Livewire::actingAs($managerUser)
-            ->test(\App\Livewire\Tasks\KanbanBoard::class)
+            ->test(KanbanBoard::class)
             ->assertSee('Manager Task')
             ->assertSee('Worker Task')
             ->assertSee('Unassigned Task')
@@ -379,7 +384,7 @@ class KanbanTaskTest extends TestCase
 
         // 3. Admin should see: all tasks.
         Livewire::actingAs($this->adminUser)
-            ->test(\App\Livewire\Tasks\KanbanBoard::class)
+            ->test(KanbanBoard::class)
             ->assertSee('Admin Task')
             ->assertSee('Manager Task')
             ->assertSee('Worker Task')

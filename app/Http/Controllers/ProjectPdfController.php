@@ -17,6 +17,6 @@ class ProjectPdfController extends Controller
 
         $pdf = Pdf::loadView('pdf.project-pdf', compact('project'));
 
-        return $pdf->download(str_replace(' ', '_', $project->name) . '_compliance_report.pdf');
+        return $pdf->download(str_replace(' ', '_', $project->name).'_compliance_report.pdf');
     }
 }

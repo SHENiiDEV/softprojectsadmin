@@ -2,9 +2,14 @@
 
 namespace Tests\Feature;
 
-use App\Models\Project;
+use App\Livewire\Projects\Create;
+use App\Livewire\Projects\Edit;
+use App\Livewire\Projects\Index;
+use App\Livewire\Projects\Show;
 use App\Models\Director;
+use App\Models\Project;
 use App\Models\User;
+use App\Models\Website;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -39,7 +44,7 @@ class ProjectTest extends TestCase
         $project1 = Project::factory()->has(Director::factory())->create(['name' => 'Target Company Alpha']);
         $project2 = Project::factory()->has(Director::factory())->create(['name' => 'Other Company Beta']);
 
-        Livewire::test(\App\Livewire\Projects\Index::class)
+        Livewire::test(Index::class)
             ->set('search', 'Alpha')
             ->assertSee('Target Company Alpha')
             ->assertDontSee('Other Company Beta');
@@ -50,7 +55,7 @@ class ProjectTest extends TestCase
         $user = User::factory()->create()->assignRole('admin');
         $this->actingAs($user);
 
-        Livewire::test(\App\Livewire\Projects\Create::class)
+        Livewire::test(Create::class)
             ->set('name', 'New Custom Co')
             ->set('website', 'https://customcompany.com')
             ->set('status', 'active')
@@ -79,7 +84,7 @@ class ProjectTest extends TestCase
 
         $project = Project::where('name', 'New Custom Co')->first();
         $this->assertNotNull($project);
-        
+
         $this->assertDatabaseHas('websites', [
             'project_id' => $project->id,
             'url' => 'https://customcompany.com',
@@ -119,13 +124,13 @@ class ProjectTest extends TestCase
             'status' => 'onboarding',
         ]);
 
-        \App\Models\Website::create([
+        Website::create([
             'project_id' => $project->id,
             'name' => 'Main Website',
             'url' => 'https://oldsite.com',
         ]);
 
-        Livewire::test(\App\Livewire\Projects\Edit::class, ['project' => $project])
+        Livewire::test(Edit::class, ['project' => $project])
             ->set('name', 'Updated Company Co')
             ->set('website', 'https://newsite.com')
             ->set('status', 'active')
@@ -159,7 +164,7 @@ class ProjectTest extends TestCase
 
         $project = Project::factory()->has(Director::factory())->create(['name' => 'Company to Delete']);
 
-        Livewire::test(\App\Livewire\Projects\Index::class)
+        Livewire::test(Index::class)
             ->call('deleteProject', $project->id);
 
         $this->assertDatabaseMissing('projects', [
@@ -177,7 +182,7 @@ class ProjectTest extends TestCase
 
         Project::factory()->has(Director::factory())->create(['name' => 'Grid View Test Company']);
 
-        Livewire::test(\App\Livewire\Projects\Index::class)
+        Livewire::test(Index::class)
             ->assertSet('layout', 'table')
             ->assertSee('Company')
             ->set('layout', 'grid')
@@ -193,7 +198,7 @@ class ProjectTest extends TestCase
 
         $project = Project::factory()->has(Director::factory())->create(['name' => 'Company Alpha']);
 
-        Livewire::test(\App\Livewire\Projects\Index::class)
+        Livewire::test(Index::class)
             ->call('openNoteModal', $project->id)
             ->assertSet('showNoteModal', true)
             ->assertSet('noteProjectId', $project->id)
@@ -216,7 +221,7 @@ class ProjectTest extends TestCase
 
         $project = Project::factory()->has(Director::factory())->create(['name' => 'Company Beta']);
 
-        Livewire::test(\App\Livewire\Projects\Show::class, ['project' => $project])
+        Livewire::test(Show::class, ['project' => $project])
             ->call('openNoteModal')
             ->assertSet('showNoteModal', true)
             ->set('noteContent', 'This is a test note from details page')

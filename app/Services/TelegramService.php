@@ -2,8 +2,9 @@
 
 namespace App\Services;
 
-use App\Models\User;
+use App\Models\Task;
 use App\Models\TaskTimeLog;
+use App\Models\User;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -21,8 +22,9 @@ class TelegramService
      */
     public function sendMessage(int|string $chatId, string $text, ?array $replyMarkup = null): bool
     {
-        if (!$this->botToken) {
+        if (! $this->botToken) {
             Log::warning('Telegram Bot Token is not set.');
+
             return false;
         }
 
@@ -38,18 +40,20 @@ class TelegramService
 
         try {
             $response = Http::post("https://api.telegram.org/bot{$this->botToken}/sendMessage", $payload);
-            
+
             if ($response->failed()) {
                 Log::error('Telegram sendMessage failed', [
                     'status' => $response->status(),
                     'body' => $response->body(),
                 ]);
+
                 return false;
             }
 
             return true;
         } catch (\Exception $e) {
-            Log::error('Telegram sendMessage exception: ' . $e->getMessage());
+            Log::error('Telegram sendMessage exception: '.$e->getMessage());
+
             return false;
         }
     }
@@ -60,7 +64,7 @@ class TelegramService
     public function handleUpdate(array $update): void
     {
         $message = $update['message'] ?? null;
-        if (!$message) {
+        if (! $message) {
             return;
         }
 
@@ -69,14 +73,14 @@ class TelegramService
         $text = trim($message['text'] ?? '');
         $username = $message['from']['username'] ?? null;
 
-        if (!$chatId || !$text) {
+        if (! $chatId || ! $text) {
             return;
         }
 
         // We check if the text is like /start <token>
         if (preg_match('/^\/start\s+(.+)$/i', $text, $matches)) {
             $token = trim($matches[1]);
-            
+
             // Find user by token
             $user = User::where('tg_link_token', $token)->first();
 
@@ -87,24 +91,25 @@ class TelegramService
                     'telegram_username' => $username,
                 ]);
 
-                $successText = "🎉 *Account successfully linked\\!*\n\nWelcome, " . self::escapeMarkdownV2($user->name) . "\\! You will now receive important task and report notifications here\\.";
+                $successText = "🎉 *Account successfully linked\\!*\n\nWelcome, ".self::escapeMarkdownV2($user->name).'\\! You will now receive important task and report notifications here\\.';
                 $this->sendMessage($chatId, $successText);
             } else {
                 $errorText = "❌ *Account linking error\\!*\n\nToken not found or invalid\\. Please go to your profile settings and click the link again\\.";
                 $this->sendMessage($chatId, $errorText);
             }
         } elseif (strtolower($text) === '/summary') {
-            $user = User::where('telegram_id', (string)$fromId)->orWhere('telegram_id', (string)$chatId)->first();
-            if (!$user) {
+            $user = User::where('telegram_id', (string) $fromId)->orWhere('telegram_id', (string) $chatId)->first();
+            if (! $user) {
                 $this->sendMessage($chatId, "❌ Account not linked\. Please link your account via Profile settings\.");
+
                 return;
             }
             $this->sendSummary($chatId, $user);
         } elseif (strtolower($text) === '/help') {
             $helpText = "📖 *Available Commands:*\n\n"
-                . "/summary \- Get your task summary\n"
-                . "/help \- Show this help message\n\n"
-                . "_Link your account via Profile settings to use commands\._ ";
+                ."/summary \- Get your task summary\n"
+                ."/help \- Show this help message\n\n"
+                ."_Link your account via Profile settings to use commands\._ ";
             $this->sendMessage($chatId, $helpText);
         } else {
             // General response
@@ -120,25 +125,26 @@ class TelegramService
     public static function escapeMarkdownV2(string $text): string
     {
         $chars = ['_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!'];
-        $replace = array_map(fn($c) => '\\' . $c, $chars);
+        $replace = array_map(fn ($c) => '\\'.$c, $chars);
+
         return str_replace($chars, $replace, $text);
     }
 
     private function sendSummary(int|string $chatId, User $user): void
     {
-        $tasks = \App\Models\Task::where('assigned_to', $user->id)
+        $tasks = Task::where('assigned_to', $user->id)
             ->whereNotIn('status', ['done'])
             ->orderByRaw("CASE status WHEN 'in_progress' THEN 1 WHEN 'review' THEN 2 WHEN 'todo' THEN 3 ELSE 4 END")
             ->limit(10)
             ->get();
 
-        $overdueTasks = \App\Models\Task::where('assigned_to', $user->id)
+        $overdueTasks = Task::where('assigned_to', $user->id)
             ->whereNotNull('due_date')
             ->where('due_date', '<', now()->startOfDay())
             ->whereNotIn('status', ['done'])
             ->count();
 
-        $todayDeadlines = \App\Models\Task::where('assigned_to', $user->id)
+        $todayDeadlines = Task::where('assigned_to', $user->id)
             ->whereDate('due_date', today())
             ->whereNotIn('status', ['done'])
             ->count();
@@ -177,13 +183,13 @@ class TelegramService
         } else {
             $text .= "📝 *Your Tasks:*\n";
             foreach ($tasks->take(8) as $task) {
-                $statusEmoji = match($task->status) {
+                $statusEmoji = match ($task->status) {
                     'in_progress' => '🔵',
                     'review' => '🟡',
                     'todo' => '⚪',
                     default => '⚫',
                 };
-                $priorityEmoji = match($task->priority) {
+                $priorityEmoji = match ($task->priority) {
                     'critical' => '🔴',
                     'high' => '🟠',
                     'medium' => '🟢',

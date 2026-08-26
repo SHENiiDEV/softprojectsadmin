@@ -55,7 +55,7 @@ class OperationsSection extends Component
     public function mount(Project $project): void
     {
         $this->project = $project;
-        if (!config('features.smm', true)) {
+        if (! config('features.smm', true)) {
             $this->activeSubTab = 'reviews';
         }
     }

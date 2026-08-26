@@ -1,15 +1,19 @@
 <?php
+
 namespace App\Livewire\Companies;
 
-use Livewire\Component;
 use App\Models\Company;
 use App\Models\Website;
+use Livewire\Component;
 
 class Create extends Component
 {
     public $name = '';
+
     public $onboarding_completed = false;
+
     public $website_id = null;
+
     public $websites = [];
 
     public function mount()
@@ -34,6 +38,7 @@ class Create extends Component
             'onboarding_completed' => $this->onboarding_completed,
             'website_id' => $this->website_id,
         ]);
+
         return redirect()->route('companies.index');
     }
 
@@ -42,4 +47,3 @@ class Create extends Component
         return view('livewire.companies.create');
     }
 }
-?>

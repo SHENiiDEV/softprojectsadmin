@@ -2,22 +2,21 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-use App\Models\Client;
-use App\Models\Project;
-use App\Models\Director;
-use App\Models\Website;
 use App\Models\Boarding;
-use App\Models\Report;
+use App\Models\Client;
 use App\Models\Credential;
+use App\Models\Director;
+use App\Models\Project;
+use App\Models\Report;
 use App\Models\Task;
+use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
-use Carbon\Carbon;
 
 class DatabaseSeeder extends Seeder
 {
@@ -84,12 +83,12 @@ class DatabaseSeeder extends Seeder
         // 4. Create Clients
         $clientKudret = Client::create([
             'name' => 'Kudret - G',
-            'hash' => Str::random(32)
+            'hash' => Str::random(32),
         ]);
 
         $clientMarvli = Client::create([
             'name' => 'Marvli - R',
-            'hash' => Str::random(32)
+            'hash' => Str::random(32),
         ]);
 
         // 5. Seed Projects / Companies & related models
@@ -126,10 +125,10 @@ class DatabaseSeeder extends Seeder
             'companies_house_verification' => 'completed',
         ]);
         Report::create([
-            'project_id'       => $p1->id,
-            'reg_number'       => '12345678',
-            'accounts_due_by'  => Carbon::now()->addDays(30)->toDateString(),
-            'statements_due_by'=> Carbon::now()->addDays(15)->toDateString(),
+            'project_id' => $p1->id,
+            'reg_number' => '12345678',
+            'accounts_due_by' => Carbon::now()->addDays(30)->toDateString(),
+            'statements_due_by' => Carbon::now()->addDays(15)->toDateString(),
         ]);
 
         // CHANGE IT UP SERVICES LTD
@@ -164,9 +163,9 @@ class DatabaseSeeder extends Seeder
             'companies_house_verification' => 'completed',
         ]);
         Report::create([
-            'project_id'       => $p2->id,
-            'accounts_due_by'  => Carbon::now()->subDays(5)->toDateString(),
-            'statements_due_by'=> Carbon::now()->addDays(60)->toDateString(),
+            'project_id' => $p2->id,
+            'accounts_due_by' => Carbon::now()->subDays(5)->toDateString(),
+            'statements_due_by' => Carbon::now()->addDays(60)->toDateString(),
         ]);
 
         // ANY PLACE ANY TIME LTD
@@ -201,9 +200,9 @@ class DatabaseSeeder extends Seeder
             'companies_house_verification' => 'completed',
         ]);
         Report::create([
-            'project_id'       => $p3->id,
-            'accounts_due_by'  => Carbon::now()->addDays(7)->toDateString(),
-            'statements_due_by'=> Carbon::now()->addDays(45)->toDateString(),
+            'project_id' => $p3->id,
+            'accounts_due_by' => Carbon::now()->addDays(7)->toDateString(),
+            'statements_due_by' => Carbon::now()->addDays(45)->toDateString(),
         ]);
 
         // RENATASTRADAS MB
@@ -238,9 +237,9 @@ class DatabaseSeeder extends Seeder
             'companies_house_verification' => 'completed',
         ]);
         Report::create([
-            'project_id'       => $p4->id,
-            'accounts_due_by'  => Carbon::now()->subDays(20)->toDateString(),
-            'statements_due_by'=> Carbon::now()->subDays(10)->toDateString(),
+            'project_id' => $p4->id,
+            'accounts_due_by' => Carbon::now()->subDays(20)->toDateString(),
+            'statements_due_by' => Carbon::now()->subDays(10)->toDateString(),
         ]);
 
         // WEARWIBE LTD (with three websites)
@@ -468,9 +467,9 @@ class DatabaseSeeder extends Seeder
         Report::create(['project_id' => $p10->id]);
         // ── Seed Tasks with due_dates for Deadline Center ────────────────────
         $allProjects = [$p1, $p2, $p3, $p4, $p5, $p6, $p7, $p8, $p9, $p10];
-        $allUsers    = array_values($users);
-        $statuses    = ['todo', 'in_progress', 'review'];
-        $priorities  = ['low', 'medium', 'high', 'critical'];
+        $allUsers = array_values($users);
+        $statuses = ['todo', 'in_progress', 'review'];
+        $priorities = ['low', 'medium', 'high', 'critical'];
 
         $taskData = [
             // Today's deadlines
@@ -494,14 +493,14 @@ class DatabaseSeeder extends Seeder
         foreach ($taskData as $idx => $t) {
             $assignee = $allUsers[$idx % count($allUsers)];
             Task::create([
-                'project_id'  => $t['proj']->id,
-                'creator_id'  => $allUsers[0]->id,
+                'project_id' => $t['proj']->id,
+                'creator_id' => $allUsers[0]->id,
                 'assigned_to' => $assignee->id,
-                'title'       => $t['title'],
+                'title' => $t['title'],
                 'description' => 'Auto-generated task for deadline seeding.',
-                'status'      => $t['status'],
-                'priority'    => $t['priority'],
-                'due_date'    => $t['due']->toDateString(),
+                'status' => $t['status'],
+                'priority' => $t['priority'],
+                'due_date' => $t['due']->toDateString(),
             ]);
         }
 

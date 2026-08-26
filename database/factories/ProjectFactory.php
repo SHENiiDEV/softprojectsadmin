@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Project;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -32,7 +33,7 @@ class ProjectFactory extends Factory
                 'Private' => $this->faker->safeEmail(),
             ],
             'notes' => $this->faker->paragraph(),
-            'manager_id' => \App\Models\User::role(['admin', 'manager'])->inRandomOrder()->first()?->id ?? \App\Models\User::factory(),
+            'manager_id' => User::role(['admin', 'manager'])->inRandomOrder()->first()?->id ?? User::factory(),
         ];
     }
 }

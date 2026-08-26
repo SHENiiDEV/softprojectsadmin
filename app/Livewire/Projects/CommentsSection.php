@@ -3,8 +3,10 @@
 namespace App\Livewire\Projects;
 
 use App\Models\ActivityLog;
+use App\Models\Client;
 use App\Models\Comment;
 use App\Models\Project;
+use App\Models\User;
 use App\Services\NotificationService;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
@@ -116,8 +118,8 @@ class CommentsSection extends Component
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $users = \App\Models\User::orderBy('name')->get();
-        $clients = \App\Models\Client::orderBy('name')->get();
+        $users = User::orderBy('name')->get();
+        $clients = Client::orderBy('name')->get();
 
         return view('livewire.projects.comments-section', compact('comments', 'users', 'clients'));
     }

@@ -2,11 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\SendTelegramMessageJob;
 use App\Models\Project;
 use App\Models\Report;
 use App\Models\Task;
 use App\Models\User;
-use App\Jobs\SendTelegramMessageJob;
+use Carbon\Carbon;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
@@ -14,13 +15,13 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Livewire\Livewire;
 use Tests\TestCase;
-use Carbon\Carbon;
 
 class TelegramNotificationTest extends TestCase
 {
     use RefreshDatabase;
 
     protected User $user;
+
     protected Project $project;
 
     protected function setUp(): void
@@ -32,15 +33,15 @@ class TelegramNotificationTest extends TestCase
 
         // Create manager/admin user
         $this->user = User::factory()->create()->assignRole('admin');
-        
+
         $this->project = Project::factory()->create([
             'manager_id' => $this->user->id,
         ]);
-        
+
         // Define fallback credentials
         config([
             'services.telegram.bot_token' => '123456:fake_bot_token',
-            'services.telegram.bot_username' => 'test_pm_compliance_bot'
+            'services.telegram.bot_username' => 'test_pm_compliance_bot',
         ]);
     }
 
@@ -89,9 +90,9 @@ class TelegramNotificationTest extends TestCase
                                 'type' => 'private',
                             ],
                             'text' => '/start my_secret_token_123',
-                        ]
-                    ]
-                ]
+                        ],
+                    ],
+                ],
             ]),
             'https://api.telegram.org/bot*/sendMessage*' => Http::response(['ok' => true]),
         ]);
@@ -134,7 +135,7 @@ class TelegramNotificationTest extends TestCase
                     'type' => 'private',
                 ],
                 'text' => '/start my_webhook_token_999',
-            ]
+            ],
         ];
 
         $response = $this->postJson('/telegram/webhook', $payload);
@@ -166,8 +167,8 @@ class TelegramNotificationTest extends TestCase
             'priority' => 'high',
         ]);
 
-        Queue::assertPushed(SendTelegramMessageJob::class, function ($job) use ($worker, $task) {
-            return $job->chatId === $worker->telegram_id 
+        Queue::assertPushed(SendTelegramMessageJob::class, function ($job) use ($worker) {
+            return $job->chatId === $worker->telegram_id
                 && str_contains($job->text, 'Important Compliance Task')
                 && str_contains($job->text, 'A new task has been assigned to you:');
         });
@@ -183,13 +184,13 @@ class TelegramNotificationTest extends TestCase
 
         // Verify notification is sent to the new assignee
         Queue::assertPushed(SendTelegramMessageJob::class, function ($job) use ($anotherWorker) {
-            return $job->chatId === $anotherWorker->telegram_id 
+            return $job->chatId === $anotherWorker->telegram_id
                 && str_contains($job->text, 'A task has been assigned to you:');
         });
 
         // Verify unassign/removal notification is sent to the old assignee
         Queue::assertPushed(SendTelegramMessageJob::class, function ($job) use ($worker) {
-            return $job->chatId === $worker->telegram_id 
+            return $job->chatId === $worker->telegram_id
                 && str_contains($job->text, 'Task has been unassigned from you:');
         });
     }
@@ -209,7 +210,7 @@ class TelegramNotificationTest extends TestCase
 
         $project = Project::factory()->create([
             'manager_id' => $manager->id,
-            'name' => 'Target Company'
+            'name' => 'Target Company',
         ]);
 
         // Create curator with telegram
@@ -239,7 +240,7 @@ class TelegramNotificationTest extends TestCase
 
         // Verify Manager gets notified
         Queue::assertPushed(SendTelegramMessageJob::class, function ($job) use ($manager) {
-            return $job->chatId === $manager->telegram_id 
+            return $job->chatId === $manager->telegram_id
                 && str_contains($job->text, 'Target Company')
                 && str_contains($job->text, 'Financial Statement');
         });

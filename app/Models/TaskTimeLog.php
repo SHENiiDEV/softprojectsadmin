@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
 
 #[Fillable(['task_id', 'user_id', 'started_at', 'stopped_at', 'duration_seconds'])]
 class TaskTimeLog extends Model
@@ -41,41 +41,41 @@ class TaskTimeLog extends Model
         $seconds = $this->duration_seconds;
         if ($seconds === null) {
             // If active and running
-            if ($this->started_at && !$this->stopped_at) {
+            if ($this->started_at && ! $this->stopped_at) {
                 $seconds = $this->started_at->diffInSeconds(now(), true);
             } else {
                 return '0s';
             }
         }
-        
+
         if ($seconds <= 0) {
             return '0s';
         }
-        
+
         $parts = [];
-        
+
         $days = floor($seconds / 86400);
         if ($days > 0) {
             $parts[] = "{$days}d";
             $seconds %= 86400;
         }
-        
+
         $hours = floor($seconds / 3600);
         if ($hours > 0) {
             $parts[] = "{$hours}h";
             $seconds %= 3600;
         }
-        
+
         $minutes = floor($seconds / 60);
         if ($minutes > 0) {
             $parts[] = "{$minutes}m";
             $seconds %= 60;
         }
-        
+
         if ($seconds > 0 || empty($parts)) {
             $parts[] = "{$seconds}s";
         }
-        
+
         return implode(' ', $parts);
     }
 }

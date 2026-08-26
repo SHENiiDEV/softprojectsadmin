@@ -2,9 +2,9 @@
 
 namespace App\Console\Commands;
 
+use App\Jobs\SendTelegramMessageJob;
 use App\Models\Task;
 use App\Services\TelegramService;
-use App\Jobs\SendTelegramMessageJob;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 
@@ -41,7 +41,7 @@ class CheckTaskDeadlines extends Command
 
         foreach ($tasks as $task) {
             $assignee = $task->assignee;
-            if (!$assignee || !$assignee->telegram_id) {
+            if (! $assignee || ! $assignee->telegram_id) {
                 continue;
             }
 
@@ -56,9 +56,9 @@ class CheckTaskDeadlines extends Command
             $replyMarkup = [
                 'inline_keyboard' => [
                     [
-                        ['text' => '🔗 Open Task', 'url' => $url]
-                    ]
-                ]
+                        ['text' => '🔗 Open Task', 'url' => $url],
+                    ],
+                ],
             ];
 
             SendTelegramMessageJob::dispatch($assignee->telegram_id, $text, $replyMarkup);
@@ -70,6 +70,7 @@ class CheckTaskDeadlines extends Command
         }
 
         $this->info('Completed checking task deadlines.');
+
         return 0;
     }
 }

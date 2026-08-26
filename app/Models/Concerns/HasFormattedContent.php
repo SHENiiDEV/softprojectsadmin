@@ -18,8 +18,6 @@ trait HasFormattedContent
      * - **bold** → <strong>
      * - *italic* → <em>
      * - `code` → <code>
-     *
-     * @return string
      */
     public function getFormattedContentAttribute(): string
     {

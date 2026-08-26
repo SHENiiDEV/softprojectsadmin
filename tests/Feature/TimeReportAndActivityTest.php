@@ -2,24 +2,31 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
-use App\Models\User;
-use App\Models\Project;
+use App\Livewire\ClientPortal;
+use App\Livewire\Reports\TimeReport;
+use App\Livewire\Tasks\KanbanBoard;
 use App\Models\Client;
-use App\Models\Website;
+use App\Models\Project;
 use App\Models\Task;
 use App\Models\TaskTimeLog;
-use Livewire\Livewire;
+use App\Models\User;
+use App\Models\Website;
 use Carbon\Carbon;
+use Database\Seeders\RolesAndPermissionsSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
+use Tests\TestCase;
 
 class TimeReportAndActivityTest extends TestCase
 {
     use RefreshDatabase;
 
     protected User $adminUser;
+
     protected User $managerUser;
+
     protected User $workerUser;
+
     protected Project $project;
 
     protected function setUp(): void
@@ -27,7 +34,7 @@ class TimeReportAndActivityTest extends TestCase
         parent::setUp();
 
         // Seed roles & permissions
-        $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
+        $this->seed(RolesAndPermissionsSeeder::class);
 
         // Create users
         $this->adminUser = User::factory()->create()->assignRole('admin');
@@ -85,7 +92,7 @@ class TimeReportAndActivityTest extends TestCase
         ]);
 
         // Test Livewire component
-        Livewire::test(\App\Livewire\Reports\TimeReport::class)
+        Livewire::test(TimeReport::class)
             ->assertSet('userId', '') // Defaults to All
             ->assertSee('1h 30m') // Total duration
             ->assertSee($this->workerUser->name)
@@ -160,7 +167,7 @@ class TimeReportAndActivityTest extends TestCase
         ]);
 
         // Start timer
-        Livewire::test(\App\Livewire\Tasks\KanbanBoard::class)
+        Livewire::test(KanbanBoard::class)
             ->call('toggleTimer', $task->id);
 
         $this->assertDatabaseHas('activity_logs', [
@@ -170,7 +177,7 @@ class TimeReportAndActivityTest extends TestCase
         ]);
 
         // Stop timer
-        Livewire::test(\App\Livewire\Tasks\KanbanBoard::class)
+        Livewire::test(KanbanBoard::class)
             ->call('toggleTimer', $task->id);
 
         $this->assertDatabaseHas('activity_logs', [
@@ -199,7 +206,7 @@ class TimeReportAndActivityTest extends TestCase
             'status' => 'Live',
         ]);
 
-        Livewire::test(\App\Livewire\ClientPortal::class, ['hash' => $client->hash])
+        Livewire::test(ClientPortal::class, ['hash' => $client->hash])
             ->set('selectedCompanyId', $company->id)
             ->set('selectedWebsiteId', $website->id)
             ->set('requestType', 'Bug Report')

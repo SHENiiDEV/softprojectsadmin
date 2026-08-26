@@ -2,31 +2,33 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
-use App\Models\User;
-use App\Models\Project;
-use App\Models\Client;
-use App\Models\Website;
-use App\Models\Task;
-use Livewire\Volt\Volt;
-use Livewire\Livewire;
-use Illuminate\Support\Facades\Queue;
 use App\Jobs\SendTelegramMessageJob;
+use App\Livewire\NotificationTray;
+use App\Models\Project;
+use App\Models\Task;
+use App\Models\User;
+use Database\Seeders\RolesAndPermissionsSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
+use Livewire\Livewire;
+use Livewire\Volt\Volt;
+use Tests\TestCase;
 
 class NotificationSettingsTest extends TestCase
 {
     use RefreshDatabase;
 
     protected User $user;
+
     protected User $otherUser;
+
     protected Project $project;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
+        $this->seed(RolesAndPermissionsSeeder::class);
 
         $this->user = User::factory()->create([
             'telegram_id' => '123456789',
@@ -132,7 +134,7 @@ class NotificationSettingsTest extends TestCase
         $this->assertEquals('New Task Assigned', $notification->data['title']);
 
         // Livewire NotificationTray interaction
-        Livewire::test(\App\Livewire\NotificationTray::class)
+        Livewire::test(NotificationTray::class)
             ->assertSee('New Task Assigned')
             ->assertViewHas('unreadCount', 1)
             ->call('markAsRead', $notification->id)
@@ -168,7 +170,7 @@ class NotificationSettingsTest extends TestCase
 
         $this->assertCount(2, $this->otherUser->unreadNotifications);
 
-        Livewire::test(\App\Livewire\NotificationTray::class)
+        Livewire::test(NotificationTray::class)
             ->assertViewHas('unreadCount', 2)
             ->call('markAllAsRead')
             ->assertViewHas('unreadCount', 0);

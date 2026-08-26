@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Livewire\Users\Index;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -14,7 +15,9 @@ class UserManagementTest extends TestCase
     use RefreshDatabase;
 
     protected User $admin;
+
     protected User $curator;
+
     protected User $worker;
 
     protected function setUp(): void
@@ -57,7 +60,7 @@ class UserManagementTest extends TestCase
 
         $anotherWorker = User::factory()->create(['name' => 'Searchable Name'])->assignRole('worker');
 
-        Livewire::test(\App\Livewire\Users\Index::class)
+        Livewire::test(Index::class)
             ->assertSee($this->admin->name)
             ->assertSee($this->curator->name)
             ->assertSee($this->worker->name)
@@ -77,7 +80,7 @@ class UserManagementTest extends TestCase
     {
         $this->actingAs($this->curator);
 
-        Livewire::test(\App\Livewire\Users\Index::class)
+        Livewire::test(Index::class)
             ->call('openCreateModal')
             ->set('name', 'New User')
             ->set('email', 'newuser@example.com')
@@ -105,7 +108,7 @@ class UserManagementTest extends TestCase
 
         $user = User::factory()->create()->assignRole('worker');
 
-        Livewire::test(\App\Livewire\Users\Index::class)
+        Livewire::test(Index::class)
             ->call('openEditModal', $user->id)
             ->set('name', 'Updated Name')
             ->set('role', 'curator')
@@ -126,7 +129,7 @@ class UserManagementTest extends TestCase
 
         $user = User::factory()->create(['password' => Hash::make('old_password')]);
 
-        Livewire::test(\App\Livewire\Users\Index::class)
+        Livewire::test(Index::class)
             ->call('openResetModal', $user->id)
             ->set('newPassword', 'new_secure_password_999')
             ->call('resetPassword')
@@ -144,7 +147,7 @@ class UserManagementTest extends TestCase
 
         // 1. Curator cannot delete users
         $this->actingAs($this->curator);
-        Livewire::test(\App\Livewire\Users\Index::class)
+        Livewire::test(Index::class)
             ->call('deleteUser', $userToDelete->id)
             ->assertSee('Only administrators can delete users.');
 
@@ -152,14 +155,14 @@ class UserManagementTest extends TestCase
 
         // 2. Admin can delete users
         $this->actingAs($this->admin);
-        Livewire::test(\App\Livewire\Users\Index::class)
+        Livewire::test(Index::class)
             ->call('deleteUser', $userToDelete->id)
             ->assertSee('User successfully deleted.');
 
         $this->assertDatabaseMissing('users', ['id' => $userToDelete->id]);
 
         // 3. Admin cannot delete self
-        Livewire::test(\App\Livewire\Users\Index::class)
+        Livewire::test(Index::class)
             ->call('deleteUser', $this->admin->id)
             ->assertSee('You cannot delete yourself.');
 

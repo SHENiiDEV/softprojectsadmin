@@ -2,9 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Livewire\CredentialVault;
+use App\Models\Credential;
 use App\Models\Project;
 use App\Models\User;
-use App\Models\Credential;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -15,14 +16,19 @@ class CredentialVaultTest extends TestCase
     use RefreshDatabase;
 
     protected User $adminUser;
+
     protected User $managerUser1;
+
     protected User $managerUser2;
+
     protected User $curatorUser;
 
     protected Project $project1;
+
     protected Project $project2;
 
     protected Credential $credential1;
+
     protected Credential $credential2;
 
     protected function setUp(): void
@@ -71,10 +77,11 @@ class CredentialVaultTest extends TestCase
     {
         $this->actingAs($this->adminUser);
 
-        Livewire::test(\App\Livewire\CredentialVault::class)
+        Livewire::test(CredentialVault::class)
             ->assertViewHas('grouped', function ($grouped) {
                 // Should see both Project Alpha and Project Beta
                 $labels = $grouped->pluck('label')->toArray();
+
                 return in_array('Project Alpha', $labels) && in_array('Project Beta', $labels);
             })
             ->assertSet('types', ['database', 'hosting']);
@@ -84,9 +91,10 @@ class CredentialVaultTest extends TestCase
     {
         $this->actingAs($this->curatorUser);
 
-        Livewire::test(\App\Livewire\CredentialVault::class)
+        Livewire::test(CredentialVault::class)
             ->assertViewHas('grouped', function ($grouped) {
                 $labels = $grouped->pluck('label')->toArray();
+
                 return in_array('Project Alpha', $labels) && in_array('Project Beta', $labels);
             })
             ->assertSet('types', ['database', 'hosting']);
@@ -96,11 +104,12 @@ class CredentialVaultTest extends TestCase
     {
         $this->actingAs($this->managerUser1);
 
-        Livewire::test(\App\Livewire\CredentialVault::class)
+        Livewire::test(CredentialVault::class)
             ->assertViewHas('grouped', function ($grouped) {
                 $labels = $grouped->pluck('label')->toArray();
+
                 // Should see Project Alpha, but NOT Project Beta
-                return in_array('Project Alpha', $labels) && !in_array('Project Beta', $labels);
+                return in_array('Project Alpha', $labels) && ! in_array('Project Beta', $labels);
             })
             ->assertSet('types', ['hosting']); // ONLY hosting (credential 2 type database is hidden)
     }

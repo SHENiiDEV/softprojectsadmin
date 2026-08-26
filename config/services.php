@@ -40,4 +40,8 @@ return [
         'bot_username' => env('TELEGRAM_BOT_USERNAME', 'pm_compliance_bot'),
     ],
 
+    'gmail_webhook' => [
+        'secret' => env('GMAIL_WEBHOOK_SECRET'),
+    ],
+
 ];

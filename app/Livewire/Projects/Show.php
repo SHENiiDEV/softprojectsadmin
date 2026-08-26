@@ -3,6 +3,7 @@
 namespace App\Livewire\Projects;
 
 use App\Models\Project;
+use App\Models\ProjectNote;
 use Livewire\Component;
 
 class Show extends Component
@@ -31,7 +32,7 @@ class Show extends Component
             'noteContent' => 'required|string|min:2|max:5000',
         ]);
 
-        \App\Models\ProjectNote::create([
+        ProjectNote::create([
             'project_id' => $this->project->id,
             'user_id' => auth()->id(),
             'content' => $this->noteContent,
