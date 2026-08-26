@@ -10,20 +10,37 @@ use Illuminate\Support\Facades\Storage;
 
 class GmailSyncRecentCommand extends Command
 {
-    protected $signature = 'gmail:sync-recent {--limit=10 : Number of recent emails to inspect}';
+    protected $signature = 'gmail:sync-recent 
+                            {--email= : Filter by sender/recipient email (defaults to GMAIL_TEST_EMAILS or mihails.horolskis@gmail.com)} 
+                            {--limit=50 : Maximum number of emails to inspect} 
+                            {--query= : Custom Gmail search query}';
 
-    protected $description = 'Sync recent messages from Gmail mailbox into support tickets & CRM tasks';
+    protected $description = 'Sync messages from Gmail mailbox into support tickets & CRM tasks';
 
     public function handle(GmailSyncService $syncService): int
     {
         $limit = (int) $this->option('limit');
-        $this->info("Fetching last {$limit} messages from Gmail...");
+        $email = $this->option('email') ?: env('GMAIL_TEST_EMAILS', 'mihails.horolskis@gmail.com');
+        $customQuery = $this->option('query');
+
+        $query = '';
+        if ($customQuery) {
+            $query = $customQuery;
+        } elseif (! empty($email)) {
+            $firstEmail = trim(explode(',', $email)[0]);
+            $query = "from:{$firstEmail} OR to:{$firstEmail}";
+        }
+
+        $this->info("Fetching messages from Gmail (limit: {$limit}".($query ? ", query: '{$query}'" : '').')...');
 
         try {
             $gmail = $syncService->getGmailService();
-            $listResponse = $gmail->users_messages->listUsersMessages('me', [
-                'maxResults' => $limit,
-            ]);
+            $params = ['maxResults' => $limit];
+            if (! empty($query)) {
+                $params['q'] = $query;
+            }
+
+            $listResponse = $gmail->users_messages->listUsersMessages('me', $params);
 
             $messages = $listResponse->getMessages() ?? [];
             if (empty($messages)) {
