@@ -386,4 +386,22 @@ class KanbanBoard extends Component
         $this->newCommentIsPrivate = false;
         session()->flash('message', 'Comment added.');
     }
+
+    public function deleteComment(int $commentId): void
+    {
+        $comment = Comment::findOrFail($commentId);
+
+        $user = auth()->user();
+        $isAuthor = $user && $comment->user_id === $user->id;
+        $isAdminOrManager = $user && $user->hasAnyRole(['admin', 'manager']);
+
+        if (! $isAuthor && ! $isAdminOrManager) {
+            session()->flash('error', 'You do not have permission to delete this comment.');
+
+            return;
+        }
+
+        $comment->delete();
+        session()->flash('message', 'Comment deleted successfully.');
+    }
 }

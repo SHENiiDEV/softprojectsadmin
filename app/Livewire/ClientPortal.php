@@ -698,6 +698,24 @@ class ClientPortal extends Component
         unset($this->replyCommentContent[$parentId]);
     }
 
+    public function deleteComment(int $commentId): void
+    {
+        $comment = Comment::findOrFail($commentId);
+
+        $isAuthor = $this->client && $comment->client_id === $this->client->id;
+        $user = auth()->user();
+        $isAdminOrManager = $user && $user->hasAnyRole(['admin', 'manager']);
+
+        if (! $isAuthor && ! $isAdminOrManager) {
+            session()->flash('error', 'You do not have permission to delete this comment.');
+
+            return;
+        }
+
+        $comment->delete();
+        session()->flash('message', 'Comment deleted successfully.');
+    }
+
     public function render()
     {
         $companies = $this->client->companies()->orderBy('name')->get();

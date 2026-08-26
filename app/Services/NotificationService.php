@@ -137,6 +137,10 @@ class NotificationService
     public static function sendNewCommentNotification($comment): void
     {
         $task = $comment->task;
+        if (! $task) {
+            return;
+        }
+
         $actor = $comment->user;
         $actorName = $actor ? $actor->name : 'System';
 
