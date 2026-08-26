@@ -206,53 +206,33 @@ class ProcessGmailAlertJob implements ShouldQueue
         }
 
         if (! $ticket->task_id) {
-            // Build task title & description
+            // Build task title & rich HTML description
             $taskTitle = "📩 [Ticket #{$ticket->id}] {$ticket->subject}";
             if ($cats) {
                 $taskTitle = "📩 [{$cats}] {$ticket->subject}";
             }
 
-            $description = "📌 **Gmail Ticket #{$ticket->id}**\n\n";
-            $description .= "👤 **From:** {$message->from}\n";
-            $description .= "📫 **To:** {$message->to}\n";
-            $description .= "🏷️ **Categories:** {$cats}\n\n";
-            $description .= "💬 **Message:**\n".($message->body_text ?: '_No text content_')."\n";
-
-            if (! empty($savedFiles)) {
-                $description .= "\n📎 **Attachments (".count($savedFiles)."):**\n";
-                foreach ($savedFiles as $f) {
-                    $description .= "• {$f->original_filename} (".round($f->size_bytes / 1024, 1)." KB)\n";
-                }
-            }
+            $descriptionHtml = $this->buildHtmlDescription($ticket, $message, $savedFiles);
 
             $task = Task::create([
                 'project_id' => $ticket->project_id,
                 'title' => Str::limit($taskTitle, 190),
-                'description' => $description,
+                'description' => $descriptionHtml,
                 'status' => 'todo',
                 'priority' => $priority,
             ]);
 
             $ticket->update(['task_id' => $task->id]);
         } else {
-            // Task already exists, add comment detailing update
+            // Task already exists, add formatted comment detailing update
             $task = Task::find($ticket->task_id);
             if ($task) {
-                $commentText = "📩 **New email reply received in Thread #{$ticket->gmail_thread_id}**\n\n";
-                $commentText .= "👤 **From:** {$message->from}\n";
-                $commentText .= "💬 **Body:**\n".($message->body_text ?: '_No text content_');
-
-                if (! empty($savedFiles)) {
-                    $commentText .= "\n\n📎 **New Attachments:**\n";
-                    foreach ($savedFiles as $f) {
-                        $commentText .= "• {$f->original_filename} (".round($f->size_bytes / 1024, 1)." KB)\n";
-                    }
-                }
+                $commentHtml = $this->buildHtmlComment($ticket, $message, $savedFiles);
 
                 Comment::create([
                     'task_id' => $task->id,
                     'user_id' => null, // System / Webhook
-                    'content' => $commentText,
+                    'content' => $commentHtml,
                 ]);
 
                 // Bump priority if new categories contain chargeback/complaint
@@ -261,5 +241,181 @@ class ProcessGmailAlertJob implements ShouldQueue
                 }
             }
         }
+    }
+
+    /**
+     * Build rich executive HTML card for Task description.
+     */
+    private function buildHtmlDescription(SupportTicket $ticket, SupportTicketMessage $message, array $savedFiles): string
+    {
+        $categoryList = $ticket->categories ?? ['general'];
+        $primaryCategory = strtolower($categoryList[0] ?? 'alert');
+
+        $bannerGradient = match ($primaryCategory) {
+            'chargeback' => 'from-rose-600 to-red-700',
+            'complaint' => 'from-amber-500 to-orange-600',
+            'refund' => 'from-emerald-500 to-teal-600',
+            default => 'from-sky-500 to-indigo-600',
+        };
+
+        $badgeColor = match ($primaryCategory) {
+            'chargeback' => 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border-rose-200 dark:border-rose-800',
+            'complaint' => 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border-amber-200 dark:border-amber-800',
+            'refund' => 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
+            default => 'bg-sky-100 text-sky-800 dark:bg-sky-950/60 dark:text-sky-300 border-sky-200 dark:border-sky-800',
+        };
+
+        $formattedBody = $this->formatEmailBodyHtml($message->body_text ?? '');
+        $dateFormatted = $message->sent_at ? $message->sent_at->format('d M Y, H:i') : now()->format('d M Y, H:i');
+
+        $websiteName = $ticket->website?->name ?: $ticket->website?->url;
+        $projectName = $ticket->project?->name;
+
+        $html = '<div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-sm space-y-0">';
+
+        // Header Hero Banner
+        $html .= '<div class="px-5 py-3.5 bg-gradient-to-r '.$bannerGradient.' text-white flex items-center justify-between flex-wrap gap-2">';
+        $html .= '<div class="flex items-center space-x-2">';
+        $html .= '<span class="px-2.5 py-1 text-[11px] font-black uppercase tracking-wider bg-white/20 backdrop-blur-md rounded-lg flex items-center gap-1.5"><i class="fa-solid fa-bell text-[10px]"></i> '.e(strtoupper($primaryCategory)).' TICKET</span>';
+        $html .= '<span class="text-xs font-semibold opacity-90">#'.e($ticket->id).'</span>';
+        $html .= '</div>';
+        $html .= '<span class="text-xs font-medium opacity-80 flex items-center gap-1"><i class="fa-regular fa-clock text-[10px]"></i> '.e($dateFormatted).'</span>';
+        $html .= '</div>';
+
+        // Meta Bar
+        $html .= '<div class="p-5 space-y-4">';
+        $html .= '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs bg-slate-50 dark:bg-slate-950 p-3.5 rounded-xl border border-slate-100 dark:border-slate-800/60">';
+        $html .= '<div><span class="text-slate-400 font-semibold uppercase text-[10px] block mb-0.5">From Client</span><div class="font-bold text-slate-800 dark:text-slate-100 truncate" title="'.e($message->from).'">'.e($message->from).'</div></div>';
+        $html .= '<div><span class="text-slate-400 font-semibold uppercase text-[10px] block mb-0.5">To Support</span><div class="font-bold text-slate-800 dark:text-slate-100 truncate" title="'.e($message->to).'">'.e($message->to).'</div></div>';
+
+        if ($websiteName || $projectName) {
+            $html .= '<div><span class="text-slate-400 font-semibold uppercase text-[10px] block mb-0.5">Matched Entity</span><div class="font-bold text-indigo-600 dark:text-indigo-400 truncate flex items-center gap-1"><i class="fa-solid fa-globe text-[10px]"></i> '.e($websiteName ?: $projectName).'</div></div>';
+        } else {
+            $html .= '<div><span class="text-slate-400 font-semibold uppercase text-[10px] block mb-0.5">Categories</span><div class="flex items-center gap-1 flex-wrap">';
+            foreach ($categoryList as $cat) {
+                $html .= '<span class="px-2 py-0.5 text-[10px] font-bold rounded border '.$badgeColor.'">'.e(strtoupper($cat)).'</span>';
+            }
+            $html .= '</div></div>';
+        }
+        $html .= '</div>';
+
+        // Message Content Box
+        $html .= '<div>';
+        $html .= '<div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 flex items-center gap-1"><i class="fa-regular fa-envelope text-[11px]"></i> Email Message Body</div>';
+        $html .= '<div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 text-xs leading-relaxed text-slate-800 dark:text-slate-200 font-sans space-y-2 overflow-x-auto">';
+        $html .= $formattedBody;
+        $html .= '</div></div>';
+
+        // Attachments List if any
+        if (! empty($savedFiles)) {
+            $html .= '<div>';
+            $html .= '<div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 flex items-center gap-1"><i class="fa-solid fa-paperclip text-[11px]"></i> Attachments ('.count($savedFiles).')</div>';
+            $html .= '<div class="grid grid-cols-1 sm:grid-cols-2 gap-2">';
+            foreach ($savedFiles as $f) {
+                $sizeKb = round($f->size_bytes / 1024, 1);
+                $html .= '<div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800 flex items-center space-x-2.5">';
+                $html .= '<span class="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400"><i class="fa-solid fa-file-lines text-xs"></i></span>';
+                $html .= '<div class="min-w-0 flex-1"><div class="font-semibold text-xs text-slate-800 dark:text-slate-200 truncate">'.e($f->original_filename).'</div><div class="text-[10px] text-slate-400">'.$sizeKb.' KB</div></div>';
+                $html .= '</div>';
+            }
+            $html .= '</div></div>';
+        }
+
+        $html .= '</div></div>';
+
+        return $html;
+    }
+
+    /**
+     * Build rich executive HTML for Comment reply updates.
+     */
+    private function buildHtmlComment(SupportTicket $ticket, SupportTicketMessage $message, array $savedFiles): string
+    {
+        $formattedBody = $this->formatEmailBodyHtml($message->body_text ?? '');
+        $dateFormatted = $message->sent_at ? $message->sent_at->format('d M Y, H:i') : now()->format('d M Y, H:i');
+
+        $html = '<div class="rounded-xl border border-indigo-200/80 dark:border-indigo-900/60 bg-indigo-50/40 dark:bg-slate-900/80 p-4 space-y-3 shadow-sm">';
+
+        // Header Bar
+        $html .= '<div class="flex items-center justify-between text-xs border-b border-indigo-100 dark:border-indigo-800/40 pb-2.5 flex-wrap gap-2">';
+        $html .= '<div class="flex items-center space-x-2">';
+        $html .= '<span class="px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider rounded-md bg-indigo-600 text-white flex items-center gap-1"><i class="fa-solid fa-reply text-[9px]"></i> EMAIL REPLY</span>';
+        $html .= '<span class="font-bold text-slate-800 dark:text-slate-100 truncate" title="'.e($message->from).'">'.e($message->from).'</span>';
+        $html .= '</div>';
+        $html .= '<span class="text-[11px] font-medium text-slate-400 flex items-center gap-1"><i class="fa-regular fa-clock text-[10px]"></i> '.e($dateFormatted).'</span>';
+        $html .= '</div>';
+
+        // Message Body
+        $html .= '<div class="text-xs text-slate-800 dark:text-slate-200 leading-relaxed font-sans space-y-2 overflow-x-auto">';
+        $html .= $formattedBody;
+        $html .= '</div>';
+
+        // Attachments
+        if (! empty($savedFiles)) {
+            $html .= '<div class="pt-2 border-t border-indigo-100 dark:border-indigo-800/40 space-y-1.5">';
+            $html .= '<span class="text-[10px] font-bold uppercase tracking-wider text-indigo-500 flex items-center gap-1"><i class="fa-solid fa-paperclip text-[10px]"></i> New Attachments ('.count($savedFiles).')</span>';
+            $html .= '<div class="grid grid-cols-1 sm:grid-cols-2 gap-2">';
+            foreach ($savedFiles as $f) {
+                $sizeKb = round($f->size_bytes / 1024, 1);
+                $html .= '<div class="p-2 rounded-lg bg-white dark:bg-slate-950 border border-indigo-100 dark:border-indigo-900/60 flex items-center space-x-2">';
+                $html .= '<i class="fa-solid fa-file-arrow-down text-indigo-500 text-xs"></i>';
+                $html .= '<span class="font-semibold text-xs text-slate-700 dark:text-slate-300 truncate">'.e($f->original_filename).'</span>';
+                $html .= '<span class="text-[10px] text-slate-400 ml-auto">'.$sizeKb.' KB</span>';
+                $html .= '</div>';
+            }
+            $html .= '</div></div>';
+        }
+
+        $html .= '</div>';
+
+        return $html;
+    }
+
+    /**
+     * Format email text into clean HTML, highlight keywords, and collapse quote history.
+     */
+    private function formatEmailBodyHtml(string $body): string
+    {
+        if (empty(trim($body))) {
+            return '<em class="text-slate-400">No text content in message</em>';
+        }
+
+        // Split into main message vs quotes
+        $lines = explode("\n", str_replace("\r\n", "\n", $body));
+        $mainLines = [];
+        $quoteLines = [];
+        $isQuoting = false;
+
+        foreach ($lines as $line) {
+            if (preg_match('/^(On\s+.*wrote:|From:.*Sent:.*To:.*|>-+Original Message-+)/i', trim($line))) {
+                $isQuoting = true;
+            }
+
+            if ($isQuoting || str_starts_with(trim($line), '>')) {
+                $quoteLines[] = ltrim($line, '> ');
+            } else {
+                $mainLines[] = $line;
+            }
+        }
+
+        $mainText = trim(implode("\n", $mainLines));
+        $quoteText = trim(implode("\n", $quoteLines));
+
+        $html = nl2br(e($mainText));
+
+        // Highlight trigger words
+        $keywords = ['refund', 'chargeback', 'dispute', 'complaint', 'fraud', 'scam', 'unauthorized', 'money back'];
+        foreach ($keywords as $kw) {
+            $html = preg_replace_callback('/\b('.preg_quote($kw, '/').')\b/i', function ($m) {
+                return '<mark class="bg-amber-200 dark:bg-amber-900/80 text-amber-900 dark:text-amber-200 px-1 py-0.5 rounded font-bold">'.$m[0].'</mark>';
+            }, $html);
+        }
+
+        if (! empty($quoteText)) {
+            $quoteHtml = nl2br(e($quoteText));
+            $html .= '<details class="mt-3"><summary class="text-[11px] font-semibold text-slate-400 hover:text-indigo-500 cursor-pointer select-none">Show quoted message history</summary><blockquote class="mt-2 pl-3 border-l-2 border-slate-300 dark:border-slate-700 text-slate-400 text-xs italic space-y-1">'.$quoteHtml.'</blockquote></details>';
+        }
+
+        return $html;
     }
 }
