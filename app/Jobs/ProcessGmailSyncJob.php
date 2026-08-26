@@ -85,6 +85,10 @@ class ProcessGmailSyncJob implements ShouldQueue
      */
     protected function processParsedMessage(GmailSyncService $syncService, array $msg): void
     {
+        if (SupportTicketMessage::where('gmail_message_id', $msg['id'])->exists()) {
+            return;
+        }
+
         DB::transaction(function () use ($syncService, $msg) {
             $threadId = $msg['threadId'];
             $fromRaw = $msg['from'];
