@@ -74,7 +74,7 @@ class GmailSyncTest extends TestCase
             ->andReturn([
                 'id' => 'msg_100',
                 'threadId' => 'thread_100',
-                'from' => 'Customer <john@client.com>',
+                'from' => 'Customer <mihails.horolskis@gmail.com>',
                 'to' => 'Support <info@sivora.co.uk>',
                 'subject' => 'Request refund for purchase',
                 'date' => now()->toISOString(),
@@ -89,7 +89,7 @@ class GmailSyncTest extends TestCase
         // Assert ticket created
         $this->assertDatabaseHas('support_tickets', [
             'gmail_thread_id' => 'thread_100',
-            'customer_email' => 'john@client.com',
+            'customer_email' => 'mihails.horolskis@gmail.com',
             'status' => 'open',
             'project_id' => $project->id,
             'website_id' => $website->id,

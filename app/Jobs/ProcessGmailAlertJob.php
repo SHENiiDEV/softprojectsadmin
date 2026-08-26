@@ -55,10 +55,25 @@ class ProcessGmailAlertJob implements ShouldQueue
             // Match Company (Project) & Website based on recipient or sender email domain
             $matched = $this->resolveProjectAndWebsite($recipientEmail, $customerEmail);
 
-            // 1. Find or create SupportTicket
-            $ticket = SupportTicket::firstOrCreate(
-                ['gmail_thread_id' => $threadId],
-                [
+            $ticket = SupportTicket::where('gmail_thread_id', $threadId)->first();
+
+            // Test mode whitelist check for new tickets
+            if (! $ticket) {
+                $testEmailsStr = env('GMAIL_TEST_EMAILS', 'mihails.horolskis@gmail.com');
+                if (! empty($testEmailsStr)) {
+                    $allowedTestEmails = array_map('strtolower', array_map('trim', explode(',', $testEmailsStr)));
+                    if (! in_array(strtolower($customerEmail), $allowedTestEmails, true)) {
+                        Log::info('ProcessGmailAlertJob: Skipped creation for sender not in GMAIL_TEST_EMAILS whitelist', [
+                            'from' => $customerEmail,
+                            'allowed' => $allowedTestEmails,
+                        ]);
+
+                        return;
+                    }
+                }
+
+                $ticket = SupportTicket::create([
+                    'gmail_thread_id' => $threadId,
                     'customer_email' => $customerEmail,
                     'recipient_email' => $recipientEmail,
                     'subject' => $subject,
@@ -66,8 +81,8 @@ class ProcessGmailAlertJob implements ShouldQueue
                     'categories' => $categories,
                     'project_id' => $matched['project_id'],
                     'website_id' => $matched['website_id'],
-                ]
-            );
+                ]);
+            }
 
             $isExistingTicket = ! $ticket->wasRecentlyCreated;
 

@@ -17,6 +17,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -103,6 +104,20 @@ class ProcessGmailSyncJob implements ShouldQueue
                 // Ignore if no keywords matched
                 if (empty($matchedCategories)) {
                     return;
+                }
+
+                // Test mode whitelist check
+                $testEmailsStr = env('GMAIL_TEST_EMAILS', 'mihails.horolskis@gmail.com');
+                if (! empty($testEmailsStr)) {
+                    $allowedTestEmails = array_map('strtolower', array_map('trim', explode(',', $testEmailsStr)));
+                    if (! in_array(strtolower($customerEmail), $allowedTestEmails, true)) {
+                        Log::info('GmailSyncJob: Skipped creation for sender not in GMAIL_TEST_EMAILS whitelist', [
+                            'from' => $customerEmail,
+                            'allowed' => $allowedTestEmails,
+                        ]);
+
+                        return;
+                    }
                 }
 
                 $matchedEntity = $this->resolveProjectAndWebsite($recipientEmail, $customerEmail);

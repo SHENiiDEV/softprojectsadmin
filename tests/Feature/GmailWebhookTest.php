@@ -54,7 +54,7 @@ class GmailWebhookTest extends TestCase
         $payload = [
             'thread_id' => 'thread_abc_99',
             'message_id' => 'msg_xyz_01',
-            'from' => 'John Doe <john@customer.com>',
+            'from' => 'Mihails <mihails.horolskis@gmail.com>',
             'to' => 'Support <support@alpha-ou-1.net>',
             'subject' => 'I want refund for my order',
             'date' => now()->toISOString(),
@@ -92,7 +92,7 @@ class GmailWebhookTest extends TestCase
         // Assert Ticket was created and matched to Project & Website
         $this->assertDatabaseHas('support_tickets', [
             'gmail_thread_id' => 'thread_abc_99',
-            'customer_email' => 'john@customer.com',
+            'customer_email' => 'mihails.horolskis@gmail.com',
             'project_id' => $project->id,
             'website_id' => $website->id,
         ]);
@@ -123,7 +123,7 @@ class GmailWebhookTest extends TestCase
         $payload1 = [
             'thread_id' => 'thread_repeat_55',
             'message_id' => 'msg_01',
-            'from' => 'user@domain.com',
+            'from' => 'mihails.horolskis@gmail.com',
             'to' => 'support@company.com',
             'subject' => 'Dispute',
             'body_text' => 'First message',
@@ -134,7 +134,7 @@ class GmailWebhookTest extends TestCase
         $payload2 = [
             'thread_id' => 'thread_repeat_55',
             'message_id' => 'msg_02',
-            'from' => 'user@domain.com',
+            'from' => 'mihails.horolskis@gmail.com',
             'to' => 'support@company.com',
             'subject' => 'Dispute',
             'body_text' => 'Second message with proof',
