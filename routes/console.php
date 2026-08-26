@@ -11,3 +11,4 @@ Artisan::command('inspire', function () {
 Schedule::command('reports:check-deadlines')->daily();
 Schedule::command('tasks:check-deadlines')->dailyAt('09:00');
 Schedule::command('digest:daily')->dailyAt('09:00');
+Schedule::command('gmail:watch')->dailyAt('04:00');

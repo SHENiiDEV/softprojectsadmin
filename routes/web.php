@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\GmailPushController;
 use App\Http\Controllers\Api\GmailWebhookController;
 use App\Http\Controllers\ProjectPdfController;
 use App\Http\Controllers\TelegramWebhookController;
@@ -54,8 +55,8 @@ Route::get('/portal/{hash}', ClientPortal::class)->middleware('feature:client_po
 Route::post('/telegram/webhook', TelegramWebhookController::class)
     ->name('telegram.webhook');
 
-Route::post('/api/v1/webhooks/gmail-alert', GmailWebhookController::class)
-    ->name('webhooks.gmail-alert');
+Route::post('/api/v1/webhooks/gmail-alert', GmailWebhookController::class)->name('gmail.alert-webhook');
+Route::post('/api/v1/gmail/pubsub-webhook', GmailPushController::class)->name('gmail.pubsub-webhook');
 
 require __DIR__.'/auth.php';
 

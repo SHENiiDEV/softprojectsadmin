@@ -44,4 +44,11 @@ return [
         'secret' => env('GMAIL_WEBHOOK_SECRET'),
     ],
 
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'refresh_token' => env('GOOGLE_REFRESH_TOKEN'),
+        'topic_name' => env('GOOGLE_PUBSUB_TOPIC'),
+    ],
+
 ];

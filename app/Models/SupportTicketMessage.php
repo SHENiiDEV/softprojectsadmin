@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'gmail_message_id',
     'from',
     'to',
+    'is_outgoing',
     'body_text',
     'sent_at',
 ])]
@@ -28,6 +29,7 @@ class SupportTicketMessage extends Model
     protected function casts(): array
     {
         return [
+            'is_outgoing' => 'boolean',
             'sent_at' => 'datetime',
         ];
     }

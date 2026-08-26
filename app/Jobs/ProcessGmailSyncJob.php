@@ -9,6 +9,7 @@ use App\Models\SupportTicketAttachment;
 use App\Models\SupportTicketMessage;
 use App\Models\Task;
 use App\Models\Website;
+use App\Services\GmailSyncService;
 use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -16,126 +17,193 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
-class ProcessGmailAlertJob implements ShouldQueue
+class ProcessGmailSyncJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public function __construct(public array $payload) {}
+    public const KEYWORDS = [
+        'refund' => [
+            'refund', 'i want refund', 'money back', 'reimbursement',
+            'возврат средств', 'верните деньги', 'сделайте возврат',
+        ],
+        'chargeback' => [
+            'chargeback', 'charge back', 'dispute', 'чарджбек',
+            'оспаривание платежа', 'оспаривание',
+        ],
+        'fraud' => [
+            'fraud', 'scam', 'unauthorized transaction', 'stolen card',
+            'мошенничество', 'несанкционированное списание',
+        ],
+    ];
 
-    public function handle(): void
+    public function __construct(public string $historyId, public ?string $emailAddress = null) {}
+
+    public function handle(GmailSyncService $syncService): void
     {
-        $threadId = $this->payload['thread_id'] ?? null;
-        $messageId = $this->payload['message_id'] ?? null;
+        $addedMessages = $syncService->fetchAddedMessages($this->historyId);
 
-        if (! $threadId || ! $messageId) {
-            Log::warning('ProcessGmailAlertJob missing thread_id or message_id', $this->payload);
-
+        if (empty($addedMessages)) {
             return;
         }
 
-        // Deduplication: if message already processed, exit
-        if (SupportTicketMessage::where('gmail_message_id', $messageId)->exists()) {
-            return;
+        foreach ($addedMessages as $item) {
+            $msgId = $item['id'];
+
+            // Skip if message already recorded in database
+            if (SupportTicketMessage::where('gmail_message_id', $msgId)->exists()) {
+                continue;
+            }
+
+            $rawMsg = $syncService->getMessage($msgId);
+            if (! $rawMsg) {
+                continue;
+            }
+
+            $parsed = $syncService->parseMessagePayload($rawMsg);
+            $this->processParsedMessage($syncService, $parsed);
         }
+    }
 
-        DB::transaction(function () use ($threadId, $messageId) {
-            $fromRaw = $this->payload['from'] ?? '';
-            $toRaw = $this->payload['to'] ?? '';
-
+    /**
+     * Process a single parsed Gmail message.
+     *
+     * @param  array{
+     *     id: string,
+     *     threadId: string,
+     *     from: string,
+     *     to: string,
+     *     subject: string,
+     *     date: ?string,
+     *     body: string,
+     *     attachments: array<array{filename: string, mimeType: string, attachmentId: string, size: int}>,
+     *     labelIds: array<string>
+     * }  $msg
+     */
+    protected function processParsedMessage(GmailSyncService $syncService, array $msg): void
+    {
+        DB::transaction(function () use ($syncService, $msg) {
+            $threadId = $msg['threadId'];
+            $fromRaw = $msg['from'];
+            $toRaw = $msg['to'];
             $customerEmail = $this->extractEmail($fromRaw);
             $recipientEmail = $this->extractEmail($toRaw);
-            $subject = $this->payload['subject'] ?? 'No Subject';
-            $bodyText = $this->payload['body_text'] ?? '';
-            $categories = $this->payload['categories'] ?? [];
+            $subject = $msg['subject'] ?: 'No Subject';
+            $bodyText = $msg['body'];
 
-            // Match Company (Project) & Website based on recipient or sender email domain
-            $matched = $this->resolveProjectAndWebsite($recipientEmail, $customerEmail);
+            $isOutgoing = in_array('SENT', $msg['labelIds'], true);
+            $matchedCategories = $this->classifyKeywords($subject, $bodyText);
 
-            // 1. Find or create SupportTicket
-            $ticket = SupportTicket::firstOrCreate(
-                ['gmail_thread_id' => $threadId],
-                [
+            $ticket = SupportTicket::where('gmail_thread_id', $threadId)->first();
+
+            // Scenario 1: New thread email from client
+            if (! $ticket && ! $isOutgoing) {
+                // Ignore if no keywords matched
+                if (empty($matchedCategories)) {
+                    return;
+                }
+
+                $matchedEntity = $this->resolveProjectAndWebsite($recipientEmail, $customerEmail);
+
+                $ticket = SupportTicket::create([
+                    'gmail_thread_id' => $threadId,
                     'customer_email' => $customerEmail,
                     'recipient_email' => $recipientEmail,
                     'subject' => $subject,
                     'status' => 'open',
-                    'categories' => $categories,
-                    'project_id' => $matched['project_id'],
-                    'website_id' => $matched['website_id'],
-                ]
-            );
-
-            $isExistingTicket = ! $ticket->wasRecentlyCreated;
-
-            // Merge categories if updated
-            if ($isExistingTicket && ! empty($categories)) {
-                $mergedCats = array_values(array_unique(array_merge($ticket->categories ?? [], $categories)));
-                $ticket->update(['categories' => $mergedCats]);
-            }
-
-            // Update project/website if missing and now resolved
-            if (! $ticket->project_id && $matched['project_id']) {
-                $ticket->update([
-                    'project_id' => $matched['project_id'],
-                    'website_id' => $matched['website_id'],
+                    'categories' => $matchedCategories,
+                    'project_id' => $matchedEntity['project_id'],
+                    'website_id' => $matchedEntity['website_id'],
                 ]);
+            } elseif (! $ticket && $isOutgoing) {
+                // Outgoing email for non-tracked thread -> skip
+                return;
+            } else {
+                // Scenario 2 & 3: Existing ticket thread update
+                if ($isOutgoing) {
+                    $ticket->update(['status' => 'answered']);
+                } else {
+                    $ticket->update(['status' => 'customer_replied']);
+                    if (! empty($matchedCategories)) {
+                        $merged = array_values(array_unique(array_merge($ticket->categories ?? [], $matchedCategories)));
+                        $ticket->update(['categories' => $merged]);
+                    }
+                }
             }
 
-            // 2. Record Message
-            $sentAt = ! empty($this->payload['date'])
-                ? Carbon::parse($this->payload['date'])
-                : now();
-
-            $message = SupportTicketMessage::create([
+            // Save Message Record
+            $sentAt = ! empty($msg['date']) ? Carbon::parse($msg['date']) : now();
+            $ticketMessage = SupportTicketMessage::create([
                 'support_ticket_id' => $ticket->id,
-                'gmail_message_id' => $messageId,
+                'gmail_message_id' => $msg['id'],
                 'from' => $fromRaw,
                 'to' => $toRaw,
+                'is_outgoing' => $isOutgoing,
                 'body_text' => $bodyText,
                 'sent_at' => $sentAt,
             ]);
 
-            // 3. Save Attachments
+            // Save Attachments
             $savedFiles = [];
-            $attachments = $this->payload['attachments'] ?? [];
-            foreach ($attachments as $att) {
-                if (! empty($att['base64'])) {
-                    $fileContent = base64_decode($att['base64']);
-                    $origName = $att['filename'] ?? 'file';
+            $disk = config('filesystems.disks.private') ? 'private' : 'local';
+
+            foreach ($msg['attachments'] as $att) {
+                $fileContent = $syncService->downloadAttachment($msg['id'], $att['attachmentId']);
+                if ($fileContent) {
+                    $origName = $att['filename'] ?: 'file';
                     $ext = pathinfo($origName, PATHINFO_EXTENSION) ?: 'bin';
                     $cleanName = Str::slug(pathinfo($origName, PATHINFO_FILENAME));
                     $filename = "{$cleanName}_".uniqid().".{$ext}";
-
                     $path = "tickets/{$ticket->id}/{$filename}";
-                    $disk = config('filesystems.disks.private') ? 'private' : 'local';
+
                     Storage::disk($disk)->put($path, $fileContent);
 
                     $attachmentModel = SupportTicketAttachment::create([
                         'support_ticket_id' => $ticket->id,
-                        'support_ticket_message_id' => $message->id,
+                        'support_ticket_message_id' => $ticketMessage->id,
                         'original_filename' => $origName,
                         'storage_path' => $path,
-                        'mime_type' => $att['mime_type'] ?? 'application/octet-stream',
-                        'size_bytes' => $att['size'] ?? strlen($fileContent),
+                        'mime_type' => $att['mimeType'] ?: 'application/octet-stream',
+                        'size_bytes' => $att['size'] ?: strlen($fileContent),
                     ]);
 
                     $savedFiles[] = $attachmentModel;
                 }
             }
 
-            // 4. Create or update associated CRM Task
-            $this->syncCrmTask($ticket, $message, $savedFiles, $isExistingTicket);
+            // Sync with CRM Task
+            $this->syncCrmTask($ticket, $ticketMessage, $savedFiles, $isOutgoing);
         });
+    }
+
+    /**
+     * Classify message subject and body text against KEYWORDS dictionary.
+     *
+     * @return array<string>
+     */
+    protected function classifyKeywords(string $subject, string $body): array
+    {
+        $text = strtolower($subject."\n".$body);
+        $matched = [];
+
+        foreach (self::KEYWORDS as $category => $keywords) {
+            foreach ($keywords as $kw) {
+                if (str_contains($text, strtolower($kw))) {
+                    $matched[] = $category;
+                    break;
+                }
+            }
+        }
+
+        return array_values(array_unique($matched));
     }
 
     /**
      * Extract raw email address from header string like "John Doe <john@example.com>".
      */
-    private function extractEmail(string $raw): string
+    protected function extractEmail(string $raw): string
     {
         if (preg_match('/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/', $raw, $matches)) {
             return strtolower($matches[0]);
@@ -145,11 +213,11 @@ class ProcessGmailAlertJob implements ShouldQueue
     }
 
     /**
-     * Resolve Project and Website from email domains.
+     * Resolve Project and Website from recipient or customer domain.
      *
      * @return array{project_id: ?int, website_id: ?int}
      */
-    private function resolveProjectAndWebsite(string $recipientEmail, string $customerEmail): array
+    protected function resolveProjectAndWebsite(string $recipientEmail, string $customerEmail): array
     {
         $emailsToTest = array_filter([$recipientEmail, $customerEmail]);
 
@@ -160,7 +228,6 @@ class ProcessGmailAlertJob implements ShouldQueue
             }
             $domain = strtolower($parts[1]);
 
-            // Skip generic free mail providers for company matching
             if (in_array($domain, ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'icloud.com'], true)) {
                 continue;
             }
@@ -177,7 +244,6 @@ class ProcessGmailAlertJob implements ShouldQueue
                 ];
             }
 
-            // Try matching Project company name
             $project = Project::where('name', 'like', "%{$domain}%")->first();
             if ($project) {
                 return [
@@ -195,19 +261,18 @@ class ProcessGmailAlertJob implements ShouldQueue
      *
      * @param  array<SupportTicketAttachment>  $savedFiles
      */
-    private function syncCrmTask(SupportTicket $ticket, SupportTicketMessage $message, array $savedFiles, bool $isExistingTicket): void
+    protected function syncCrmTask(SupportTicket $ticket, SupportTicketMessage $message, array $savedFiles, bool $isOutgoing): void
     {
         $cats = implode(', ', array_map('ucfirst', $ticket->categories ?? ['General Alert']));
         $priority = 'medium';
         foreach ($ticket->categories ?? [] as $cat) {
-            if (in_array(strtolower($cat), ['chargeback', 'complaint'], true)) {
+            if (in_array(strtolower($cat), ['chargeback', 'complaint', 'fraud'], true)) {
                 $priority = 'high';
                 break;
             }
         }
 
         if (! $ticket->task_id) {
-            // Build task title & rich HTML description
             $taskTitle = "📩 [Ticket #{$ticket->id}] {$ticket->subject}";
             if ($cats) {
                 $taskTitle = "📩 [{$cats}] {$ticket->subject}";
@@ -225,10 +290,9 @@ class ProcessGmailAlertJob implements ShouldQueue
 
             $ticket->update(['task_id' => $task->id]);
         } else {
-            // Task already exists, add formatted comment detailing update
             $task = Task::find($ticket->task_id);
             if ($task) {
-                $commentHtml = $this->buildHtmlComment($ticket, $message, $savedFiles);
+                $commentHtml = $this->buildHtmlComment($ticket, $message, $savedFiles, $isOutgoing);
 
                 Comment::create([
                     'task_id' => $task->id,
@@ -236,7 +300,6 @@ class ProcessGmailAlertJob implements ShouldQueue
                     'content' => $commentHtml,
                 ]);
 
-                // Bump priority if new categories contain chargeback/complaint
                 if ($priority === 'high' && $task->priority !== 'high') {
                     $task->update(['priority' => 'high']);
                 }
@@ -244,23 +307,20 @@ class ProcessGmailAlertJob implements ShouldQueue
         }
     }
 
-    /**
-     * Build rich executive HTML card for Task description.
-     */
-    private function buildHtmlDescription(SupportTicket $ticket, SupportTicketMessage $message, array $savedFiles): string
+    protected function buildHtmlDescription(SupportTicket $ticket, SupportTicketMessage $message, array $savedFiles): string
     {
         $categoryList = $ticket->categories ?? ['general'];
         $primaryCategory = strtolower($categoryList[0] ?? 'alert');
 
         $bannerGradient = match ($primaryCategory) {
-            'chargeback' => 'from-rose-600 to-red-700',
+            'chargeback', 'fraud' => 'from-rose-600 to-red-700',
             'complaint' => 'from-amber-500 to-orange-600',
             'refund' => 'from-emerald-500 to-teal-600',
             default => 'from-sky-500 to-indigo-600',
         };
 
         $badgeColor = match ($primaryCategory) {
-            'chargeback' => 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border-rose-200 dark:border-rose-800',
+            'chargeback', 'fraud' => 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border-rose-200 dark:border-rose-800',
             'complaint' => 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border-amber-200 dark:border-amber-800',
             'refund' => 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
             default => 'bg-sky-100 text-sky-800 dark:bg-sky-950/60 dark:text-sky-300 border-sky-200 dark:border-sky-800',
@@ -274,7 +334,6 @@ class ProcessGmailAlertJob implements ShouldQueue
 
         $html = '<div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-sm space-y-0">';
 
-        // Header Hero Banner
         $html .= '<div class="px-5 py-3.5 bg-gradient-to-r '.$bannerGradient.' text-white flex items-center justify-between flex-wrap gap-2">';
         $html .= '<div class="flex items-center space-x-2">';
         $html .= '<span class="px-2.5 py-1 text-[11px] font-black uppercase tracking-wider bg-white/20 backdrop-blur-md rounded-lg flex items-center gap-1.5"><i class="fa-solid fa-bell text-[10px]"></i> '.e(strtoupper($primaryCategory)).' TICKET</span>';
@@ -283,7 +342,6 @@ class ProcessGmailAlertJob implements ShouldQueue
         $html .= '<span class="text-xs font-medium opacity-80 flex items-center gap-1"><i class="fa-regular fa-clock text-[10px]"></i> '.e($dateFormatted).'</span>';
         $html .= '</div>';
 
-        // Meta Bar
         $html .= '<div class="p-5 space-y-4">';
         $html .= '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs bg-slate-50 dark:bg-slate-950 p-3.5 rounded-xl border border-slate-100 dark:border-slate-800/60">';
         $html .= '<div><span class="text-slate-400 font-semibold uppercase text-[10px] block mb-0.5">From Client</span><div class="font-bold text-slate-800 dark:text-slate-100 truncate" title="'.e($message->from).'">'.e($message->from).'</div></div>';
@@ -300,14 +358,12 @@ class ProcessGmailAlertJob implements ShouldQueue
         }
         $html .= '</div>';
 
-        // Message Content Box
         $html .= '<div>';
         $html .= '<div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 flex items-center gap-1"><i class="fa-regular fa-envelope text-[11px]"></i> Email Message Body</div>';
         $html .= '<div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 text-xs leading-relaxed text-slate-800 dark:text-slate-200 font-sans space-y-2 overflow-x-auto">';
         $html .= $formattedBody;
         $html .= '</div></div>';
 
-        // Attachments List if any
         if (! empty($savedFiles)) {
             $html .= '<div>';
             $html .= '<div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 flex items-center gap-1"><i class="fa-solid fa-paperclip text-[11px]"></i> Attachments ('.count($savedFiles).')</div>';
@@ -327,38 +383,36 @@ class ProcessGmailAlertJob implements ShouldQueue
         return $html;
     }
 
-    /**
-     * Build rich executive HTML for Comment reply updates.
-     */
-    private function buildHtmlComment(SupportTicket $ticket, SupportTicketMessage $message, array $savedFiles): string
+    protected function buildHtmlComment(SupportTicket $ticket, SupportTicketMessage $message, array $savedFiles, bool $isOutgoing): string
     {
         $formattedBody = $this->formatEmailBodyHtml($message->body_text ?? '');
         $dateFormatted = $message->sent_at ? $message->sent_at->format('d M Y, H:i') : now()->format('d M Y, H:i');
 
-        $html = '<div class="rounded-xl border border-indigo-200/80 dark:border-indigo-900/60 bg-indigo-50/40 dark:bg-slate-900/80 p-4 space-y-3 shadow-sm">';
+        $badgeLabel = $isOutgoing ? 'SUPPORT REPLY' : 'EMAIL REPLY';
+        $badgeClass = $isOutgoing ? 'bg-emerald-600' : 'bg-indigo-600';
+        $boxBorder = $isOutgoing ? 'border-emerald-200/80 dark:border-emerald-900/60 bg-emerald-50/40' : 'border-indigo-200/80 dark:border-indigo-900/60 bg-indigo-50/40';
 
-        // Header Bar
-        $html .= '<div class="flex items-center justify-between text-xs border-b border-indigo-100 dark:border-indigo-800/40 pb-2.5 flex-wrap gap-2">';
+        $html = '<div class="rounded-xl border '.$boxBorder.' dark:bg-slate-900/80 p-4 space-y-3 shadow-sm">';
+
+        $html .= '<div class="flex items-center justify-between text-xs border-b border-slate-200/60 dark:border-slate-800/40 pb-2.5 flex-wrap gap-2">';
         $html .= '<div class="flex items-center space-x-2">';
-        $html .= '<span class="px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider rounded-md bg-indigo-600 text-white flex items-center gap-1"><i class="fa-solid fa-reply text-[9px]"></i> EMAIL REPLY</span>';
+        $html .= '<span class="px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider rounded-md '.$badgeClass.' text-white flex items-center gap-1"><i class="fa-solid fa-reply text-[9px]"></i> '.$badgeLabel.'</span>';
         $html .= '<span class="font-bold text-slate-800 dark:text-slate-100 truncate" title="'.e($message->from).'">'.e($message->from).'</span>';
         $html .= '</div>';
         $html .= '<span class="text-[11px] font-medium text-slate-400 flex items-center gap-1"><i class="fa-regular fa-clock text-[10px]"></i> '.e($dateFormatted).'</span>';
         $html .= '</div>';
 
-        // Message Body
         $html .= '<div class="text-xs text-slate-800 dark:text-slate-200 leading-relaxed font-sans space-y-2 overflow-x-auto">';
         $html .= $formattedBody;
         $html .= '</div>';
 
-        // Attachments
         if (! empty($savedFiles)) {
-            $html .= '<div class="pt-2 border-t border-indigo-100 dark:border-indigo-800/40 space-y-1.5">';
+            $html .= '<div class="pt-2 border-t border-slate-200/60 dark:border-slate-800/40 space-y-1.5">';
             $html .= '<span class="text-[10px] font-bold uppercase tracking-wider text-indigo-500 flex items-center gap-1"><i class="fa-solid fa-paperclip text-[10px]"></i> New Attachments ('.count($savedFiles).')</span>';
             $html .= '<div class="grid grid-cols-1 sm:grid-cols-2 gap-2">';
             foreach ($savedFiles as $f) {
                 $sizeKb = round($f->size_bytes / 1024, 1);
-                $html .= '<div class="p-2 rounded-lg bg-white dark:bg-slate-950 border border-indigo-100 dark:border-indigo-900/60 flex items-center space-x-2">';
+                $html .= '<div class="p-2 rounded-lg bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800 flex items-center space-x-2">';
                 $html .= '<i class="fa-solid fa-file-arrow-down text-indigo-500 text-xs"></i>';
                 $html .= '<span class="font-semibold text-xs text-slate-700 dark:text-slate-300 truncate">'.e($f->original_filename).'</span>';
                 $html .= '<span class="text-[10px] text-slate-400 ml-auto">'.$sizeKb.' KB</span>';
@@ -372,16 +426,12 @@ class ProcessGmailAlertJob implements ShouldQueue
         return $html;
     }
 
-    /**
-     * Format email text into clean HTML, highlight keywords, and collapse quote history.
-     */
-    private function formatEmailBodyHtml(string $body): string
+    protected function formatEmailBodyHtml(string $body): string
     {
         if (empty(trim($body))) {
             return '<em class="text-slate-400">No text content in message</em>';
         }
 
-        // Split into main message vs quotes
         $lines = explode("\n", str_replace("\r\n", "\n", $body));
         $mainLines = [];
         $quoteLines = [];
@@ -404,10 +454,9 @@ class ProcessGmailAlertJob implements ShouldQueue
 
         $html = nl2br(e($mainText));
 
-        // Highlight trigger words
-        $keywords = ['refund', 'chargeback', 'dispute', 'complaint', 'fraud', 'scam', 'unauthorized', 'money back'];
+        $keywords = ['refund', 'chargeback', 'dispute', 'complaint', 'fraud', 'scam', 'unauthorized', 'money back', 'возврат', 'чарджбек', 'мошенничество'];
         foreach ($keywords as $kw) {
-            $html = preg_replace_callback('/\b('.preg_quote($kw, '/').')\b/i', function ($m) {
+            $html = preg_replace_callback('/\b('.preg_quote($kw, '/').')\b/iu', function ($m) {
                 return '<mark class="bg-amber-200 dark:bg-amber-900/80 text-amber-900 dark:text-amber-200 px-1 py-0.5 rounded font-bold">'.$m[0].'</mark>';
             }, $html);
         }

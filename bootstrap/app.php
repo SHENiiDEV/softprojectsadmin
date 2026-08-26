@@ -17,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->validateCsrfTokens(except: [
             'telegram/webhook',
             'api/v1/webhooks/gmail-alert',
+            'api/v1/gmail/pubsub-webhook',
         ]);
 
         $middleware->alias([
