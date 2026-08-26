@@ -164,14 +164,27 @@ class ProcessGmailSyncJob implements ShouldQueue
                 'sent_at' => $sentAt,
             ]);
 
-            // Save Attachments
+            // Save Attachments with deduplication
             $savedFiles = [];
             $disk = config('filesystems.disks.private') ? 'private' : 'local';
 
             foreach ($msg['attachments'] as $att) {
+                $origName = $att['filename'] ?: 'file';
+                $attSize = (int) ($att['size'] ?? 0);
+
+                // Skip duplicate attachment download if already present for ticket
+                $alreadyExists = SupportTicketAttachment::where('support_ticket_id', $ticket->id)
+                    ->where('original_filename', $origName)
+                    ->exists();
+
+                if ($alreadyExists) {
+                    Log::info('Skipped duplicate attachment for ticket: '.$origName, ['ticketId' => $ticket->id]);
+
+                    continue;
+                }
+
                 $fileContent = $syncService->downloadAttachment($msg['id'], $att['attachmentId']);
                 if ($fileContent) {
-                    $origName = $att['filename'] ?: 'file';
                     $ext = pathinfo($origName, PATHINFO_EXTENSION) ?: 'bin';
                     $cleanName = Str::slug(pathinfo($origName, PATHINFO_FILENAME));
                     $filename = "{$cleanName}_".uniqid().".{$ext}";
@@ -185,7 +198,7 @@ class ProcessGmailSyncJob implements ShouldQueue
                         'original_filename' => $origName,
                         'storage_path' => $path,
                         'mime_type' => $att['mimeType'] ?: 'application/octet-stream',
-                        'size_bytes' => $att['size'] ?: strlen($fileContent),
+                        'size_bytes' => $attSize ?: strlen($fileContent),
                     ]);
 
                     $savedFiles[] = $attachmentModel;
@@ -311,12 +324,12 @@ class ProcessGmailSyncJob implements ShouldQueue
         } else {
             $task = Task::find($ticket->task_id);
             if ($task) {
-                $commentHtml = $this->buildHtmlComment($ticket, $message, $savedFiles, $isOutgoing);
+                $commentText = $this->buildCommentText($ticket, $message, $savedFiles, $isOutgoing);
 
                 Comment::create([
                     'task_id' => $task->id,
                     'user_id' => null, // System / Webhook
-                    'content' => $commentHtml,
+                    'content' => $commentText,
                 ]);
 
                 if ($priority === 'high' && $task->priority !== 'high') {
@@ -421,47 +434,49 @@ class ProcessGmailSyncJob implements ShouldQueue
         return $html;
     }
 
-    protected function buildHtmlComment(SupportTicket $ticket, SupportTicketMessage $message, array $savedFiles, bool $isOutgoing): string
+    protected function buildCommentText(SupportTicket $ticket, SupportTicketMessage $message, array $savedFiles, bool $isOutgoing): string
     {
-        $formattedBody = $this->formatEmailBodyHtml($message->body_text ?? '');
-        $dateFormatted = $message->sent_at ? $message->sent_at->format('d M Y, H:i') : now()->format('d M Y, H:i');
+        $badge = $isOutgoing ? '🟢 **Support Reply**' : '📩 **Email Reply**';
+        $sender = $message->from;
+        $cleanBody = $this->cleanReplyText($message->body_text ?? '');
 
-        $badgeLabel = $isOutgoing ? 'SUPPORT REPLY' : 'EMAIL REPLY';
-        $badgeClass = $isOutgoing ? 'bg-emerald-600' : 'bg-indigo-600';
-        $boxBorder = $isOutgoing ? 'border-emerald-200/80 dark:border-emerald-900/60 bg-emerald-50/40' : 'border-indigo-200/80 dark:border-indigo-900/60 bg-indigo-50/40';
-
-        $html = '<div class="rounded-xl border '.$boxBorder.' dark:bg-slate-900/80 p-4 space-y-3 shadow-sm">';
-
-        $html .= '<div class="flex items-center justify-between text-xs border-b border-slate-200/60 dark:border-slate-800/40 pb-2.5 flex-wrap gap-2">';
-        $html .= '<div class="flex items-center space-x-2">';
-        $html .= '<span class="px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider rounded-md '.$badgeClass.' text-white flex items-center gap-1"><i class="fa-solid fa-reply text-[9px]"></i> '.$badgeLabel.'</span>';
-        $html .= '<span class="font-bold text-slate-800 dark:text-slate-100 truncate" title="'.e($message->from).'">'.e($message->from).'</span>';
-        $html .= '</div>';
-        $html .= '<span class="text-[11px] font-medium text-slate-400 flex items-center gap-1"><i class="fa-regular fa-clock text-[10px]"></i> '.e($dateFormatted).'</span>';
-        $html .= '</div>';
-
-        $html .= '<div class="text-xs text-slate-800 dark:text-slate-200 leading-relaxed font-sans space-y-2 overflow-x-auto">';
-        $html .= $formattedBody;
-        $html .= '</div>';
+        $text = "{$badge} from `{$sender}`\n\n{$cleanBody}";
 
         if (! empty($savedFiles)) {
-            $html .= '<div class="pt-2 border-t border-slate-200/60 dark:border-slate-800/40 space-y-1.5">';
-            $html .= '<span class="text-[10px] font-bold uppercase tracking-wider text-indigo-500 flex items-center gap-1"><i class="fa-solid fa-paperclip text-[10px]"></i> New Attachments ('.count($savedFiles).')</span>';
-            $html .= '<div class="grid grid-cols-1 sm:grid-cols-2 gap-2">';
+            $text .= "\n\n📎 **New Attachments:**\n";
             foreach ($savedFiles as $f) {
                 $sizeKb = round($f->size_bytes / 1024, 1);
-                $html .= '<div class="p-2 rounded-lg bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800 flex items-center space-x-2">';
-                $html .= '<i class="fa-solid fa-file-arrow-down text-indigo-500 text-xs"></i>';
-                $html .= '<span class="font-semibold text-xs text-slate-700 dark:text-slate-300 truncate">'.e($f->original_filename).'</span>';
-                $html .= '<span class="text-[10px] text-slate-400 ml-auto">'.$sizeKb.' KB</span>';
-                $html .= '</div>';
+                $text .= "• {$f->original_filename} ({$sizeKb} KB)\n";
             }
-            $html .= '</div></div>';
         }
 
-        $html .= '</div>';
+        return $text;
+    }
 
-        return $html;
+    protected function cleanReplyText(string $body): string
+    {
+        if (empty(trim($body))) {
+            return '_No text content_';
+        }
+
+        $lines = explode("\n", str_replace("\r\n", "\n", $body));
+        $cleanLines = [];
+
+        foreach ($lines as $line) {
+            $trimmed = trim($line);
+            if (preg_match('/^(On\s+.*wrote:|From:.*Sent:.*To:.*|>-+Original Message-+)/i', $trimmed)) {
+                break;
+            }
+            if (str_starts_with($trimmed, '>')) {
+                continue;
+            }
+            $lineClean = preg_replace('/\[image:\s*[^\]]+\]/i', '', $line);
+            $cleanLines[] = $lineClean;
+        }
+
+        $result = trim(implode("\n", $cleanLines));
+
+        return $result ?: '_No new text_';
     }
 
     protected function formatEmailBodyHtml(string $body): string
