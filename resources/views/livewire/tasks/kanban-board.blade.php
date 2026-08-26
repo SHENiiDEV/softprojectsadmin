@@ -187,9 +187,9 @@
                             </h4>
 
                             <!-- Description Snippet -->
-                            @if($task->description)
+                            @if($task->excerpt)
                                 <p class="text-xs text-slate-400 dark:text-slate-500 mt-1.5 line-clamp-2">
-                                    {{ $task->description }}
+                                    {{ $task->excerpt }}
                                 </p>
                             @endif
 

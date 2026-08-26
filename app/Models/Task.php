@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
@@ -241,6 +242,27 @@ class Task extends Model implements HasMedia
         }
 
         return (int) $logged;
+    }
+
+    /**
+     * Get clean text excerpt of description without HTML tags or header metadata.
+     */
+    public function getExcerptAttribute(): string
+    {
+        if (empty($this->description)) {
+            return '';
+        }
+
+        $text = $this->description;
+        if (str_contains($text, 'Email Message Body')) {
+            $parts = explode('Email Message Body', $text);
+            $text = end($parts);
+        }
+
+        $clean = trim(preg_replace('/\s+/', ' ', strip_tags($text)));
+        $clean = preg_replace('/\[image:\s*[^\]]+\]/i', '', $clean);
+
+        return Str::limit($clean, 120);
     }
 
     /**

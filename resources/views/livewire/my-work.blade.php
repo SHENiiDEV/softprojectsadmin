@@ -237,9 +237,9 @@
                             @endif
                         </div>
 
-                        @if($task->description)
+                        @if($task->excerpt)
                             <p class="text-xs text-slate-500 dark:text-slate-400 mt-1.5 line-clamp-1">
-                                {{ \Illuminate\Support\Str::limit($task->description, 100) }}
+                                {{ $task->excerpt }}
                             </p>
                         @endif
                     </div>
