@@ -110,8 +110,8 @@ class ProcessGmailAlertJob implements ShouldQueue
                     $cleanName = Str::slug(pathinfo($origName, PATHINFO_FILENAME));
                     $filename = "{$cleanName}_".uniqid().".{$ext}";
 
-                    $path = "tickets/{$ticket->id}/{$filename}";
-                    Storage::disk('private')->put($path, $fileContent);
+                    $disk = config('filesystems.disks.private') ? 'private' : 'local';
+                    Storage::disk($disk)->put($path, $fileContent);
 
                     $attachmentModel = SupportTicketAttachment::create([
                         'support_ticket_id' => $ticket->id,
