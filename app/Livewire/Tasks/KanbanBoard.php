@@ -367,6 +367,11 @@ class KanbanBoard extends Component
         session()->flash('message', 'Attachment deleted successfully.');
     }
 
+    public function deleteAttachment($mediaId): void
+    {
+        $this->deleteMedia($mediaId);
+    }
+
     public function addComment()
     {
         $this->validate(['newCommentContent' => 'required|string']);
