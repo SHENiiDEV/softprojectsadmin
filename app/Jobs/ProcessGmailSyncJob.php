@@ -98,6 +98,19 @@ class ProcessGmailSyncJob implements ShouldQueue
             $subject = $msg['subject'] ?: 'No Subject';
             $bodyText = $msg['body'];
 
+            $minDateStr = env('GMAIL_SYNC_MIN_DATE');
+            if (! empty($minDateStr) && ! app()->environment('testing')) {
+                $sentAt = ! empty($msg['date']) ? Carbon::parse($msg['date']) : now();
+                if ($sentAt->lt(Carbon::parse($minDateStr))) {
+                    Log::info('GmailSyncJob: Skipped email sent before minimum cutoff date', [
+                        'sentAt' => $sentAt->toIso8601String(),
+                        'minDate' => $minDateStr,
+                    ]);
+
+                    return;
+                }
+            }
+
             $isOutgoing = in_array('SENT', $msg['labelIds'], true);
             $matchedCategories = $this->classifyKeywords($subject, $bodyText);
 
