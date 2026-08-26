@@ -295,6 +295,13 @@ class ClientPortal extends Component
         }
     }
 
+    public function updatedTrafficMonth(string $value): void
+    {
+        if (! empty($value)) {
+            $this->trafficPlan = "Traffic Launch {$value}";
+        }
+    }
+
     public function updatedSearchQuery(): void
     {
         $this->resetPage();
@@ -317,6 +324,13 @@ class ClientPortal extends Component
             $this->urgency = 'high';
         } else {
             $this->urgency = 'medium';
+        }
+
+        if ($value === 'Traffic Report') {
+            if (empty($this->trafficMonth)) {
+                $this->trafficMonth = now()->format('F Y');
+            }
+            $this->trafficPlan = "Traffic Launch {$this->trafficMonth}";
         }
     }
 
