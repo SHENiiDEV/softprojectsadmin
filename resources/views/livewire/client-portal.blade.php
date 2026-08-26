@@ -473,16 +473,43 @@
                                         </div>
                                     </div>
 
-                                    <!-- Traffic Channels (Social, Organic, Direct) -->
-                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                        <div>
-                                            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Social Traffic (%)</label>
-                                            <div class="relative">
-                                                <input type="number" wire:model="trafficSocialPercent" min="0" max="100" placeholder="20" class="w-full pl-3 pr-7 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
-                                                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">%</span>
+                                    <!-- Social Traffic Block (Total + Facebook/Instagram Breakdown) -->
+                                    <div class="p-3 bg-white/60 dark:bg-slate-900/60 border border-slate-200/60 dark:border-white/10 rounded-xl space-y-3">
+                                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
+                                            <div>
+                                                <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Social Traffic Total (%)</label>
+                                                <div class="relative">
+                                                    <input type="number" wire:model="trafficSocialPercent" min="0" max="100" placeholder="20" class="w-full pl-3 pr-7 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
+                                                    <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">%</span>
+                                                </div>
+                                            </div>
+
+                                            <div class="sm:col-span-2 grid grid-cols-2 gap-3">
+                                                <div>
+                                                    <label class="block text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1 flex items-center gap-1">
+                                                        <i class="fa-brands fa-facebook text-xs"></i> Facebook (%)
+                                                    </label>
+                                                    <div class="relative">
+                                                        <input type="number" wire:model="trafficSocialFbPercent" min="0" max="100" placeholder="10" class="w-full pl-3 pr-7 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
+                                                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">%</span>
+                                                    </div>
+                                                </div>
+
+                                                <div>
+                                                    <label class="block text-xs font-semibold text-pink-600 dark:text-pink-400 mb-1 flex items-center gap-1">
+                                                        <i class="fa-brands fa-instagram text-xs"></i> Instagram (%)
+                                                    </label>
+                                                    <div class="relative">
+                                                        <input type="number" wire:model="trafficSocialInstPercent" min="0" max="100" placeholder="10" class="w-full pl-3 pr-7 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
+                                                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">%</span>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
+                                    </div>
 
+                                    <!-- Organic & Direct Traffic -->
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         <div>
                                             <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Organic Traffic (%)</label>
                                             <div class="relative">

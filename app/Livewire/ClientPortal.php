@@ -417,15 +417,13 @@ class ClientPortal extends Component
             if ($this->trafficSocialPercent !== '') {
                 $socPercent = e($this->trafficSocialPercent);
                 $socialSubHtml = '';
-                if ($this->trafficSocialFbPercent !== '' || ! empty($this->trafficSocialFbLink)) {
+                if ($this->trafficSocialFbPercent !== '') {
                     $fbPercent = e($this->trafficSocialFbPercent);
-                    $fbLink = ! empty($this->trafficSocialFbLink) ? " — <a href='".e($this->trafficSocialFbLink)."' target='_blank' style='color: #0284c7;'>Link</a>" : '';
-                    $socialSubHtml .= "<div style='font-size: 11px; color: #475569; margin-top: 4px;'>• <strong>Facebook:</strong> {$fbPercent}%{$fbLink}</div>";
+                    $socialSubHtml .= "<div style='font-size: 11px; color: #475569; margin-top: 4px;'>• <strong>Facebook:</strong> {$fbPercent}%</div>";
                 }
-                if ($this->trafficSocialInstPercent !== '' || ! empty($this->trafficSocialInstLink)) {
+                if ($this->trafficSocialInstPercent !== '') {
                     $instPercent = e($this->trafficSocialInstPercent);
-                    $instLink = ! empty($this->trafficSocialInstLink) ? " — <a href='".e($this->trafficSocialInstLink)."' target='_blank' style='color: #0284c7;'>Link</a>" : '';
-                    $socialSubHtml .= "<div style='font-size: 11px; color: #475569; margin-top: 2px;'>• <strong>Instagram:</strong> {$instPercent}%{$instLink}</div>";
+                    $socialSubHtml .= "<div style='font-size: 11px; color: #475569; margin-top: 2px;'>• <strong>Instagram:</strong> {$instPercent}%</div>";
                 }
                 $channelsHtml .= "
                 <div style='padding: 10px 12px; background: #ffffff; border-radius: 8px; margin-bottom: 8px; border: 1px solid #e2e8f0;'>
