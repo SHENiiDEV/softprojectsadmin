@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+
+# Exit immediately if a command exits with a non-zero status
+set -e
+
+echo "----------------------------------------"
+echo "🚀 Starting Production Deployment"
+echo "----------------------------------------"
+
+# 1. Pull latest code from Git repository
+echo "📦 1. Pulling latest code from Git..."
+git pull origin main
+
+# 2. Install / Optimize Composer Dependencies
+echo "🐘 2. Installing Composer dependencies..."
+if command -v composer &> /dev/null; then
+    composer install --no-interaction --prefer-dist --optimize-autoloader
+elif [ -f "./vendor/bin/sail" ]; then
+    ./vendor/bin/sail composer install --no-interaction --prefer-dist --optimize-autoloader
+fi
+
+# 3. Run Database Migrations
+echo "🗄️ 3. Running Database Migrations..."
+php artisan migrate --force
+
+# 4. Clear and Rebuild Laravel Caches
+echo "🧹 4. Clearing and optimizing Laravel caches..."
+php artisan config:clear
+php artisan route:clear
+php artisan view:clear
+php artisan cache:clear
+
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+php artisan event:cache
+
+# 5. Build Frontend Assets (Vite)
+if [ -f "package.json" ]; then
+    echo "⚡ 5. Building Frontend Assets (Vite)..."
+    if command -v npm &> /dev/null; then
+        npm install --quiet
+        npm run build
+    fi
+fi
+
+# 6. Restart Queue Workers & Register Gmail Watch
+echo "🔄 6. Restarting Queue Workers & Registering Gmail Watch..."
+php artisan queue:restart || true
+php artisan gmail:watch || true
+
+echo "----------------------------------------"
+echo "✅ Deployment completed successfully!"
+echo "----------------------------------------"
