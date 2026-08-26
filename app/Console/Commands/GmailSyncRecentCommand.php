@@ -61,13 +61,13 @@ class GmailSyncRecentCommand extends Command
                     continue;
                 }
                 foreach ($ticket->attachments as $att) {
-                    $existsInMedia = $ticket->task->getMedia('documents')->contains('file_name', $att->original_filename);
+                    $existsInMedia = $ticket->task->getMedia('attachments')->contains('file_name', $att->original_filename);
                     if (! $existsInMedia && Storage::disk($disk)->exists($att->storage_path)) {
                         $content = Storage::disk($disk)->get($att->storage_path);
                         if ($content) {
                             $ticket->task->addMediaFromString($content)
                                 ->usingFileName($att->original_filename)
-                                ->toMediaCollection('documents');
+                                ->toMediaCollection('attachments');
                         }
                     }
                 }

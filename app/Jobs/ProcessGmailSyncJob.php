@@ -335,7 +335,7 @@ class ProcessGmailSyncJob implements ShouldQueue
                         if ($content) {
                             $task->addMediaFromString($content)
                                 ->usingFileName($f->original_filename)
-                                ->toMediaCollection('documents');
+                                ->toMediaCollection('attachments');
                         }
                     }
                 } catch (\Throwable $e) {
@@ -488,6 +488,9 @@ class ProcessGmailSyncJob implements ShouldQueue
         }
 
         $mainText = trim(implode("\n", $mainLines));
+        // Strip inline image placeholders like [image: image.png]
+        $mainText = preg_replace('/\[image:\s*[^\]]+\]/i', '', $mainText);
+        $mainText = trim($mainText);
         $quoteText = trim(implode("\n", $quoteLines));
 
         $html = nl2br(e($mainText));

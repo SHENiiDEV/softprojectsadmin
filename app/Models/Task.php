@@ -181,6 +181,7 @@ class Task extends Model implements HasMedia
      */
     public function registerMediaCollections(): void
     {
+        $this->addMediaCollection('attachments');
         $this->addMediaCollection('documents');
     }
 
