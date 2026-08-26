@@ -285,7 +285,7 @@ class ProcessGmailAlertJob implements ShouldQueue
             }
         }
 
-        // Sync attachments to Spatie MediaLibrary 'documents' collection on Task
+        // Sync attachments to Spatie MediaLibrary 'attachments' collection on Task safely without duplicates
         if ($task && ! empty($savedFiles)) {
             $disk = config('filesystems.disks.private') ? 'private' : 'local';
             foreach ($savedFiles as $f) {
@@ -293,9 +293,7 @@ class ProcessGmailAlertJob implements ShouldQueue
                     if (Storage::disk($disk)->exists($f->storage_path)) {
                         $content = Storage::disk($disk)->get($f->storage_path);
                         if ($content) {
-                            $task->addMediaFromString($content)
-                                ->usingFileName($f->original_filename)
-                                ->toMediaCollection('attachments');
+                            $task->attachDocumentStrict($content, $f->original_filename);
                         }
                     }
                 } catch (\Throwable $e) {

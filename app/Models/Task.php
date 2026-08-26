@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 #[Fillable(['project_id', 'creator_id', 'assigned_to', 'title', 'description', 'status', 'priority', 'due_date', 'order', 'archived_at'])]
 class Task extends Model implements HasMedia
@@ -184,6 +185,48 @@ class Task extends Model implements HasMedia
     {
         $this->addMediaCollection('attachments');
         $this->addMediaCollection('documents');
+    }
+
+    /**
+     * Attach a document to task attachments collection strictly avoiding duplicates.
+     */
+    public function attachDocumentStrict(string $fileContent, string $originalFilename): ?Media
+    {
+        $cleanSearch = strtolower(preg_replace('/[^a-zA-Z0-9\.]/', '', $originalFilename));
+        $contentSize = strlen($fileContent);
+
+        // Check if task already has this file attached in media library
+        $existing = $this->getMedia('attachments')->first(function ($media) use ($cleanSearch, $contentSize) {
+            $mediaClean = strtolower(preg_replace('/[^a-zA-Z0-9\.]/', '', $media->file_name));
+            $sameName = $mediaClean === $cleanSearch || str_contains($mediaClean, $cleanSearch) || str_contains($cleanSearch, $mediaClean);
+            $sameSize = abs((int) $media->size - $contentSize) < 200;
+
+            return $sameName && $sameSize;
+        });
+
+        if ($existing) {
+            return $existing;
+        }
+
+        return $this->addMediaFromString($fileContent)
+            ->usingFileName($originalFilename)
+            ->toMediaCollection('attachments');
+    }
+
+    /**
+     * Clean up duplicate media items attached to this task.
+     */
+    public function cleanupDuplicateMedia(): void
+    {
+        $seen = [];
+        foreach ($this->getMedia('attachments') as $media) {
+            $key = strtolower(preg_replace('/[^a-zA-Z0-9\.]/', '', $media->file_name)).'_'.$media->size;
+            if (isset($seen[$key])) {
+                $media->delete();
+            } else {
+                $seen[$key] = true;
+            }
+        }
     }
 
     /**

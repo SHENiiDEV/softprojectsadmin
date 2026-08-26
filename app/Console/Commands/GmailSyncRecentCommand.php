@@ -3,10 +3,9 @@
 namespace App\Console\Commands;
 
 use App\Jobs\ProcessGmailSyncJob;
-use App\Models\SupportTicket;
+use App\Models\Task;
 use App\Services\GmailSyncService;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Storage;
 
 class GmailSyncRecentCommand extends Command
 {
@@ -70,24 +69,10 @@ class GmailSyncRecentCommand extends Command
 
             $this->info("✅ Successfully inspected and processed {$count} recent Gmail messages!");
 
-            // Backfill attachments to task Spatie MediaLibrary 'documents' collection for existing tickets
-            $tickets = SupportTicket::whereNotNull('task_id')->with('attachments', 'task')->get();
-            $disk = config('filesystems.disks.private') ? 'private' : 'local';
-            foreach ($tickets as $ticket) {
-                if (! $ticket->task) {
-                    continue;
-                }
-                foreach ($ticket->attachments as $att) {
-                    $existsInMedia = $ticket->task->getMedia('attachments')->contains('file_name', $att->original_filename);
-                    if (! $existsInMedia && Storage::disk($disk)->exists($att->storage_path)) {
-                        $content = Storage::disk($disk)->get($att->storage_path);
-                        if ($content) {
-                            $ticket->task->addMediaFromString($content)
-                                ->usingFileName($att->original_filename)
-                                ->toMediaCollection('attachments');
-                        }
-                    }
-                }
+            // Run duplicate media cleanup & strict attachment on all tasks
+            $tasks = Task::has('media')->get();
+            foreach ($tasks as $task) {
+                $task->cleanupDuplicateMedia();
             }
 
             return 0;
