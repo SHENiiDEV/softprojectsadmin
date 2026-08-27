@@ -189,8 +189,8 @@ class KanbanTaskTest extends TestCase
             ->assertHasNoErrors();
 
         $task = $task->fresh();
-        $this->assertEquals(1, $task->getMedia('documents')->count());
-        $this->assertEquals('document.pdf', $task->getMedia('documents')->first()->file_name);
+        $this->assertEquals(1, $task->getMedia('attachments')->count());
+        $this->assertEquals('document.pdf', $task->getMedia('attachments')->first()->file_name);
     }
 
     public function test_global_tasks_filter_works_successfully(): void

@@ -2,13 +2,16 @@
 
 namespace App\Livewire\Tasks;
 
+use App\Models\ActivityLog;
 use App\Models\Client;
 use App\Models\Comment;
 use App\Models\EmailTemplate;
 use App\Models\Project;
 use App\Models\Task;
+use App\Models\TaskTimeLog;
 use App\Models\User;
 use App\Services\EmailReplyService;
+use App\Services\NotificationService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Livewire\Component;
@@ -129,6 +132,96 @@ class KanbanBoard extends Component
         $task = Task::findOrFail($taskId);
         $task->archive();
         session()->flash('message', "Task \"{$task->title}\" moved to archive.");
+    }
+
+    public function takeTask(int $taskId): void
+    {
+        $task = Task::findOrFail($taskId);
+        $user = auth()->user();
+
+        $task->assigned_to = $user->id;
+        if (in_array($task->status, ['todo', 'email_inbox'])) {
+            $task->status = 'in_progress';
+        }
+        $task->save();
+
+        session()->flash('message', "Task \"{$task->title}\" assigned to you.");
+    }
+
+    public function toggleTimer(int $taskId): void
+    {
+        $user = auth()->user();
+        $task = Task::findOrFail($taskId);
+
+        // Check if task is assigned to the current user
+        if ($task->assigned_to !== $user->id) {
+            session()->flash('error', 'Это не ваш таск! Вы можете запускать таймер только на своих задачах.');
+
+            return;
+        }
+
+        $activeTimer = $task->timeLogs()
+            ->where('user_id', $user->id)
+            ->whereNull('stopped_at')
+            ->first();
+
+        if ($activeTimer) {
+            $activeTimer->stopped_at = now();
+            $durationSeconds = (int) $activeTimer->started_at->diffInSeconds(now(), true);
+            $activeTimer->duration_seconds = $durationSeconds;
+            $activeTimer->save();
+
+            ActivityLog::create([
+                'user_id' => $user->id,
+                'task_id' => $task->id,
+                'project_id' => $task->project_id,
+                'action' => 'timer_stopped',
+                'description' => "Timer stopped on task '{$task->title}' after ".gmdate('H:i:s', $durationSeconds).' by '.$user->name,
+            ]);
+
+            NotificationService::sendTimerAction($task, 'stopped', $durationSeconds, $user);
+
+            session()->flash('message', "Timer stopped for \"{$task->title}\".");
+        } else {
+            // Stop any active timer by this user first
+            TaskTimeLog::where('user_id', $user->id)
+                ->whereNull('stopped_at')
+                ->get()
+                ->each(function ($log) use ($user) {
+                    $log->stopped_at = now();
+                    $dur = (int) $log->started_at->diffInSeconds(now(), true);
+                    $log->duration_seconds = $dur;
+                    $log->save();
+
+                    if ($log->task) {
+                        ActivityLog::create([
+                            'user_id' => $user->id,
+                            'task_id' => $log->task->id,
+                            'project_id' => $log->task->project_id,
+                            'action' => 'timer_stopped',
+                            'description' => "Timer auto-stopped on task '{$log->task->title}' by ".$user->name,
+                        ]);
+                        NotificationService::sendTimerAction($log->task, 'stopped', $dur, $user);
+                    }
+                });
+
+            $task->timeLogs()->create([
+                'user_id' => $user->id,
+                'started_at' => now(),
+            ]);
+
+            ActivityLog::create([
+                'user_id' => $user->id,
+                'task_id' => $task->id,
+                'project_id' => $task->project_id,
+                'action' => 'timer_started',
+                'description' => "Timer started on task '{$task->title}' by ".$user->name,
+            ]);
+
+            NotificationService::sendTimerAction($task, 'started', 0, $user);
+
+            session()->flash('message', "Timer started for \"{$task->title}\".");
+        }
     }
 
     public function render()
@@ -310,6 +403,12 @@ class KanbanBoard extends Component
 
     public function saveTask()
     {
+        if (auth()->user()->hasRole('curator')) {
+            session()->flash('error', 'Curators are not allowed to create or edit tasks.');
+
+            return;
+        }
+
         $this->validate();
 
         if ($this->editingTaskId) {
@@ -421,6 +520,24 @@ class KanbanBoard extends Component
 
         $comment->delete();
         session()->flash('message', 'Comment deleted successfully.');
+    }
+
+    public function addReply(int $commentId): void
+    {
+        $content = trim($this->replyCommentContent[$commentId] ?? '');
+        if (empty($content) || ! $this->editingTaskId) {
+            return;
+        }
+
+        Comment::create([
+            'task_id' => $this->editingTaskId,
+            'user_id' => auth()->id(),
+            'parent_id' => $commentId,
+            'content' => $content,
+        ]);
+
+        $this->replyCommentContent[$commentId] = '';
+        session()->flash('message', 'Reply added.');
     }
 
     public function sendClientEmailReply(EmailReplyService $replyService): void

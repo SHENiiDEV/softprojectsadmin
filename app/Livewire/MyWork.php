@@ -103,8 +103,8 @@ class MyWork extends Component
         $user = Auth::user();
         $task = Task::findOrFail($taskId);
 
-        if ($task->assigned_to !== $user->id && ! $user->hasAnyRole(['admin', 'manager'])) {
-            $this->flash('Only the assigned user can track time.', 'error');
+        if ($task->assigned_to !== $user->id) {
+            session()->flash('error', 'Это не ваш таск! Вы можете запускать таймер только на своих задачах.');
 
             return;
         }
