@@ -237,7 +237,7 @@
                                         @php
                                             $activeTimer = $task->activeTimer();
                                         @endphp
-                                        <div class="flex items-center space-x-1.5">
+                                        <div class="flex items-center space-x-1.5 flex-wrap">
                                             @if($activeTimer)
                                                 <button type="button" wire:click="toggleTimer({{ $task->id }})" class="px-1.5 py-0.5 rounded bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-100/40 dark:border-rose-900/30 flex items-center space-x-1 text-[8px] font-bold animate-pulse" title="Stop tracking time">
                                                     <span class="w-1.5 h-1.5 rounded-full bg-rose-600 dark:bg-rose-400"></span>
@@ -257,12 +257,12 @@
                                                          const secs = seconds % 60;
                                                          return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
                                                      }
-                                                }" class="font-mono text-emerald-600 dark:text-emerald-400 font-bold text-[9px] leading-none">
+                                                }" class="font-mono text-emerald-600 dark:text-emerald-400 font-bold text-[9px] leading-none whitespace-nowrap">
                                                     <span x-text="formatTime(elapsed)"></span>
                                                 </div>
                                             @else
                                                 @if($task->assigned_to === auth()->id() || auth()->user()->hasAnyRole(['admin', 'manager']))
-                                                    <button type="button" wire:click="toggleTimer({{ $task->id }})" class="px-1.5 py-0.5 rounded bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 flex items-center space-x-1 text-[8px] font-bold transition-all duration-150" title="Start tracking time">
+                                                    <button type="button" wire:click="toggleTimer({{ $task->id }})" class="px-1.5 py-0.5 rounded bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 flex items-center space-x-1 text-[8px] font-bold transition-all duration-150 whitespace-nowrap" title="Start tracking time">
                                                         <svg class="h-2 w-2 text-slate-500" fill="currentColor" viewBox="0 0 24 24">
                                                             <path d="M8 5v14l11-7z"/>
                                                         </svg>
@@ -270,9 +270,9 @@
                                                     </button>
                                                 @endif
                                                 @if($task->total_duration > 0)
-                                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded font-mono text-[9px] bg-slate-50 dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/80 text-slate-500 dark:text-slate-400" title="Total tracked time">
-                                                         ⏱️ {{ $task->human_formatted_duration }}
-                                                      </span>
+                                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded font-mono text-[9px] bg-slate-50 dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/80 text-slate-500 dark:text-slate-400 whitespace-nowrap" title="Total tracked time">
+                                                        ⏱️ {{ $task->human_formatted_duration }}
+                                                    </span>
                                                 @endif
                                             @endif
                                         </div>
