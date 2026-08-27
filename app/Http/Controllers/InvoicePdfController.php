@@ -20,6 +20,8 @@ class InvoicePdfController extends Controller
             'sellerPhone' => 'nullable|string',
             'sellerWebsite' => 'nullable|string',
             'brandColor' => 'nullable|string',
+            'templateLayout' => 'nullable|string',
+            'paymentMethod' => 'nullable|string',
 
             'invoiceNumber' => 'required|string',
             'issueDate' => 'required|string',
@@ -60,6 +62,8 @@ class InvoicePdfController extends Controller
         $totalDue = max(0.0, round($subtotal - $discountAmount + $taxAmount, 2));
 
         $defaults = [
+            'templateLayout' => 'standard',
+            'paymentMethod' => 'Credit Card MASTERCARD ****8190',
             'sellerRegNo' => '',
             'sellerAddress' => '',
             'sellerEmail' => '',

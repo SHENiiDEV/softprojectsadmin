@@ -20,6 +20,8 @@
             <input type="hidden" name="sellerPhone" value="{{ $sellerPhone }}">
             <input type="hidden" name="sellerWebsite" value="{{ $sellerWebsite }}">
             <input type="hidden" name="brandColor" value="{{ $brandColor }}">
+            <input type="hidden" name="templateLayout" value="{{ $templateLayout }}">
+            <input type="hidden" name="paymentMethod" value="{{ $paymentMethod }}">
 
             <input type="hidden" name="invoiceNumber" value="{{ $invoiceNumber }}">
             <input type="hidden" name="issueDate" value="{{ $issueDate }}">
@@ -68,6 +70,16 @@
                 </h3>
 
                 <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Invoice Design Layout Template</label>
+                        <select wire:model.live="templateLayout" class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-sky-700 dark:text-sky-400 focus:ring-2 focus:ring-sky-500/20">
+                            <option value="jumlee">🟣 Jumlee Style (Vivid Purple Block & Centered Serif)</option>
+                            <option value="bordeux">🔵 Bordeux Style (Navy Minimalist Clean Lines)</option>
+                            <option value="electro">🌊 Electro-Base Style (Organic Wave Art Accent)</option>
+                            <option value="standard">💼 Standard Corporate (Modern Slate Blue)</option>
+                        </select>
+                    </div>
+
                     <div>
                         <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Select Company / Brand</label>
                         <select wire:model.live="selectedProjectId" class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-sky-500/20">
@@ -241,103 +253,269 @@
                         <i class="fa-solid fa-eye text-sky-500"></i> Real-Time Live Invoice Preview
                     </span>
                     <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold text-white uppercase tracking-wider" style="background-color: {{ $brandColor }}">
-                        Live Theme
+                        {{ strtoupper($templateLayout) }} Layout
                     </span>
                 </div>
 
                 <!-- Invoice Content Sheet -->
-                <div class="p-8 space-y-6 text-slate-800 dark:text-slate-100 font-sans text-xs bg-white dark:bg-slate-900 min-h-[600px]">
-                    <!-- Brand Top Banner -->
-                    <div class="flex items-start justify-between border-b-2 pb-5" style="border-color: {{ $brandColor }}">
-                        <div>
-                            <h2 class="text-2xl font-extrabold tracking-tight" style="color: {{ $brandColor }}">{{ $sellerName ?: 'Company Name' }}</h2>
-                            @if($sellerWebsite)<div class="text-xs text-slate-500 mt-0.5">{{ $sellerWebsite }}</div>@endif
-                            @if($sellerEmail)<div class="text-xs text-slate-500">{{ $sellerEmail }}</div>@endif
-                            @if($sellerRegNo)<div class="text-[11px] text-slate-400 mt-1">Reg No: {{ $sellerRegNo }}</div>@endif
-                        </div>
-                        <div class="text-right">
-                            <div class="text-2xl font-black tracking-widest text-slate-800 dark:text-slate-100 uppercase">INVOICE</div>
-                            <div class="text-sm font-bold text-slate-500 mt-1">#{{ $invoiceNumber }}</div>
-                            <div class="text-xs text-slate-500 mt-1">Date: <strong>{{ $issueDate }}</strong></div>
-                            @if($dueDate)<div class="text-xs text-slate-500">Due Date: <strong>{{ $dueDate }}</strong></div>@endif
-                        </div>
-                    </div>
+                <div class="p-8 space-y-6 text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-900 min-h-[600px] relative overflow-hidden">
 
-                    <!-- Client Info -->
-                    <div class="bg-slate-50 dark:bg-slate-950/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
-                        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Billed To</span>
-                        <div class="font-bold text-sm text-slate-800 dark:text-slate-100">{{ $clientName ?: 'Client / Business Name' }}</div>
-                        @if($clientEmail)<div class="text-xs text-slate-500">{{ $clientEmail }}</div>@endif
-                        @if($clientAddress)<div class="text-xs text-slate-500 mt-1 whitespace-pre-line">{{ $clientAddress }}</div>@endif
-                    </div>
+                    @if($templateLayout === 'jumlee')
+                        <!-- JUMLEE STYLE PREVIEW -->
+                        <div class="space-y-6">
+                            <h2 class="text-4xl font-serif font-black tracking-widest text-center uppercase text-slate-900 dark:text-white">INVOICE</h2>
 
-                    <!-- Items Table -->
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr class="text-white text-xs font-bold uppercase" style="background-color: {{ $brandColor }}">
-                                    <th class="py-2.5 px-3 rounded-l-lg">Description</th>
-                                    <th class="py-2.5 px-3 text-center">Qty</th>
-                                    <th class="py-2.5 px-3 text-right">Price</th>
-                                    <th class="py-2.5 px-3 text-right rounded-r-lg">Amount</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
-                                @foreach($items as $item)
-                                    <tr>
-                                        <td class="py-3 px-3 font-medium">{{ $item['description'] ?: 'Service description' }}</td>
-                                        <td class="py-3 px-3 text-center font-bold text-slate-600 dark:text-slate-400">{{ $item['quantity'] }}</td>
-                                        <td class="py-3 px-3 text-right font-medium">{{ $currencySymbol }}{{ number_format((float)$item['unit_price'], 2) }}</td>
-                                        <td class="py-3 px-3 text-right font-bold text-slate-800 dark:text-slate-100">{{ $currencySymbol }}{{ number_format((float)$item['quantity'] * (float)$item['unit_price'], 2) }}</td>
+                            <div class="grid grid-cols-2 gap-6 text-xs">
+                                <div>
+                                    <span class="font-bold text-slate-900 dark:text-white uppercase block mb-1 text-[11px]">INVOICE TO:</span>
+                                    <div class="font-bold text-sm text-slate-800 dark:text-slate-100">{{ $clientName ?: 'Client Name' }}</div>
+                                    @if($clientEmail)<div class="text-slate-500">{{ $clientEmail }}</div>@endif
+                                    @if($clientAddress)<div class="text-slate-500">{{ $clientAddress }}</div>@endif
+                                </div>
+                                <div class="text-right">
+                                    <span class="font-bold text-slate-900 dark:text-white uppercase block mb-1 text-[11px]">INVOICE FROM:</span>
+                                    <div class="font-bold text-sm text-slate-800 dark:text-slate-100">{{ $sellerName }}</div>
+                                    @if($sellerAddress)<div class="text-slate-500">{{ $sellerAddress }}</div>@endif
+                                    @if($sellerEmail)<div class="text-slate-500">{{ $sellerEmail }}</div>@endif
+                                    @if($sellerPhone)<div class="text-slate-500">{{ $sellerPhone }}</div>@endif
+                                </div>
+                            </div>
+
+                            <table class="w-full text-left border-collapse text-xs">
+                                <thead>
+                                    <tr class="text-white text-xs font-bold uppercase" style="background-color: {{ $brandColor }}">
+                                        <th class="py-3 px-4">PRODUCT</th>
+                                        <th class="py-3 px-4 text-right">PRICE</th>
+                                        <th class="py-3 px-4 text-center">QTY</th>
+                                        <th class="py-3 px-4 text-right">TOTAL</th>
                                     </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
+                                </thead>
+                                <tbody>
+                                    @foreach($items as $item)
+                                        <tr class="bg-slate-50 dark:bg-slate-950/60 border-b border-white dark:border-slate-900">
+                                            <td class="py-3.5 px-4 font-bold text-slate-800 dark:text-slate-200">{{ $item['description'] }}</td>
+                                            <td class="py-3.5 px-4 text-right">{{ $currencySymbol }}{{ number_format((float)$item['unit_price'], 2) }}</td>
+                                            <td class="py-3.5 px-4 text-center font-bold">{{ $item['quantity'] }}</td>
+                                            <td class="py-3.5 px-4 text-right font-bold">{{ $currencySymbol }}{{ number_format((float)$item['quantity'] * (float)$item['unit_price'], 2) }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
 
-                    <!-- Financial Summary -->
-                    <div class="flex justify-end">
-                        <div class="w-64 space-y-1.5 text-xs bg-slate-50 dark:bg-slate-950/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
-                            <div class="flex justify-between text-slate-500">
-                                <span>Subtotal:</span>
-                                <span class="font-bold text-slate-800 dark:text-slate-200">{{ $currencySymbol }}{{ number_format($this->subtotal, 2) }}</span>
+                            <div class="flex justify-end">
+                                <div class="w-72 text-xs space-y-2">
+                                    <div class="flex justify-between font-bold text-slate-600 dark:text-slate-300">
+                                        <span>SUB-TOTAL</span>
+                                        <span>{{ $currencySymbol }}{{ number_format($this->subtotal, 2) }}</span>
+                                    </div>
+                                    <div class="flex justify-between font-bold text-white px-4 py-2.5 rounded-md" style="background-color: {{ $brandColor }}">
+                                        <span>TOTAL</span>
+                                        <span>{{ $currencySymbol }}{{ number_format($this->totalDue, 2) }}</span>
+                                    </div>
+                                </div>
                             </div>
-                            @if($discountAmount > 0)
-                                <div class="flex justify-between text-emerald-600 dark:text-emerald-400">
-                                    <span>Discount:</span>
-                                    <span class="font-bold">-{{ $currencySymbol }}{{ number_format($discountAmount, 2) }}</span>
+
+                            <div class="pt-6 font-bold text-xs space-y-1 text-slate-900 dark:text-slate-100 uppercase">
+                                <div>PAYMENT METHOD: {{ $paymentMethod }}</div>
+                                <div>DATE: {{ date('d.m.Y', strtotime($issueDate)) }}</div>
+                                <div>INVOICE ID: #{{ $invoiceNumber }}</div>
+                            </div>
+
+                            <div class="h-2 rounded-full w-full" style="background-color: {{ $brandColor }}"></div>
+                        </div>
+
+                    @elseif($templateLayout === 'bordeux')
+                        <!-- BORDEUX NAVY MINIMALIST PREVIEW -->
+                        <div class="space-y-6">
+                            <div class="flex items-start justify-between">
+                                <div class="text-xs space-y-0.5 text-slate-600 dark:text-slate-400">
+                                    <div>Date : <strong>{{ date('d M, Y', strtotime($issueDate)) }}</strong></div>
+                                    <div>Invoice No. <strong>{{ $invoiceNumber }}</strong></div>
                                 </div>
-                            @endif
-                            @if($taxPercent > 0)
-                                <div class="flex justify-between text-slate-500">
-                                    <span>Tax ({{ $taxPercent }}%):</span>
-                                    <span class="font-bold text-slate-800 dark:text-slate-200">{{ $currencySymbol }}{{ number_format($this->taxAmount, 2) }}</span>
+                                <div class="text-4xl font-black tracking-wider uppercase" style="color: {{ $brandColor }}">INVOICE</div>
+                            </div>
+
+                            <div class="h-0.5 w-full" style="background-color: {{ $brandColor }}"></div>
+
+                            <div class="grid grid-cols-2 gap-6 text-xs">
+                                <div>
+                                    <span class="font-bold uppercase text-slate-900 dark:text-white block mb-1">BILLED TO:</span>
+                                    <div class="font-bold text-sm text-slate-800 dark:text-slate-100">{{ $clientName ?: 'Client Name' }}</div>
+                                    @if($clientAddress)<div class="text-slate-500">{{ $clientAddress }}</div>@endif
+                                    @if($clientEmail)<div class="text-slate-500">{{ $clientEmail }}</div>@endif
                                 </div>
-                            @endif
-                            <div class="flex justify-between text-sm font-extrabold pt-2 border-t border-slate-200 dark:border-slate-800" style="color: {{ $brandColor }}">
-                                <span>Total Due:</span>
-                                <span>{{ $currencySymbol }}{{ number_format($this->totalDue, 2) }} {{ $currency }}</span>
+                                <div>
+                                    <span class="font-bold uppercase text-slate-900 dark:text-white block mb-1">FROM:</span>
+                                    <div class="font-bold text-sm text-slate-800 dark:text-slate-100">{{ $sellerName }}</div>
+                                    @if($sellerAddress)<div class="text-slate-500">{{ $sellerAddress }}</div>@endif
+                                    @if($sellerPhone)<div class="text-slate-500">{{ $sellerPhone }}</div>@endif
+                                    @if($sellerEmail)<div class="text-slate-500">{{ $sellerEmail }}</div>@endif
+                                </div>
+                            </div>
+
+                            <table class="w-full text-left border-collapse text-xs">
+                                <thead>
+                                    <tr class="border-y-2 border-slate-900 dark:border-white text-slate-900 dark:text-white font-bold uppercase">
+                                        <th class="py-2.5 px-3">DESCRIPTION</th>
+                                        <th class="py-2.5 px-3 text-center">QUANTITY</th>
+                                        <th class="py-2.5 px-3 text-right">PRICE</th>
+                                        <th class="py-2.5 px-3 text-right">TOTAL</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+                                    @foreach($items as $item)
+                                        <tr>
+                                            <td class="py-3 px-3 font-medium border-r border-slate-200 dark:border-slate-800">{{ $item['description'] }}</td>
+                                            <td class="py-3 px-3 text-center font-semibold border-r border-slate-200 dark:border-slate-800">{{ $item['quantity'] }}</td>
+                                            <td class="py-3 px-3 text-right border-r border-slate-200 dark:border-slate-800">{{ $currencySymbol }}{{ number_format((float)$item['unit_price'], 2) }}</td>
+                                            <td class="py-3 px-3 text-right font-bold">{{ $currencySymbol }}{{ number_format((float)$item['quantity'] * (float)$item['unit_price'], 2) }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+
+                            <div class="flex justify-end">
+                                <div class="w-64 space-y-1.5 text-xs text-right">
+                                    <div class="text-slate-500">Subtotal: <strong class="text-slate-800 dark:text-slate-200">{{ $currencySymbol }}{{ number_format($this->subtotal, 2) }}</strong></div>
+                                    <div class="text-sm font-bold text-slate-900 dark:text-white pt-1">Grand Total: <strong style="color: {{ $brandColor }}">{{ $currencySymbol }}{{ number_format($this->totalDue, 2) }}</strong></div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-between pt-6 border-t border-slate-200 dark:border-slate-800 text-xs">
+                                <div>
+                                    <div class="font-bold uppercase text-[11px] text-slate-900 dark:text-white">PAYMENT INFORMATION</div>
+                                    <div class="text-slate-500 mt-0.5">{{ $paymentMethod }}</div>
+                                </div>
+                                <div class="font-bold text-sm uppercase text-slate-900 dark:text-white">
+                                    THANK YOU FOR YOUR PURCHASE!
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Payment Box -->
-                    @if($bankName || $accountNumber || $iban)
-                        <div class="p-4 rounded-xl border-l-4 space-y-1 bg-slate-50 dark:bg-slate-950/40" style="border-color: {{ $brandColor }}">
-                            <span class="text-[10px] font-bold uppercase tracking-wider block" style="color: {{ $brandColor }}">Payment Instructions</span>
-                            <div class="grid grid-cols-2 gap-2 text-[11px] text-slate-600 dark:text-slate-400">
-                                @if($bankName)<div><strong>Bank:</strong> {{ $bankName }}</div>@endif
-                                @if($accountNumber)<div><strong>Account:</strong> {{ $accountNumber }}</div>@endif
-                                @if($iban)<div><strong>IBAN:</strong> {{ $iban }}</div>@endif
+                    @elseif($templateLayout === 'electro')
+                        <!-- ELECTRO BASE ORGANIC WAVE ART PREVIEW -->
+                        <div class="space-y-6 relative z-10">
+                            <!-- Background wave accent effect -->
+                            <div class="absolute -top-8 -right-8 w-44 h-44 rounded-full bg-sky-200/50 dark:bg-sky-900/20 blur-2xl pointer-events-none"></div>
+
+                            <div class="flex items-start justify-between">
+                                <div class="text-4xl font-serif font-bold text-slate-900 dark:text-white">Invoice</div>
+                                <div class="text-right text-xs">
+                                    <div class="font-bold text-sm text-slate-900 dark:text-white">Invoice No. {{ $invoiceNumber }}</div>
+                                    <div class="text-slate-500 mt-1">{{ date('d.m.Y', strtotime($issueDate)) }}</div>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-6 text-xs">
+                                <div>
+                                    <span class="font-bold text-slate-900 dark:text-white block mb-1">From:</span>
+                                    <div class="font-bold text-sm text-slate-800 dark:text-slate-100">{{ $sellerName }}</div>
+                                    @if($sellerAddress)<div class="text-slate-500">{{ $sellerAddress }}</div>@endif
+                                    @if($sellerEmail)<div class="text-slate-500">{{ $sellerEmail }}</div>@endif
+                                    @if($sellerPhone)<div class="text-slate-500">{{ $sellerPhone }}</div>@endif
+                                </div>
+                                <div>
+                                    <span class="font-bold text-slate-900 dark:text-white block mb-1">To:</span>
+                                    <div class="font-bold text-sm text-slate-800 dark:text-slate-100">{{ $clientName ?: 'Client Name' }}</div>
+                                    @if($clientEmail)<div class="text-slate-500">{{ $clientEmail }}</div>@endif
+                                    @if($clientAddress)<div class="text-slate-500">{{ $clientAddress }}</div>@endif
+                                </div>
+                            </div>
+
+                            <table class="w-full text-left border-collapse text-xs">
+                                <thead>
+                                    <tr class="border-y-2 border-slate-900 dark:border-white font-bold text-slate-900 dark:text-white">
+                                        <th class="py-2.5 px-2">Description</th>
+                                        <th class="py-2.5 px-2 text-center">Quantity</th>
+                                        <th class="py-2.5 px-2 text-right">Rate</th>
+                                        <th class="py-2.5 px-2 text-right">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-900 dark:divide-slate-100">
+                                    @foreach($items as $item)
+                                        <tr>
+                                            <td class="py-3 px-2 font-medium">{{ $item['description'] }}</td>
+                                            <td class="py-3 px-2 text-center font-semibold">{{ $item['quantity'] }}</td>
+                                            <td class="py-3 px-2 text-right">{{ $currencySymbol }}{{ number_format((float)$item['unit_price'], 2) }}</td>
+                                            <td class="py-3 px-2 text-right font-bold">{{ $currencySymbol }}{{ number_format((float)$item['quantity'] * (float)$item['unit_price'], 2) }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+
+                            <div class="flex justify-end">
+                                <div class="w-60 flex justify-between font-bold text-sm text-slate-900 dark:text-white">
+                                    <span class="uppercase">TOTAL</span>
+                                    <span>{{ $currencySymbol }}{{ number_format($this->totalDue, 2) }}</span>
+                                </div>
+                            </div>
+
+                            <div class="text-right text-xs pt-4">
+                                <div class="font-bold font-serif text-sm text-slate-900 dark:text-white">Payment details</div>
+                                <div class="text-slate-500 mt-0.5">Payment was successfully completed using VISA ending in 6714</div>
+                            </div>
+                        </div>
+
+                    @else
+                        <!-- STANDARD CORPORATE PREVIEW -->
+                        <div class="space-y-6">
+                            <div class="flex items-start justify-between border-b-2 pb-5" style="border-color: {{ $brandColor }}">
+                                <div>
+                                    <h2 class="text-2xl font-extrabold tracking-tight" style="color: {{ $brandColor }}">{{ $sellerName ?: 'Company Name' }}</h2>
+                                    @if($sellerWebsite)<div class="text-xs text-slate-500 mt-0.5">{{ $sellerWebsite }}</div>@endif
+                                    @if($sellerEmail)<div class="text-xs text-slate-500">{{ $sellerEmail }}</div>@endif
+                                    @if($sellerRegNo)<div class="text-[11px] text-slate-400 mt-1">Reg No: {{ $sellerRegNo }}</div>@endif
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-2xl font-black tracking-widest text-slate-800 dark:text-slate-100 uppercase">INVOICE</div>
+                                    <div class="text-sm font-bold text-slate-500 mt-1">#{{ $invoiceNumber }}</div>
+                                    <div class="text-xs text-slate-500 mt-1">Date: <strong>{{ $issueDate }}</strong></div>
+                                </div>
+                            </div>
+
+                            <div class="bg-slate-50 dark:bg-slate-950/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Billed To</span>
+                                <div class="font-bold text-sm text-slate-800 dark:text-slate-100">{{ $clientName ?: 'Client / Business Name' }}</div>
+                                @if($clientEmail)<div class="text-xs text-slate-500">{{ $clientEmail }}</div>@endif
+                                @if($clientAddress)<div class="text-xs text-slate-500 mt-1 whitespace-pre-line">{{ $clientAddress }}</div>@endif
+                            </div>
+
+                            <table class="w-full text-left border-collapse text-xs">
+                                <thead>
+                                    <tr class="text-white text-xs font-bold uppercase" style="background-color: {{ $brandColor }}">
+                                        <th class="py-2.5 px-3 rounded-l-lg">Description</th>
+                                        <th class="py-2.5 px-3 text-center">Qty</th>
+                                        <th class="py-2.5 px-3 text-right">Price</th>
+                                        <th class="py-2.5 px-3 text-right rounded-r-lg">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                                    @foreach($items as $item)
+                                        <tr>
+                                            <td class="py-3 px-3 font-medium">{{ $item['description'] ?: 'Service description' }}</td>
+                                            <td class="py-3 px-3 text-center font-bold text-slate-600 dark:text-slate-400">{{ $item['quantity'] }}</td>
+                                            <td class="py-3 px-3 text-right font-medium">{{ $currencySymbol }}{{ number_format((float)$item['unit_price'], 2) }}</td>
+                                            <td class="py-3 px-3 text-right font-bold text-slate-800 dark:text-slate-100">{{ $currencySymbol }}{{ number_format((float)$item['quantity'] * (float)$item['unit_price'], 2) }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+
+                            <div class="flex justify-end">
+                                <div class="w-64 space-y-1.5 text-xs bg-slate-50 dark:bg-slate-950/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                                    <div class="flex justify-between text-slate-500">
+                                        <span>Subtotal:</span>
+                                        <span class="font-bold text-slate-800 dark:text-slate-200">{{ $currencySymbol }}{{ number_format($this->subtotal, 2) }}</span>
+                                    </div>
+                                    <div class="flex justify-between text-sm font-extrabold pt-2 border-t border-slate-200 dark:border-slate-800" style="color: {{ $brandColor }}">
+                                        <span>Total Due:</span>
+                                        <span>{{ $currencySymbol }}{{ number_format($this->totalDue, 2) }} {{ $currency }}</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     @endif
 
-                    @if($notes)
-                        <div class="text-[11px] text-slate-400 italic pt-2">
-                            <strong>Notes:</strong> {{ $notes }}
-                        </div>
-                    @endif
                 </div>
             </div>
         </div>

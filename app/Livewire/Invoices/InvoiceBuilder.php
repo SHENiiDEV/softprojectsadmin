@@ -28,6 +28,10 @@ class InvoiceBuilder extends Component
 
     public string $brandColor = '#0ea5e9'; // Hex color (sky blue, indigo, emerald, amber, slate)
 
+    public string $templateLayout = 'standard'; // jumlee, bordeux, electro, standard
+
+    public string $paymentMethod = 'Credit Card MASTERCARD ****8190';
+
     // Invoice Header
     public string $invoiceNumber = '';
 
@@ -133,6 +137,24 @@ class InvoiceBuilder extends Component
             $domain = parse_url($website->url, PHP_URL_HOST) ?: $website->url;
             $domainClean = preg_replace('/^www\./i', '', $domain);
             $this->sellerEmail = "info@{$domainClean}";
+
+            // Presets per domain
+            if (str_contains($domainClean, 'jumlee')) {
+                $this->templateLayout = 'jumlee';
+                $this->brandColor = '#8b5cf6';
+                $this->currency = 'EUR';
+                $this->currencySymbol = '€';
+            } elseif (str_contains($domainClean, 'bordeux')) {
+                $this->templateLayout = 'bordeux';
+                $this->brandColor = '#0f172a';
+                $this->currency = 'GBP';
+                $this->currencySymbol = '£';
+            } elseif (str_contains($domainClean, 'electro')) {
+                $this->templateLayout = 'electro';
+                $this->brandColor = '#3b82f6';
+                $this->currency = 'EUR';
+                $this->currencySymbol = '€';
+            }
         }
     }
 
