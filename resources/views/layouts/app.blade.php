@@ -213,6 +213,14 @@
                         <i class="fa-solid fa-file-invoice mr-3 text-base text-sky-500 transition-transform duration-200 group-hover:scale-110"></i>
                         Email Templates
                     </a>
+
+                    <!-- Invoice Builder Link -->
+                    <a href="{{ route('invoices.builder') }}"
+                       class="flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 group {{ request()->routeIs('invoices.builder') ? 'bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-400' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-800 dark:hover:text-white' }}"
+                       wire:navigate>
+                        <i class="fa-solid fa-file-invoice-dollar mr-3 text-base text-emerald-500 transition-transform duration-200 group-hover:scale-110"></i>
+                        Invoice Builder
+                    </a>
                     @endcan
 
                     @if(config('features.users'))
