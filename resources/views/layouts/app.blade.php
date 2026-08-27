@@ -504,8 +504,8 @@
                 </header>
 
                 <!-- Page Main Content -->
-                <main class="flex-1 relative overflow-y-auto focus:outline-none bg-slate-50 dark:bg-slate-950 p-6 md:p-8">
-                    <div class="max-w-7xl mx-auto space-y-6">
+                <main class="flex-1 relative overflow-y-auto focus:outline-none bg-slate-50 dark:bg-slate-950 {{ request()->routeIs('tasks.kanban') ? 'p-4 md:p-6' : 'p-6 md:p-8' }}">
+                    <div class="{{ request()->routeIs('tasks.kanban') ? 'w-full' : 'max-w-7xl mx-auto' }} space-y-6">
                         @if(auth()->check() && !auth()->user()->telegram_id)
                             <div class="p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded-2xl flex items-center justify-between shadow-sm">
                                 <div class="flex items-center space-x-3">
