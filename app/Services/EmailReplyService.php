@@ -161,7 +161,7 @@ class EmailReplyService
     public function sendReply(
         SupportTicket $ticket,
         string $replyText,
-        string $senderName
+        ?string $customSenderName = null
     ): array {
         $toEmail = $ticket->customer_email;
         $subject = $ticket->subject ?: 'Support Ticket Reply';
@@ -176,6 +176,18 @@ class EmailReplyService
             $fromEmail = $matches[1];
         } else {
             $fromEmail = trim($supportEmail);
+        }
+
+        // Determine Website / Company / Domain sender display name instead of user personal name
+        if ($customSenderName) {
+            $senderName = $customSenderName;
+        } elseif ($ticket->website && (! empty($ticket->website->name) || ! empty($ticket->website->url))) {
+            $senderName = $ticket->website->name ?: $ticket->website->url;
+        } elseif ($ticket->project && ! empty($ticket->project->name)) {
+            $senderName = $ticket->project->name;
+        } else {
+            $domain = str_contains($fromEmail, '@') ? substr(strrchr($fromEmail, '@'), 1) : '';
+            $senderName = $domain ?: 'Support';
         }
 
         $project = $ticket->project;

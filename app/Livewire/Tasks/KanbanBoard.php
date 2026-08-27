@@ -444,8 +444,7 @@ class KanbanBoard extends Component
         $ticket = $task->supportTicket;
 
         try {
-            $senderName = auth()->user()?->name ?: 'Support Team';
-            $result = $replyService->sendReply($ticket, $this->emailReplyBody, $senderName);
+            $result = $replyService->sendReply($ticket, $this->emailReplyBody);
 
             // Log clean comment on task
             Comment::create([
