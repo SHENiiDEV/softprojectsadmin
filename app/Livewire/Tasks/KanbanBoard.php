@@ -485,6 +485,7 @@ class KanbanBoard extends Component
         $task = Task::with(['supportTicket', 'project', 'project.websites'])->find($this->editingTaskId);
         $ticket = $task?->supportTicket;
 
+        $clientName = $ticket?->customer_name ?: 'Customer';
         $clientEmail = $ticket?->customer_email ?: '';
         $companyName = $task?->project?->name ?: 'Support Team';
         $websiteUrl = $task?->project?->websites?->first()?->url ?: '';
@@ -492,6 +493,7 @@ class KanbanBoard extends Component
         $agentName = auth()->user()?->name ?: 'Support Team';
 
         $renderedText = $template->renderBody([
+            'client_name' => $clientName,
             'client_email' => $clientEmail,
             'company_name' => $companyName,
             'website_url' => $websiteUrl,

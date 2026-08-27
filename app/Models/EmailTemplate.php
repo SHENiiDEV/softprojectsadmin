@@ -28,6 +28,7 @@ class EmailTemplate extends Model
         $text = $this->body_text;
 
         $replacements = [
+            '{client_name}' => $context['client_name'] ?? 'Customer',
             '{client_email}' => $context['client_email'] ?? '',
             '{company_name}' => $context['company_name'] ?? 'Support Team',
             '{website_url}' => $context['website_url'] ?? '',

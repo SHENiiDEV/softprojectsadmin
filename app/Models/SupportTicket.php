@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 #[Fillable([
     'gmail_thread_id',
@@ -73,5 +74,25 @@ class SupportTicket extends Model
     public function attachments(): HasMany
     {
         return $this->hasMany(SupportTicketAttachment::class);
+    }
+
+    /**
+     * Get the customer's display name from the first incoming message or email.
+     */
+    public function getCustomerNameAttribute(): string
+    {
+        $firstMsg = $this->messages()->where('is_outgoing', false)->orderBy('id', 'asc')->first();
+
+        if ($firstMsg && ! empty($firstMsg->sender_name)) {
+            return $firstMsg->sender_name;
+        }
+
+        if ($this->customer_email && str_contains($this->customer_email, '@')) {
+            $parts = explode('@', $this->customer_email);
+
+            return Str::title(str_replace(['.', '_', '-'], ' ', $parts[0]));
+        }
+
+        return 'Customer';
     }
 }

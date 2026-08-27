@@ -543,7 +543,7 @@
                                                     <div class="flex items-center gap-2">
                                                         <span class="font-bold text-slate-500 dark:text-slate-400">To Client:</span>
                                                         <span class="font-semibold text-sky-700 dark:text-sky-300 bg-white dark:bg-slate-900 px-2.5 py-1 rounded-lg border border-sky-200/60 dark:border-sky-800/40">
-                                                            <i class="fa-solid fa-user-circle mr-1"></i> {{ $ticket->customer_email }}
+                                                            <i class="fa-solid fa-user-circle mr-1"></i> {{ $ticket->customer_name }} <{{ $ticket->customer_email }}>
                                                         </span>
                                                     </div>
                                                     <div class="flex items-center gap-2">

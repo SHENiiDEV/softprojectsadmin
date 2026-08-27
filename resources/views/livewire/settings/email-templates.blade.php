@@ -102,7 +102,7 @@
                     <div>
                         <div class="flex items-center justify-between mb-1">
                             <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">Template Body Text <span class="text-rose-500">*</span></label>
-                            <span class="text-[10px] text-sky-600 dark:text-sky-400 font-semibold">Placeholders: {client_email}, {company_name}, {website_url}, {ticket_number}</span>
+                            <span class="text-[10px] text-sky-600 dark:text-sky-400 font-semibold">Placeholders: {client_name}, {client_email}, {company_name}, {website_url}, {ticket_number}</span>
                         </div>
                         <textarea wire:model="body_text" rows="6" placeholder="Type your template text..." class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 font-mono focus:outline-none focus:ring-2 focus:ring-sky-500/20"></textarea>
                         @error('body_text') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
