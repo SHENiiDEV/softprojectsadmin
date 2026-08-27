@@ -64,18 +64,27 @@
     @endif
 
     @if (session()->has('error'))
-        <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 4000)" x-transition class="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-800/40 text-rose-800 dark:text-rose-400 flex items-center justify-between shadow-sm">
-            <div class="flex items-center space-x-3">
-                <svg class="h-5 w-5 text-rose-600 dark:text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-                <span class="text-sm font-medium">{{ session('error') }}</span>
+        <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)" 
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0 scale-90 translate-y-4"
+             x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+             x-transition:leave-end="opacity-0 scale-90 translate-y-4"
+             class="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+            
+            <div class="bg-white dark:bg-slate-900 border-2 border-rose-500/80 rounded-2xl p-5 shadow-2xl max-w-md w-full pointer-events-auto flex items-start gap-4 ring-4 ring-rose-500/20">
+                <div class="p-3 bg-rose-100 dark:bg-rose-950/60 rounded-xl text-rose-600 dark:text-rose-400 flex-shrink-0">
+                    <i class="fa-solid fa-triangle-exclamation text-xl"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <h4 class="font-outfit font-bold text-sm text-slate-800 dark:text-slate-100">Внимание</h4>
+                    <p class="text-xs font-semibold text-rose-600 dark:text-rose-400 mt-1 leading-relaxed">{{ session('error') }}</p>
+                </div>
+                <button @click="show = false" type="button" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-sm p-1 cursor-pointer">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
             </div>
-            <button @click="show = false" class="text-rose-500 hover:text-rose-700 dark:hover:text-rose-300">
-                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-            </button>
         </div>
     @endif
 
@@ -1101,6 +1110,11 @@
     @endif
 
     {{-- SortableJS for drag & drop --}}
+    <style>
+        .kanban-ghost { opacity: 0.4 !important; }
+        .kanban-dragged { box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25) !important; transform: rotate(1deg) scale(1.02) !important; }
+        .kanban-chosen { outline: 2px solid #38bdf8 !important; outline-offset: 2px !important; }
+    </style>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
     <script>
     document.addEventListener('livewire:initialized', () => {
@@ -1117,9 +1131,9 @@
             column._sortable = new Sortable(column, {
                 group: 'kanban',
                 animation: 150,
-                ghostClass: 'opacity-40',
-                dragClass: 'shadow-2xl rotate-1 scale-105',
-                chosenClass: 'ring-2 ring-sky-400',
+                ghostClass: 'kanban-ghost',
+                dragClass: 'kanban-dragged',
+                chosenClass: 'kanban-chosen',
                 delay: 80,
                 delayOnTouchOnly: true,
                 onEnd(evt) {
