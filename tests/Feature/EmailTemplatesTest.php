@@ -11,6 +11,7 @@ use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class EmailTemplatesTest extends TestCase
@@ -35,6 +36,17 @@ class EmailTemplatesTest extends TestCase
             'name' => '💳 Refund Confirmation',
             'category' => 'refunds',
         ]);
+    }
+
+    public function test_worker_role_can_access_email_templates_page(): void
+    {
+        $worker = User::factory()->create();
+        $workerRole = Role::findOrCreate('worker', 'web');
+        $worker->assignRole($workerRole);
+
+        $this->actingAs($worker)
+            ->get(route('settings.email-templates'))
+            ->assertStatus(200);
     }
 
     public function test_placeholder_rendering(): void
