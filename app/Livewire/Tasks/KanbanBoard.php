@@ -4,6 +4,7 @@ namespace App\Livewire\Tasks;
 
 use App\Models\Client;
 use App\Models\Comment;
+use App\Models\EmailTemplate;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
@@ -71,6 +72,8 @@ class KanbanBoard extends Component
 
     // Client Email Reply fields
     public string $emailReplyBody = '';
+
+    public string $selectedEmailTemplateId = '';
 
     public bool $isSendingEmailReply = false;
 
@@ -462,5 +465,40 @@ class KanbanBoard extends Component
         } finally {
             $this->isSendingEmailReply = false;
         }
+    }
+
+    public function applyEmailTemplate(): void
+    {
+        if (empty($this->selectedEmailTemplateId)) {
+            return;
+        }
+
+        $template = EmailTemplate::find($this->selectedEmailTemplateId);
+        if (! $template) {
+            return;
+        }
+
+        if (! $this->editingTaskId) {
+            return;
+        }
+
+        $task = Task::with(['supportTicket', 'project', 'project.websites'])->find($this->editingTaskId);
+        $ticket = $task?->supportTicket;
+
+        $clientEmail = $ticket?->customer_email ?: '';
+        $companyName = $task?->project?->name ?: 'Support Team';
+        $websiteUrl = $task?->project?->websites?->first()?->url ?: '';
+        $ticketNumber = $ticket?->id ? "TICK-{$ticket->id}" : ($task?->id ? "TASK-{$task->id}" : '');
+        $agentName = auth()->user()?->name ?: 'Support Team';
+
+        $renderedText = $template->renderBody([
+            'client_email' => $clientEmail,
+            'company_name' => $companyName,
+            'website_url' => $websiteUrl,
+            'ticket_number' => $ticketNumber,
+            'agent_name' => $agentName,
+        ]);
+
+        $this->emailReplyBody = $renderedText;
     }
 }

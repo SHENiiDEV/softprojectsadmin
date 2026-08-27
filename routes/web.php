@@ -19,6 +19,7 @@ use App\Livewire\Projects\Show as ProjectsShow;
 use App\Livewire\Reports\ProductivityReport;
 use App\Livewire\Reports\TimeReport;
 use App\Livewire\Settings;
+use App\Livewire\Settings\EmailTemplates;
 use App\Livewire\Tasks\KanbanBoard;
 
 Route::get('/', function () {
@@ -46,6 +47,8 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/reports/time', TimeReport::class)->middleware(['feature:time_tracking', 'permission:view_reports'])->name('reports.time');
     Route::get('/reports/productivity', ProductivityReport::class)->middleware(['feature:time_tracking', 'permission:view_reports'])->name('reports.productivity');
+
+    Route::get('/settings/email-templates', EmailTemplates::class)->name('settings.email-templates');
 
     Route::view('profile', 'profile')->name('profile');
 });

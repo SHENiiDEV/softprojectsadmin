@@ -562,8 +562,24 @@
 
                                             <!-- Reply Form -->
                                             <div class="space-y-3 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/60 dark:border-slate-800 shadow-sm">
-                                                <label class="block text-xs font-bold text-slate-700 dark:text-slate-200">Compose Reply Message</label>
-                                                <textarea wire:model="emailReplyBody" rows="4" placeholder="Type your response to the client here..." class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all resize-none"></textarea>
+                                                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                                                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-200">Compose Reply Message</label>
+                                                    @php
+                                                        $templates = \App\Models\EmailTemplate::orderBy('name')->get();
+                                                    @endphp
+                                                    @if($templates->count() > 0)
+                                                        <div class="flex items-center gap-2">
+                                                            <span class="text-[11px] text-slate-400 font-medium"><i class="fa-solid fa-file-invoice text-sky-500"></i> Template:</span>
+                                                            <select wire:model.live="selectedEmailTemplateId" wire:change="applyEmailTemplate" class="px-2.5 py-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500/20">
+                                                                <option value="">-- Select Canned Template --</option>
+                                                                @foreach($templates as $tmpl)
+                                                                    <option value="{{ $tmpl->id }}">{{ $tmpl->name }}</option>
+                                                                @endforeach
+                                                            </select>
+                                                        </div>
+                                                    @endif
+                                                </div>
+                                                <textarea wire:model="emailReplyBody" rows="5" placeholder="Type your response to the client here or select a canned template above..." class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all resize-none"></textarea>
                                                 @error('emailReplyBody') <span class="text-xs text-rose-500 block">{{ $message }}</span> @enderror
 
                                                 <div class="flex justify-end pt-1">

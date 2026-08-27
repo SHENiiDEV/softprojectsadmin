@@ -48,9 +48,10 @@ class DatabaseSeeder extends Seeder
         }
         Schema::enableForeignKeyConstraints();
 
-        // 2. Call Spatie Roles and Permissions Seeder
+        // 2. Call Spatie Roles and Permissions & Email Templates Seeders
         $this->call([
             RolesAndPermissionsSeeder::class,
+            EmailTemplateSeeder::class,
         ]);
 
         // 3. Create all specialized team members with proper roles
