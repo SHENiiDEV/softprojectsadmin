@@ -21,39 +21,63 @@ class EmailReplyService
      */
     public function resolveCredential(?Project $project, string $targetEmail): ?Credential
     {
-        if (! $project) {
-            return null;
-        }
-
         $cleanTarget = strtolower(trim($targetEmail));
 
-        // 1. Search by exact login matching target email
-        $cred = Credential::where('project_id', $project->id)
-            ->whereRaw('LOWER(login) = ?', [$cleanTarget])
-            ->first();
+        // 1. Search by exact login matching target email (project-specific)
+        if ($project) {
+            $cred = Credential::where('project_id', $project->id)
+                ->whereRaw('LOWER(login) = ?', [$cleanTarget])
+                ->first();
+
+            if ($cred) {
+                return $cred;
+            }
+        }
+
+        // 2. Global search by exact login
+        $cred = Credential::whereRaw('LOWER(login) = ?', [$cleanTarget])->first();
+        if ($cred) {
+            return $cred;
+        }
+
+        // 3. Search by login or name containing target email (project-specific)
+        if ($project) {
+            $cred = Credential::where('project_id', $project->id)
+                ->where(function ($q) use ($cleanTarget) {
+                    $q->whereRaw('LOWER(login) LIKE ?', ["%{$cleanTarget}%"])
+                        ->orWhereRaw('LOWER(name) LIKE ?', ["%{$cleanTarget}%"])
+                        ->orWhereRaw('LOWER(provider_url) LIKE ?', ["%{$cleanTarget}%"]);
+                })->first();
+
+            if ($cred) {
+                return $cred;
+            }
+        }
+
+        // 4. Global search by login or name containing target email
+        $cred = Credential::where(function ($q) use ($cleanTarget) {
+            $q->whereRaw('LOWER(login) LIKE ?', ["%{$cleanTarget}%"])
+                ->orWhereRaw('LOWER(name) LIKE ?', ["%{$cleanTarget}%"])
+                ->orWhereRaw('LOWER(provider_url) LIKE ?', ["%{$cleanTarget}%"]);
+        })->first();
 
         if ($cred) {
             return $cred;
         }
 
-        // 2. Search by credential type 'email', 'smtp', 'mail', 'hosting'
-        $cred = Credential::where('project_id', $project->id)
-            ->whereIn('type', ['email', 'smtp', 'mail', 'hosting', 'domain'])
-            ->where(function ($q) use ($cleanTarget) {
-                $q->where('login', 'like', "%{$cleanTarget}%")
-                    ->orWhere('name', 'like', "%{$cleanTarget}%")
-                    ->orWhere('provider_url', 'like', "%{$cleanTarget}%");
-            })
-            ->first();
+        // 5. Fallback: any email/smtp credential for the project
+        if ($project) {
+            $cred = Credential::where('project_id', $project->id)
+                ->whereRaw("LOWER(type) IN ('email', 'smtp', 'mail', 'hosting', 'domain', 'private email')")
+                ->first();
 
-        if ($cred) {
-            return $cred;
+            if ($cred) {
+                return $cred;
+            }
         }
 
-        // 3. Fallback: any email/smtp credential for the project
-        return Credential::where('project_id', $project->id)
-            ->whereIn('type', ['email', 'smtp', 'mail'])
-            ->first();
+        // 6. Global fallback for any email/smtp credential
+        return Credential::whereRaw("LOWER(type) IN ('email', 'smtp', 'mail', 'hosting', 'domain', 'private email')")->first();
     }
 
     /**
@@ -62,41 +86,45 @@ class EmailReplyService
     public function detectSmtpSettings(Credential $cred, string $fromEmail): array
     {
         $fields = is_array($cred->fields) ? $cred->fields : [];
-        $providerUrl = strtolower((string) $cred->provider_url);
-        $credName = strtolower((string) $cred->name);
+        $nameClean = str_replace(' ', '', strtolower((string) $cred->name));
+        $urlClean = str_replace(' ', '', strtolower((string) $cred->provider_url));
+        $loginClean = strtolower((string) $cred->login);
 
         $host = $fields['smtp_host'] ?? null;
         $port = (int) ($fields['smtp_port'] ?? 0);
-        $encryption = $fields['smtp_encryption'] ?? 'tls';
+        $encryption = $fields['smtp_encryption'] ?? null;
 
         if (! $host) {
-            if (str_contains($providerUrl, 'privateemail') || str_contains($credName, 'privateemail') || str_contains($credName, 'namecheap')) {
+            if (str_contains($urlClean, 'privateemail') || str_contains($nameClean, 'privateemail') || str_contains($nameClean, 'namecheap')) {
                 $host = 'mail.privateemail.com';
                 $port = $port ?: 465;
-                $encryption = 'ssl';
-            } elseif (str_contains($providerUrl, 'hostinger') || str_contains($credName, 'hostinger')) {
+                $encryption = $encryption ?: 'ssl';
+            } elseif (str_contains($urlClean, 'hostinger') || str_contains($nameClean, 'hostinger')) {
                 $host = 'smtp.hostinger.com';
                 $port = $port ?: 465;
-                $encryption = 'ssl';
-            } elseif (str_contains($providerUrl, 'gmail') || str_contains($credName, 'gmail') || str_contains($fromEmail, '@gmail.com')) {
+                $encryption = $encryption ?: 'ssl';
+            } elseif (str_contains($urlClean, 'gmail') || str_contains($nameClean, 'gmail') || str_contains($loginClean, '@gmail.com') || str_contains($fromEmail, '@gmail.com')) {
                 $host = 'smtp.gmail.com';
                 $port = $port ?: 587;
-                $encryption = 'tls';
-            } elseif (str_contains($providerUrl, 'office365') || str_contains($providerUrl, 'outlook') || str_contains($credName, 'outlook')) {
+                $encryption = $encryption ?: 'tls';
+            } elseif (str_contains($urlClean, 'office365') || str_contains($urlClean, 'outlook') || str_contains($nameClean, 'outlook')) {
                 $host = 'smtp.office365.com';
                 $port = $port ?: 587;
-                $encryption = 'tls';
+                $encryption = $encryption ?: 'tls';
             } else {
-                // Custom domain fallback (e.g. mail.domain.com)
-                $domain = str_contains($fromEmail, '@') ? substr(strrchr($fromEmail, '@'), 1) : '';
-                $host = $domain ? "mail.{$domain}" : 'mail.privateemail.com';
+                // Namecheap PrivateEmail is the default provider for custom domain emails
+                $host = 'mail.privateemail.com';
                 $port = $port ?: 465;
-                $encryption = 'ssl';
+                $encryption = $encryption ?: 'ssl';
             }
         }
 
         if (! $port) {
-            $port = 587;
+            $port = 465;
+        }
+
+        if (! $encryption) {
+            $encryption = $port === 465 ? 'ssl' : 'tls';
         }
 
         return [
@@ -159,6 +187,16 @@ class EmailReplyService
         // 1. Try Custom SMTP if credentials exist
         if ($cred && ! empty($cred->password)) {
             $settings = $this->detectSmtpSettings($cred, $fromEmail);
+
+            Log::info('EmailReplyService: Attempting SMTP send', [
+                'from' => $fromEmail,
+                'to' => $toEmail,
+                'host' => $settings['host'],
+                'port' => $settings['port'],
+                'username' => $settings['username'],
+            ]);
+
+            // Attempt 1: Default port/encryption
             try {
                 $isSsl = $settings['encryption'] === 'ssl' || $settings['port'] === 465;
                 $transport = new EsmtpTransport(
@@ -179,12 +217,48 @@ class EmailReplyService
                 $sentVia = $settings['provider'];
                 $sentSuccess = true;
             } catch (\Throwable $e) {
-                Log::warning('Custom SMTP send failed, falling back to Gmail API', [
+                Log::warning('EmailReplyService: Primary SMTP attempt failed, trying fallback port', [
                     'from' => $fromEmail,
-                    'host' => $settings['host'] ?? null,
+                    'host' => $settings['host'],
+                    'port' => $settings['port'],
                     'error' => $e->getMessage(),
                 ]);
+
+                // Attempt 2: Fallback port (587 TLS if 465 SSL failed, or vice-versa)
+                try {
+                    $altPort = $settings['port'] === 465 ? 587 : 465;
+                    $altSsl = $altPort === 465;
+
+                    $transportAlt = new EsmtpTransport(
+                        $settings['host'],
+                        $altPort,
+                        $altSsl
+                    );
+                    $transportAlt->setUsername($settings['username']);
+                    $transportAlt->setPassword($settings['password']);
+
+                    $mailerAlt = new Mailer('custom_smtp_alt', app('view'), $transportAlt, app('events'));
+                    $mailerAlt->raw($replyText, function ($message) use ($fromEmail, $senderName, $toEmail, $subject) {
+                        $message->from($fromEmail, $senderName)
+                            ->to($toEmail)
+                            ->subject('Re: '.preg_replace('/^Re:\s*/i', '', $subject));
+                    });
+
+                    $sentVia = $settings['provider'];
+                    $sentSuccess = true;
+                } catch (\Throwable $e2) {
+                    Log::error('EmailReplyService: Fallback SMTP attempt failed', [
+                        'from' => $fromEmail,
+                        'host' => $settings['host'],
+                        'error' => $e2->getMessage(),
+                    ]);
+                }
             }
+        } else {
+            Log::warning('EmailReplyService: No matching Credential with password found for email', [
+                'target' => $fromEmail,
+                'project_id' => $project?->id,
+            ]);
         }
 
         // 2. Fallback to Gmail API thread reply
