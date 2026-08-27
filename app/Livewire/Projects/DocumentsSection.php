@@ -33,41 +33,42 @@ class DocumentsSection extends Component
     public function mount(Project $project): void
     {
         $this->project = $project;
+        $available = $this->availableAcquirers;
+        $this->selectedAcquirer = $available[0] ?? 'General';
     }
 
     public function getAvailableAcquirersProperty(): array
     {
-        $list = ['General'];
+        $list = [];
 
-        // Add gateways from project websites
-        if ($this->project->relationLoaded('websites') || $this->project->websites()->exists()) {
-            foreach ($this->project->websites as $w) {
-                if (is_array($w->gateways)) {
-                    foreach ($w->gateways as $g) {
-                        if (! empty($g) && ! in_array($g, $list, true)) {
-                            $list[] = $g;
-                        }
-                    }
+        // Collect gateways from company websites
+        $websites = $this->project->websites()->get();
+        foreach ($websites as $website) {
+            $gateways = is_array($website->gateways) ? array_filter(array_map('trim', $website->gateways)) : [];
+            foreach ($gateways as $g) {
+                if (! empty($g) && ! in_array($g, $list, true)) {
+                    $list[] = $g;
                 }
             }
         }
 
-        // Add provider from boarding
-        if ($this->project->boarding && ! empty($this->project->boarding->provider_name)) {
-            if (! in_array($this->project->boarding->provider_name, $list, true)) {
+        // Collect from compliance boarding providers data
+        if ($this->project->boarding) {
+            $savedData = is_array($this->project->boarding->providers_data) ? $this->project->boarding->providers_data : [];
+            foreach ($savedData as $item) {
+                if (is_array($item) && ! empty($item['name']) && ! in_array($item['name'], $list, true)) {
+                    $list[] = $item['name'];
+                }
+            }
+            if (! empty($this->project->boarding->provider_name) && ! in_array($this->project->boarding->provider_name, $list, true)) {
                 $list[] = $this->project->boarding->provider_name;
             }
         }
 
-        // Master defaults if list is small
-        $defaults = ['Cardaq', 'CFS', 'Payabl', 'Bankera', 'Decta', 'Emerchantpay', 'ConnectPay'];
-        foreach ($defaults as $d) {
-            if (! in_array($d, $list, true)) {
-                $list[] = $d;
-            }
+        // Fallback option if list is empty
+        if (empty($list)) {
+            $list[] = 'General';
         }
-
-        $list[] = 'Other';
 
         return array_values(array_unique($list));
     }

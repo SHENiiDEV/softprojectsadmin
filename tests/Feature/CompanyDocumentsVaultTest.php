@@ -21,6 +21,11 @@ class CompanyDocumentsVaultTest extends TestCase
 
         $user = User::factory()->create();
         $project = Project::factory()->create();
+        $project->websites()->create([
+            'name' => 'test.com',
+            'url' => 'https://test.com',
+            'gateways' => ['Cardaq', 'CFS', 'Payabl'],
+        ]);
 
         $file = UploadedFile::fake()->create('KYB_Package_Cardaq.zip', 500, 'application/zip');
 
@@ -45,6 +50,11 @@ class CompanyDocumentsVaultTest extends TestCase
 
         $user = User::factory()->create();
         $project = Project::factory()->create();
+        $project->websites()->create([
+            'name' => 'test.com',
+            'url' => 'https://test.com',
+            'gateways' => ['Cardaq', 'CFS', 'Payabl'],
+        ]);
 
         $file1 = UploadedFile::fake()->create('Statement_Cardaq.pdf', 200, 'application/pdf');
         $file2 = UploadedFile::fake()->create('Passport_UBO.pdf', 100, 'application/pdf');
