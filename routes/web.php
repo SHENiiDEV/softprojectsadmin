@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\Api\GmailPushController;
 use App\Http\Controllers\Api\GmailWebhookController;
-use App\Http\Controllers\InvoicePdfController;
 use App\Http\Controllers\ProjectPdfController;
 use App\Http\Controllers\TelegramWebhookController;
 use App\Livewire\ActivityCenter;
@@ -12,7 +11,6 @@ use App\Livewire\Clients\Index;
 use App\Livewire\CompanyHealthScore;
 use App\Livewire\CredentialVault;
 use App\Livewire\DeadlineCenter;
-use App\Livewire\Invoices\InvoiceBuilder;
 use App\Livewire\MyWork;
 use App\Livewire\Projects\Create as ProjectsCreate;
 use App\Livewire\Projects\Edit as ProjectsEdit;
@@ -51,9 +49,6 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/reports/productivity', ProductivityReport::class)->middleware(['feature:time_tracking', 'permission:view_reports'])->name('reports.productivity');
 
     Route::get('/settings/email-templates', EmailTemplates::class)->name('settings.email-templates');
-
-    Route::get('/invoices/builder', InvoiceBuilder::class)->name('invoices.builder');
-    Route::post('/invoices/download-pdf', [InvoicePdfController::class, 'download'])->name('invoices.download-pdf');
 
     Route::view('profile', 'profile')->name('profile');
 });
