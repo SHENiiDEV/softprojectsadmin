@@ -176,7 +176,7 @@ class KanbanBoard extends Component
 
         // Check if task is assigned to the current user
         if ($task->assigned_to !== $user->id) {
-            session()->flash('error', 'Это не ваш таск! Вы можете запускать таймер только на своих задачах.');
+            session()->flash('error', 'This is not your task! You can only start timers on tasks assigned to you.');
 
             return;
         }

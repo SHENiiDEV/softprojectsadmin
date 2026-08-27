@@ -71,14 +71,14 @@
              x-transition:leave="transition ease-in duration-200"
              x-transition:leave-start="opacity-100 scale-100 translate-y-0"
              x-transition:leave-end="opacity-0 scale-90 translate-y-4"
-             class="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+             class="fixed inset-0 z-[100] flex items-center justify-center p-4 pointer-events-none">
             
             <div class="bg-white dark:bg-slate-900 border-2 border-rose-500/80 rounded-2xl p-5 shadow-2xl max-w-md w-full pointer-events-auto flex items-start gap-4 ring-4 ring-rose-500/20">
                 <div class="p-3 bg-rose-100 dark:bg-rose-950/60 rounded-xl text-rose-600 dark:text-rose-400 flex-shrink-0">
                     <i class="fa-solid fa-triangle-exclamation text-xl"></i>
                 </div>
                 <div class="flex-1 min-w-0">
-                    <h4 class="font-outfit font-bold text-sm text-slate-800 dark:text-slate-100">Внимание</h4>
+                    <h4 class="font-outfit font-bold text-sm text-slate-800 dark:text-slate-100">Notice</h4>
                     <p class="text-xs font-semibold text-rose-600 dark:text-rose-400 mt-1 leading-relaxed">{{ session('error') }}</p>
                 </div>
                 <button @click="show = false" type="button" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-sm p-1 cursor-pointer">
