@@ -635,16 +635,30 @@
                                                             <input type="checkbox" wire:model="newCommentIsPrivate" class="rounded dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-indigo-600 shadow-sm focus:ring-indigo-500 mr-2">
                                                             🔒 Private (team only)
                                                         </label>
-
                                                         <button type="button" wire:click="addComment" class="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs transition-all duration-150 shadow-sm">
                                                             Comment
                                                         </button>
                                                     </div>
                                                 </div>
 
+                                                <!-- Comments Controls (Sorting & System Filter) -->
+                                                <div class="flex items-center justify-between pt-2 text-xs">
+                                                    <div class="flex items-center gap-2">
+                                                        <button type="button" wire:click="$toggle('hideSystemComments')" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer {{ $hideSystemComments ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-900/50' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 hover:bg-slate-200' }}">
+                                                            <i class="fa-solid {{ $hideSystemComments ? 'fa-eye-slash text-amber-500' : 'fa-eye text-slate-400' }}"></i>
+                                                            {{ $hideSystemComments ? 'System Messages Hidden' : 'Hide System Messages' }}
+                                                        </button>
+                                                    </div>
+
+                                                    <button type="button" wire:click="$set('commentSortOrder', '{{ $commentSortOrder === 'asc' ? 'desc' : 'asc' }}')" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 hover:bg-slate-200 transition-all cursor-pointer">
+                                                        <i class="fa-solid {{ $commentSortOrder === 'asc' ? 'fa-arrow-up-short-wide text-sky-500' : 'fa-arrow-down-wide-short text-sky-500' }}"></i>
+                                                        {{ $commentSortOrder === 'asc' ? 'Oldest First' : 'Newest First' }}
+                                                    </button>
+                                                </div>
+
                                                 <!-- Comments List -->
-                                                <div class="space-y-4 max-h-[400px] overflow-y-auto pr-1 mt-4">
-                                                    @forelse($modalTask->comments as $comment)
+                                                <div class="space-y-4 max-h-[400px] overflow-y-auto pr-1 mt-3">
+                                                    @forelse($this->modalComments as $comment)
                                                         <div class="bg-white dark:bg-slate-900 p-4.5 rounded-2xl border border-slate-200/50 dark:border-slate-800/60 shadow-sm relative group">
                                                             <x-comment-bubble :comment="$comment" avatar-size="6" />
 

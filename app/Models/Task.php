@@ -243,7 +243,7 @@ class Task extends Model implements HasMedia
      */
     public function comments(): HasMany
     {
-        return $this->hasMany(Comment::class)->whereNull('parent_id')->orderBy('created_at', 'desc');
+        return $this->hasMany(Comment::class)->whereNull('parent_id')->orderBy('created_at', 'asc');
     }
 
     /**
@@ -251,7 +251,7 @@ class Task extends Model implements HasMedia
      */
     public function allComments(): HasMany
     {
-        return $this->hasMany(Comment::class)->orderBy('created_at', 'desc');
+        return $this->hasMany(Comment::class)->orderBy('created_at', 'asc');
     }
 
     /**

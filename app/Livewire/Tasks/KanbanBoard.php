@@ -67,12 +67,33 @@ class KanbanBoard extends Component
 
     public $existingMedia = [];
 
-    // Comments fields
+    // Comments fields & filtering
     public $newCommentContent = '';
 
     public $newCommentIsPrivate = false;
 
     public $replyCommentContent = [];
+
+    public string $commentSortOrder = 'asc'; // 'asc' = Oldest first (chronological), 'desc' = Newest first
+
+    public bool $hideSystemComments = false; // Hide System / Automated messages
+
+    public function getModalCommentsProperty()
+    {
+        if (! $this->editingTaskId) {
+            return collect();
+        }
+
+        $query = Comment::where('task_id', $this->editingTaskId)
+            ->whereNull('parent_id')
+            ->with(['user', 'client', 'replies', 'replies.user', 'replies.client']);
+
+        if ($this->hideSystemComments) {
+            $query->whereNotNull('user_id');
+        }
+
+        return $query->orderBy('created_at', $this->commentSortOrder)->get();
+    }
 
     // Client Email Reply fields
     public string $emailReplyBody = '';

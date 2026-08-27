@@ -13,6 +13,7 @@
     $authorName = $comment->user ? $comment->user->name : ($comment->client ? $comment->client->name . ' (Client)' : 'System');
     $gradient = $comment->user && $comment->user->gradient ? $comment->user->gradient : $avatarGradient;
     $deleteWire = $deleteAction ?? "deleteComment({$comment->id})";
+    $createdAt = $comment->created_at->isFuture() ? now() : $comment->created_at;
 @endphp
 
 <div class="flex items-start justify-between">
@@ -24,8 +25,8 @@
             <span class="text-xs font-bold text-slate-800 dark:text-slate-200">
                 {{ $authorName }}
             </span>
-            <span class="text-[9px] text-slate-400 dark:text-slate-500 ml-1.5">
-                {{ $comment->created_at->diffForHumans() }}
+            <span class="text-[9px] text-slate-400 dark:text-slate-500 ml-1.5" title="{{ $comment->created_at->format('d.m.Y H:i:s') }}">
+                {{ $createdAt->diffForHumans() }}
             </span>
         </div>
     </div>
