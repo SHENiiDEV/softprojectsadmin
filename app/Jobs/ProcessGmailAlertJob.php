@@ -261,7 +261,7 @@ class ProcessGmailAlertJob implements ShouldQueue
                 'project_id' => $ticket->project_id,
                 'title' => Str::limit($taskTitle, 190),
                 'description' => $descriptionHtml,
-                'status' => 'todo',
+                'status' => 'email_inbox',
                 'priority' => $priority,
             ]);
 

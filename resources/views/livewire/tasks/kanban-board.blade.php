@@ -127,9 +127,10 @@
     </div>
 
     <!-- Kanban Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-5">
         <!-- Loop statuses -->
-        @foreach(['todo' => ['Name' => 'To Do', 'bg' => 'bg-slate-100 dark:bg-slate-900/60 border-slate-200/40 dark:border-slate-800', 'badge' => 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-400'],
+        @foreach(['email_inbox' => ['Name' => '📨 Email Requests', 'bg' => 'bg-purple-50/60 dark:bg-purple-950/20 border-purple-200/60 dark:border-purple-900/40', 'badge' => 'bg-purple-100 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300'],
+                  'todo' => ['Name' => 'To Do', 'bg' => 'bg-slate-100 dark:bg-slate-900/60 border-slate-200/40 dark:border-slate-800', 'badge' => 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-400'],
                   'in_progress' => ['Name' => 'In Progress', 'bg' => 'bg-sky-50/50 dark:bg-sky-950/10 border-sky-100 dark:border-sky-950/20', 'badge' => 'bg-sky-100 text-sky-700 dark:bg-sky-950/50 dark:text-sky-400'],
                   'review' => ['Name' => 'Review', 'bg' => 'bg-amber-50/30 dark:bg-amber-950/5 border-amber-100/40 dark:border-amber-950/10', 'badge' => 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400'],
                   'done' => ['Name' => 'Done', 'bg' => 'bg-emerald-50/30 dark:bg-emerald-950/5 border-emerald-100/40 dark:border-emerald-950/10', 'badge' => 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400']] as $statusCode => $statusDetails)
@@ -873,6 +874,7 @@
                                         <div>
                                             <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">Status</label>
                                             <select wire:model="taskStatus" class="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-150">
+                                                <option value="email_inbox">📨 Email Requests</option>
                                                 <option value="todo">To Do</option>
                                                 <option value="in_progress">In Progress</option>
                                                 <option value="review">Review</option>

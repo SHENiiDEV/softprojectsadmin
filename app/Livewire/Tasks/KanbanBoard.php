@@ -33,6 +33,7 @@ class KanbanBoard extends Component
 
     // Per-column pagination limits for ultra-fast rendering
     public array $perPage = [
+        'email_inbox' => 30,
         'todo' => 30,
         'in_progress' => 30,
         'review' => 30,
@@ -90,7 +91,7 @@ class KanbanBoard extends Component
             'taskProject' => 'nullable|exists:projects,id',
             'taskAssignee' => 'nullable|exists:users,id',
             'taskPriority' => 'required|in:low,medium,high,critical',
-            'taskStatus' => 'required|in:todo,in_progress,review,done',
+            'taskStatus' => 'required|in:email_inbox,todo,in_progress,review,done',
             'taskDueDate' => 'nullable|date',
             'attachments.*' => 'nullable|file|max:10240', // 10MB max
         ];
@@ -196,6 +197,7 @@ class KanbanBoard extends Component
 
         // 1. Calculate total counts for column headers
         $statusCounts = [
+            'email_inbox' => (clone $baseQuery)->where('status', 'email_inbox')->count(),
             'todo' => (clone $baseQuery)->where('status', 'todo')->count(),
             'in_progress' => (clone $baseQuery)->where('status', 'in_progress')->count(),
             'review' => (clone $baseQuery)->where('status', 'review')->count(),
@@ -206,7 +208,7 @@ class KanbanBoard extends Component
         $archivedCount = Task::archived()->count();
 
         // 2. Fetch tasks per column with column-specific limits & optimized selects
-        $statuses = ['todo', 'in_progress', 'review', 'done'];
+        $statuses = ['email_inbox', 'todo', 'in_progress', 'review', 'done'];
         $tasks = [];
 
         foreach ($statuses as $status) {
