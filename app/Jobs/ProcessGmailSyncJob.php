@@ -124,7 +124,7 @@ class ProcessGmailSyncJob implements ShouldQueue
                 }
 
                 // Test mode whitelist check
-                $testEmailsStr = env('GMAIL_TEST_EMAILS', 'mihails.horolskis@gmail.com');
+                $testEmailsStr = env('GMAIL_TEST_EMAILS');
                 if (! empty($testEmailsStr)) {
                     $allowedTestEmails = array_map('strtolower', array_map('trim', explode(',', $testEmailsStr)));
                     if (! in_array(strtolower($customerEmail), $allowedTestEmails, true)) {
