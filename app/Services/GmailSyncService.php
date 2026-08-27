@@ -229,4 +229,58 @@ class GmailSyncService
             return null;
         }
     }
+
+    /**
+     * Send an email reply using Gmail API within the same thread.
+     */
+    public function sendReplyEmail(
+        string $toEmail,
+        string $subject,
+        string $bodyText,
+        string $threadId,
+        ?string $inReplyToMessageId = null,
+        ?string $fromEmail = null,
+        ?string $fromName = null
+    ): ?string {
+        try {
+            $gmail = $this->getGmailService();
+
+            $fromStr = $fromEmail ? ($fromName ? "{$fromName} <{$fromEmail}>" : $fromEmail) : null;
+
+            $headers = [
+                "To: {$toEmail}",
+                'Subject: Re: '.preg_replace('/^Re:\s*/i', '', $subject),
+                'Content-Type: text/plain; charset=UTF-8',
+                'MIME-Version: 1.0',
+            ];
+
+            if ($fromStr) {
+                $headers[] = "From: {$fromStr}";
+            }
+
+            if ($inReplyToMessageId) {
+                $headers[] = "In-Reply-To: {$inReplyToMessageId}";
+                $headers[] = "References: {$inReplyToMessageId}";
+            }
+
+            $rawMessageString = implode("\r\n", $headers)."\r\n\r\n".$bodyText;
+            $mimeMessage = rtrim(strtr(base64_encode($rawMessageString), '+/', '-_'), '=');
+
+            $message = new Message;
+            $message->setRaw($mimeMessage);
+            $message->setThreadId($threadId);
+
+            $sentMessage = $gmail->users_messages->send('me', $message);
+
+            return $sentMessage->getId();
+        } catch (\Throwable $e) {
+            Log::error('Failed to send Gmail reply email', [
+                'to' => $toEmail,
+                'threadId' => $threadId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
 }

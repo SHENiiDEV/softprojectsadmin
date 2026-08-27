@@ -505,6 +505,11 @@
                                             
                                             <!-- Tab Headers -->
                                             <div class="flex items-center space-x-1 bg-slate-100 dark:bg-slate-950 p-1 rounded-xl border border-slate-200/40 dark:border-slate-800/60 shadow-inner">
+                                                @if($modalTask && $modalTask->supportTicket)
+                                                <button type="button" @click="activeTab = 'email-client'" :class="activeTab === 'email-client' ? 'bg-white dark:bg-slate-900 text-sky-600 dark:text-sky-400 shadow-sm border border-slate-200/40 dark:border-slate-800/40' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 border border-transparent'" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-150 focus:outline-none flex items-center gap-1.5">
+                                                    <i class="fa-solid fa-paper-plane text-sky-500"></i> Reply to Client
+                                                </button>
+                                                @endif
                                                 @if(config('features.task_comments', true))
                                                 <button type="button" @click="activeTab = 'comments'" :class="activeTab === 'comments' ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm border border-slate-200/40 dark:border-slate-800/40' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 border border-transparent'" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-150 focus:outline-none">
                                                     Comments
@@ -522,6 +527,77 @@
                                                 @endif
                                             </div>
                                         </div>
+
+                                        <!-- Tab 4: Email Client -->
+                                        @if($modalTask && $modalTask->supportTicket)
+                                        <div x-show="activeTab === 'email-client'" x-transition class="space-y-4">
+                                            @php
+                                                $ticket = $modalTask->supportTicket;
+                                                $firstMsg = $ticket->messages()->orderBy('id', 'asc')->first();
+                                                $supportToEmail = $firstMsg ? $firstMsg->to : 'info@sivora.co.uk';
+                                            @endphp
+
+                                            <!-- Recipient & Sender Info Box -->
+                                            <div class="bg-sky-50/60 dark:bg-sky-950/20 border border-sky-200/60 dark:border-sky-800/50 rounded-2xl p-4 space-y-2">
+                                                <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
+                                                    <div class="flex items-center gap-2">
+                                                        <span class="font-bold text-slate-500 dark:text-slate-400">To Client:</span>
+                                                        <span class="font-semibold text-sky-700 dark:text-sky-300 bg-white dark:bg-slate-900 px-2.5 py-1 rounded-lg border border-sky-200/60 dark:border-sky-800/40">
+                                                            <i class="fa-solid fa-user-circle mr-1"></i> {{ $ticket->customer_email }}
+                                                        </span>
+                                                    </div>
+                                                    <div class="flex items-center gap-2">
+                                                        <span class="font-bold text-slate-500 dark:text-slate-400">Support Mail:</span>
+                                                        <span class="font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 px-2.5 py-1 rounded-lg border border-sky-200/60 dark:border-sky-800">
+                                                            <i class="fa-solid fa-paper-plane text-sky-500 mr-1"></i> {{ $supportToEmail }}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                @if($ticket->subject)
+                                                    <div class="text-xs text-slate-600 dark:text-slate-400 pt-1">
+                                                        <strong>Subject:</strong> Re: {{ preg_replace('/^Re:\s*/i', '', $ticket->subject) }}
+                                                    </div>
+                                                @endif
+                                            </div>
+
+                                            <!-- Reply Form -->
+                                            <div class="space-y-3 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/60 dark:border-slate-800 shadow-sm">
+                                                <label class="block text-xs font-bold text-slate-700 dark:text-slate-200">Compose Reply Message</label>
+                                                <textarea wire:model="emailReplyBody" rows="4" placeholder="Type your response to the client here..." class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all resize-none"></textarea>
+                                                @error('emailReplyBody') <span class="text-xs text-rose-500 block">{{ $message }}</span> @enderror
+
+                                                <div class="flex justify-end pt-1">
+                                                    <button type="button" wire:click="sendClientEmailReply" wire:loading.attr="disabled" class="inline-flex items-center gap-2 px-5 py-2 bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white font-bold rounded-xl text-xs transition-all shadow-sm cursor-pointer">
+                                                        <i class="fa-solid fa-paper-plane"></i>
+                                                        <span wire:loading.remove wire:target="sendClientEmailReply">Send Reply to Client</span>
+                                                        <span wire:loading wire:target="sendClientEmailReply">Sending Email...</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <!-- Email Thread History -->
+                                            @if($ticket->messages()->exists())
+                                                <div class="space-y-3 pt-2">
+                                                    <h5 class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Email Conversation History</h5>
+                                                    <div class="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+                                                        @foreach($ticket->messages()->orderBy('created_at', 'desc')->get() as $msg)
+                                                            <div class="p-3.5 rounded-2xl border text-xs {{ $msg->is_outgoing ? 'bg-sky-50/40 dark:bg-sky-950/20 border-sky-200/50 dark:border-sky-800/40 ml-4' : 'bg-slate-50 dark:bg-slate-950/40 border-slate-200/50 dark:border-slate-800/40 mr-4' }}">
+                                                                <div class="flex items-center justify-between mb-2">
+                                                                    <span class="font-bold {{ $msg->is_outgoing ? 'text-sky-700 dark:text-sky-400' : 'text-slate-800 dark:text-slate-200' }}">
+                                                                        {{ $msg->is_outgoing ? '📤 Sent Reply' : '📥 Client Email' }} ({{ $msg->from }})
+                                                                    </span>
+                                                                    <span class="text-[10px] text-slate-400">{{ $msg->sent_at ? $msg->sent_at->format('d M Y H:i') : $msg->created_at->format('d M Y H:i') }}</span>
+                                                                </div>
+                                                                <div class="text-slate-600 dark:text-slate-300 whitespace-pre-line text-xs font-mono">
+                                                                    {{ Str::limit(strip_tags($msg->body_text), 300) }}
+                                                                </div>
+                                                            </div>
+                                                        @endforeach
+                                                    </div>
+                                                </div>
+                                            @endif
+                                        </div>
+                                        @endif
 
                                         <!-- Tab 3: Comments Content -->
                                         @if(config('features.task_comments', true))

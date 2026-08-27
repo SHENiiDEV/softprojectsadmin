@@ -7,7 +7,9 @@ use App\Models\Comment;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
+use App\Services\EmailReplyService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
@@ -66,6 +68,11 @@ class KanbanBoard extends Component
     public $newCommentIsPrivate = false;
 
     public $replyCommentContent = [];
+
+    // Client Email Reply fields
+    public string $emailReplyBody = '';
+
+    public bool $isSendingEmailReply = false;
 
     protected $queryString = [
         'showArchived' => ['except' => '0'],
@@ -268,6 +275,7 @@ class KanbanBoard extends Component
     {
         $this->resetValidation();
         $this->attachments = [];
+        $this->emailReplyBody = '';
 
         if ($taskId) {
             $task = Task::with('media')->findOrFail($taskId);
@@ -408,5 +416,52 @@ class KanbanBoard extends Component
 
         $comment->delete();
         session()->flash('message', 'Comment deleted successfully.');
+    }
+
+    public function sendClientEmailReply(EmailReplyService $replyService): void
+    {
+        $this->validate([
+            'emailReplyBody' => 'required|string|min:2',
+        ], [
+            'emailReplyBody.required' => 'Please enter a reply message for the client.',
+        ]);
+
+        if (! $this->editingTaskId) {
+            $this->addError('emailReplyBody', 'No task selected.');
+
+            return;
+        }
+
+        $task = Task::with('supportTicket')->find($this->editingTaskId);
+
+        if (! $task || ! $task->supportTicket) {
+            $this->addError('emailReplyBody', 'This task is not linked to an email support ticket.');
+
+            return;
+        }
+
+        $this->isSendingEmailReply = true;
+        $ticket = $task->supportTicket;
+
+        try {
+            $senderName = auth()->user()?->name ?: 'Support Team';
+            $result = $replyService->sendReply($ticket, $this->emailReplyBody, $senderName);
+
+            // Log clean comment on task
+            Comment::create([
+                'task_id' => $task->id,
+                'user_id' => auth()->id(),
+                'content' => "✉️ **Outgoing Reply Sent to {$ticket->customer_email}** via {$result['sent_via']}:\n\n".$this->emailReplyBody,
+            ]);
+
+            $this->emailReplyBody = '';
+
+            session()->flash('message', "Email reply successfully sent to {$ticket->customer_email} via {$result['sent_via']}!");
+        } catch (\Throwable $e) {
+            Log::error('Failed to send client email reply from CRM task modal: '.$e->getMessage());
+            $this->addError('emailReplyBody', 'Failed sending email: '.$e->getMessage());
+        } finally {
+            $this->isSendingEmailReply = false;
+        }
     }
 }
