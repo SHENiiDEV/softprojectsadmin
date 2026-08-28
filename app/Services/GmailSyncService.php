@@ -79,6 +79,11 @@ class GmailSyncService
                 foreach ($messagesAdded as $item) {
                     $msg = $item->getMessage();
                     if ($msg && $msg->getId()) {
+                        $labels = $msg->getLabelIds() ?? [];
+                        if (in_array('DRAFT', $labels, true)) {
+                            continue;
+                        }
+
                         $addedMessages[] = [
                             'id' => $msg->getId(),
                             'threadId' => $msg->getThreadId(),
@@ -106,10 +111,18 @@ class GmailSyncService
         try {
             return $gmail->users_messages->get($userId, $messageId, ['format' => 'full']);
         } catch (\Throwable $e) {
-            Log::error('Failed to fetch Gmail message', [
-                'messageId' => $messageId,
-                'error' => $e->getMessage(),
-            ]);
+            $msg = $e->getMessage();
+            if (str_contains($msg, 'FAILED_PRECONDITION') || str_contains($msg, 'notFound') || $e->getCode() === 400 || $e->getCode() === 404) {
+                Log::info('GmailSyncService: Skipped message (draft, deleted, or precondition failed)', [
+                    'messageId' => $messageId,
+                    'code' => $e->getCode(),
+                ]);
+            } else {
+                Log::error('Failed to fetch Gmail message', [
+                    'messageId' => $messageId,
+                    'error' => $msg,
+                ]);
+            }
 
             return null;
         }
