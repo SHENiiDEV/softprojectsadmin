@@ -70,8 +70,11 @@ class ProcessGmailAlertJob implements ShouldQueue
 
             $ticket = SupportTicket::where('gmail_thread_id', $threadId)->first();
 
-            // Create new ticket if does not exist
+            // Create new ticket if does not exist (only if trigger keywords matched)
             if (! $ticket) {
+                if (empty($categories)) {
+                    return;
+                }
 
                 $ticket = SupportTicket::create([
                     'gmail_thread_id' => $threadId,

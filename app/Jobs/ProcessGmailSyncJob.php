@@ -119,7 +119,7 @@ class ProcessGmailSyncJob implements ShouldQueue
             // Scenario 1: New thread email from client
             if (! $ticket && ! $isOutgoing) {
                 if (empty($matchedCategories)) {
-                    $matchedCategories = ['general'];
+                    return;
                 }
 
                 $matchedEntity = $this->resolveProjectAndWebsite($recipientEmail, $customerEmail);
