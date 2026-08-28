@@ -19,10 +19,10 @@ class GmailSyncRecentCommand extends Command
     public function handle(GmailSyncService $syncService): int
     {
         $limit = (int) $this->option('limit');
-        $email = $this->option('email') !== null ? $this->option('email') : env('GMAIL_TEST_EMAILS');
+        $email = $this->option('email');
         $customQuery = $this->option('query');
 
-        $query = '';
+        $query = 'in:inbox';
         if ($customQuery) {
             $query = $customQuery;
         } elseif (! empty($email)) {

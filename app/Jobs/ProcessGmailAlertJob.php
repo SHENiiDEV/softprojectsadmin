@@ -70,20 +70,8 @@ class ProcessGmailAlertJob implements ShouldQueue
 
             $ticket = SupportTicket::where('gmail_thread_id', $threadId)->first();
 
-            // Test mode whitelist check for new tickets
+            // Create new ticket if does not exist
             if (! $ticket) {
-                $testEmailsStr = env('GMAIL_TEST_EMAILS');
-                if (! empty($testEmailsStr)) {
-                    $allowedTestEmails = array_map('strtolower', array_map('trim', explode(',', $testEmailsStr)));
-                    if (! in_array(strtolower($customerEmail), $allowedTestEmails, true)) {
-                        Log::info('ProcessGmailAlertJob: Skipped creation for sender not in GMAIL_TEST_EMAILS whitelist', [
-                            'from' => $customerEmail,
-                            'allowed' => $allowedTestEmails,
-                        ]);
-
-                        return;
-                    }
-                }
 
                 $ticket = SupportTicket::create([
                     'gmail_thread_id' => $threadId,
