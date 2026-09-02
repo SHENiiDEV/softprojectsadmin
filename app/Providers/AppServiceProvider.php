@@ -27,33 +27,37 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perSecond(20);
         });
 
-        // Dynamically load settings if table exists
-        if (Schema::hasTable('settings')) {
-            $appName = Setting::get('app_name');
-            if ($appName) {
-                config(['app.name' => $appName]);
-            }
+        // Dynamically load settings if table exists and DB is reachable
+        try {
+            if (Schema::hasTable('settings')) {
+                $appName = Setting::get('app_name');
+                if ($appName) {
+                    config(['app.name' => $appName]);
+                }
 
-            // SMTP settings
-            $smtpHost = Setting::get('mail_host');
-            if ($smtpHost) {
-                config([
-                    'mail.default' => 'smtp',
-                    'mail.mailers.smtp.host' => $smtpHost,
-                    'mail.mailers.smtp.port' => Setting::get('mail_port', config('mail.mailers.smtp.port')),
-                    'mail.mailers.smtp.username' => Setting::get('mail_username', config('mail.mailers.smtp.username')),
-                    'mail.mailers.smtp.password' => Setting::get('mail_password', config('mail.mailers.smtp.password')),
-                    'mail.mailers.smtp.encryption' => Setting::get('mail_encryption', config('mail.mailers.smtp.encryption')),
-                    'mail.from.address' => Setting::get('mail_from_address', config('mail.from.address')),
-                    'mail.from.name' => Setting::get('mail_from_name', config('mail.from.name')),
-                ]);
-            }
+                // SMTP settings
+                $smtpHost = Setting::get('mail_host');
+                if ($smtpHost) {
+                    config([
+                        'mail.default' => 'smtp',
+                        'mail.mailers.smtp.host' => $smtpHost,
+                        'mail.mailers.smtp.port' => Setting::get('mail_port', config('mail.mailers.smtp.port')),
+                        'mail.mailers.smtp.username' => Setting::get('mail_username', config('mail.mailers.smtp.username')),
+                        'mail.mailers.smtp.password' => Setting::get('mail_password', config('mail.mailers.smtp.password')),
+                        'mail.mailers.smtp.encryption' => Setting::get('mail_encryption', config('mail.mailers.smtp.encryption')),
+                        'mail.from.address' => Setting::get('mail_from_address', config('mail.from.address')),
+                        'mail.from.name' => Setting::get('mail_from_name', config('mail.from.name')),
+                    ]);
+                }
 
-            // Telegram settings
-            $tgToken = Setting::get('telegram_bot_token');
-            if ($tgToken) {
-                config(['services.telegram.bot_token' => $tgToken]);
+                // Telegram settings
+                $tgToken = Setting::get('telegram_bot_token');
+                if ($tgToken) {
+                    config(['services.telegram.bot_token' => $tgToken]);
+                }
             }
+        } catch (\Throwable $e) {
+            // Ignore DB connection errors during CLI setup, discovery, or migrations
         }
     }
 }
