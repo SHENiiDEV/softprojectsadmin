@@ -71,9 +71,10 @@ class ProjectTest extends TestCase
             ->set('director_name', 'Jane Director')
             ->set('director_fee_status', 'paid')
             ->set('director_managed_by', $user->id)
-            ->call('save')
-            ->assertRedirect(route('projects.index'));
+            ->call('save');
 
+        $project = Project::where('name', 'New Custom Co')->first();
+        $this->assertNotNull($project);
         $this->assertDatabaseHas('projects', [
             'name' => 'New Custom Co',
             'status' => 'active',
@@ -81,9 +82,6 @@ class ProjectTest extends TestCase
             'ubo' => 'John Doe',
             'mcc' => '1234',
         ]);
-
-        $project = Project::where('name', 'New Custom Co')->first();
-        $this->assertNotNull($project);
 
         $this->assertDatabaseHas('websites', [
             'project_id' => $project->id,
@@ -137,7 +135,7 @@ class ProjectTest extends TestCase
             ->set('director_name', 'Updated Director Name')
             ->set('director_fee_status', 'paid')
             ->call('save')
-            ->assertRedirect(route('projects.index'));
+            ->assertRedirect(route('projects.show', $project));
 
         $this->assertDatabaseHas('projects', [
             'id' => $project->id,

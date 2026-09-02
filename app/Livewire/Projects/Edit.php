@@ -167,7 +167,7 @@ class Edit extends Component
         );
 
         session()->flash('message', 'Company and director details successfully updated.');
-        $this->redirectRoute('projects.index', navigate: true);
+        $this->redirectRoute('projects.show', ['project' => $this->project->id], navigate: true);
     }
 
     public function render()

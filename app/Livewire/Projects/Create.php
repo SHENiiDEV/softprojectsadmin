@@ -119,7 +119,7 @@ class Create extends Component
         ]);
 
         session()->flash('message', 'Company and director successfully added.');
-        $this->redirectRoute('projects.index', navigate: true);
+        $this->redirectRoute('projects.show', ['project' => $project->id], navigate: true);
     }
 
     public function render()
