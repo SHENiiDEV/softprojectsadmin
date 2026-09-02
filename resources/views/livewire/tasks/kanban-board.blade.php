@@ -921,27 +921,129 @@
                                         <!-- Client / Company -->
                                         <div>
                                             <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">Client & Company</label>
-                                            @if($taskProject)
-                                                @php
-                                                    $selectedProj = \App\Models\Project::with('client')->find($taskProject);
-                                                @endphp
-                                                @if($selectedProj && $selectedProj->client)
-                                                    <div class="mb-1.5 text-xs text-slate-700 dark:text-slate-300 font-semibold bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100/40 dark:border-indigo-900/30 px-3 py-1.5 rounded-xl flex items-center justify-between shadow-sm">
-                                                        <span class="text-[9px] uppercase font-bold text-slate-400 dark:text-slate-500">Client:</span>
-                                                        <span class="text-indigo-600 dark:text-indigo-400 font-bold">🏢 {{ $selectedProj->client->name }}</span>
+
+                                            @php
+                                                $projectsOptions = $projects->map(function ($p) {
+                                                    return [
+                                                        'id' => (string) $p->id,
+                                                        'name' => $p->name,
+                                                        'client_name' => $p->client ? $p->client->name : 'No Client',
+                                                    ];
+                                                })->values();
+                                            @endphp
+
+                                            <div x-data="{
+                                                open: false,
+                                                search: '',
+                                                selectedId: @entangle('taskProject').live,
+                                                options: {{ json_encode($projectsOptions) }},
+                                                get selectedItem() {
+                                                    return this.options.find(o => String(o.id) === String(this.selectedId)) || null;
+                                                },
+                                                get filteredOptions() {
+                                                    if (!this.search.trim()) return this.options;
+                                                    const q = this.search.toLowerCase();
+                                                    return this.options.filter(o =>
+                                                        o.name.toLowerCase().includes(q) ||
+                                                        o.client_name.toLowerCase().includes(q)
+                                                    );
+                                                },
+                                                get groupedOptions() {
+                                                    const groups = {};
+                                                    this.filteredOptions.forEach(o => {
+                                                        if (!groups[o.client_name]) groups[o.client_name] = [];
+                                                        groups[o.client_name].push(o);
+                                                    });
+                                                    return groups;
+                                                },
+                                                select(id) {
+                                                    this.selectedId = id ? String(id) : '';
+                                                    $wire.set('taskProject', this.selectedId);
+                                                    this.open = false;
+                                                    this.search = '';
+                                                }
+                                            }" class="relative">
+
+                                                <!-- Trigger Button -->
+                                                <button type="button" @click="open = !open; if (open) $nextTick(() => $refs.searchInput.focus())"
+                                                        class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all shadow-sm cursor-pointer">
+                                                    <template x-if="selectedItem">
+                                                        <div class="flex items-center gap-1.5 truncate">
+                                                            <span class="p-1 rounded bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold text-[10px] uppercase">
+                                                                <i class="fa-solid fa-building"></i>
+                                                            </span>
+                                                            <span class="font-bold text-slate-800 dark:text-slate-100" x-text="selectedItem.name"></span>
+                                                            <span class="text-slate-400 dark:text-slate-500 text-[10px]" x-text="'(' + selectedItem.client_name + ')'"></span>
+                                                        </div>
+                                                    </template>
+                                                    <template x-if="!selectedItem">
+                                                        <span class="text-slate-400 dark:text-slate-500 font-medium">Unlinked (Global Task)</span>
+                                                    </template>
+
+                                                    <div class="flex items-center gap-1.5 ml-2 flex-shrink-0">
+                                                        <template x-if="selectedId">
+                                                            <span @click.stop="select('')" title="Clear" class="text-slate-400 hover:text-rose-500 p-0.5 rounded transition-colors cursor-pointer">
+                                                                <i class="fa-solid fa-xmark text-xs"></i>
+                                                            </span>
+                                                        </template>
+                                                        <i class="fa-solid fa-chevron-down text-[10px] text-slate-400 transition-transform" :class="{ 'rotate-180': open }"></i>
                                                     </div>
-                                                @endif
-                                            @endif
-                                            <select wire:model="taskProject" class="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-150">
-                                                <option value="">Unlinked (Global Task)</option>
-                                                @foreach($projects->groupBy(fn($p) => $p->client ? $p->client->name : 'No Client') as $clientName => $clientProjects)
-                                                    <optgroup label="{{ $clientName }}">
-                                                        @foreach($clientProjects as $p)
-                                                            <option value="{{ $p->id }}">{{ $p->name }}</option>
-                                                        @endforeach
-                                                    </optgroup>
-                                                @endforeach
-                                            </select>
+                                                </button>
+
+                                                <!-- Dropdown Menu -->
+                                                <div x-show="open" @click.outside="open = false" x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+                                                     class="absolute z-50 left-0 right-0 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl p-2.5 max-h-72 overflow-hidden flex flex-col">
+
+                                                    <!-- Live Search Input -->
+                                                    <div class="relative mb-2 flex-shrink-0">
+                                                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                                                        <input x-ref="searchInput" type="text" x-model="search" placeholder="Type to search company or client..."
+                                                               class="w-full pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500">
+                                                    </div>
+
+                                                    <!-- Options List -->
+                                                    <div class="overflow-y-auto custom-scroll flex-1 space-y-2 pr-1">
+                                                        <!-- Unlinked option -->
+                                                        <button type="button" @click="select('')"
+                                                                class="w-full text-left px-2.5 py-1.5 rounded-xl text-xs transition-colors flex items-center justify-between cursor-pointer"
+                                                                :class="!selectedId ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 font-bold' : 'hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-600 dark:text-slate-300'">
+                                                            <span>Unlinked (Global Task)</span>
+                                                            <template x-if="!selectedId">
+                                                                <i class="fa-solid fa-check text-xs text-indigo-500"></i>
+                                                            </template>
+                                                        </button>
+
+                                                        <!-- Grouped Options -->
+                                                        <template x-for="(groupItems, clientName) in groupedOptions" :key="clientName">
+                                                            <div class="space-y-1">
+                                                                <div class="px-2 pt-1.5 text-[9px] font-extrabold uppercase tracking-wider text-indigo-500 dark:text-indigo-400 flex items-center gap-1">
+                                                                    <i class="fa-solid fa-user-tie text-[9px]"></i>
+                                                                    <span x-text="clientName"></span>
+                                                                </div>
+                                                                <template x-for="item in groupItems" :key="item.id">
+                                                                    <button type="button" @click="select(item.id)"
+                                                                            class="w-full text-left px-3 py-1.5 rounded-xl text-xs transition-colors flex items-center justify-between cursor-pointer"
+                                                                            :class="String(selectedId) === String(item.id) ? 'bg-sky-50 dark:bg-sky-950/50 text-sky-600 dark:text-sky-400 font-bold border border-sky-200/50 dark:border-sky-800/50' : 'hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-200'">
+                                                                        <div class="flex items-center gap-2 truncate">
+                                                                            <i class="fa-solid fa-building text-[10px] text-slate-400"></i>
+                                                                            <span x-text="item.name"></span>
+                                                                        </div>
+                                                                        <template x-if="String(selectedId) === String(item.id)">
+                                                                            <i class="fa-solid fa-check text-xs text-sky-500 ml-2"></i>
+                                                                        </template>
+                                                                    </button>
+                                                                </template>
+                                                            </div>
+                                                        </template>
+
+                                                        <template x-if="Object.keys(groupedOptions).length === 0">
+                                                            <div class="py-4 text-center text-xs text-slate-400">
+                                                                No matching companies found
+                                                            </div>
+                                                        </template>
+                                                    </div>
+                                                </div>
+                                            </div>
                                             @error('taskProject') <span class="text-[10px] text-rose-500 mt-1 block">{{ $message }}</span> @enderror
                                         </div>
 
