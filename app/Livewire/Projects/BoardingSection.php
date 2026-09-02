@@ -138,7 +138,7 @@ class BoardingSection extends Component
         }
 
         $this->providers = $providersMap;
-        $this->activeGateways = collect($providersMap)->pluck('name')->unique()->values()->toArray();
+        $this->activeGateways = collect($providersMap)->pluck('name')->unique()->sort(SORT_NATURAL | SORT_FLAG_CASE)->values()->toArray();
     }
 
     public function save(): void

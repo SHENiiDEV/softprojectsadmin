@@ -70,7 +70,10 @@ class DocumentsSection extends Component
             $list[] = 'General';
         }
 
-        return array_values(array_unique($list));
+        $uniqueList = array_values(array_unique($list));
+        natcasesort($uniqueList);
+
+        return array_values($uniqueList);
     }
 
     public function getCategoriesListProperty(): array
