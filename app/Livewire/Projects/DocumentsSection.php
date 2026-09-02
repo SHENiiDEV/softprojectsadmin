@@ -80,12 +80,17 @@ class DocumentsSection extends Component
     {
         return [
             'KYB PACK (.zip)',
-            'Corporate Documents',
-            'Processing Statements',
-            'Bank Statements',
-            'ID / Passports',
-            'License / Utility Bills',
-            'Agreements & Contracts',
+            'ID/Passport',
+            'CV',
+            'Utility Bill',
+            'Private Bank Statement',
+            'Business Bank Statement',
+            'Proof Of Domain',
+            'Supplier Agreement & Invoice',
+            'Rent Agreement & Invoice',
+            'Business Plan',
+            'Marketing Agreement & Invoice',
+            'Settelment Account',
             'Other',
         ];
     }
