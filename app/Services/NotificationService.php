@@ -155,12 +155,18 @@ class NotificationService
         // Find users to notify (assignee and creator, excluding comment author)
         $recipients = collect();
 
-        if ($task->assignee) {
-            $recipients->push($task->assignee);
+        if ($task->assigned_to) {
+            $assignee = $task->assignee ?? User::find($task->assigned_to);
+            if ($assignee) {
+                $recipients->push($assignee);
+            }
         }
 
-        if ($task->creator && $task->creator_id !== $task->assigned_to) {
-            $recipients->push($task->creator);
+        if ($task->creator_id && $task->creator_id !== $task->assigned_to) {
+            $creator = $task->creator ?? User::find($task->creator_id);
+            if ($creator) {
+                $recipients->push($creator);
+            }
         }
 
         if ($recipients->isEmpty()) {
