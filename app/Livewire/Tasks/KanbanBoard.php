@@ -330,7 +330,7 @@ class KanbanBoard extends Component
             $tasks[$status] = (clone $baseQuery)
                 ->where('status', $status)
                 ->select('id', 'title', 'description', 'status', 'priority', 'due_date', 'assigned_to', 'project_id', 'created_at', 'updated_at', 'archived_at')
-                ->with(['project:id,name,client_id', 'assignee:id,name'])
+                ->with(['project:id,name,client_id', 'assignee:id,name,color'])
                 ->orderBy('order', 'asc')
                 ->orderBy('created_at', 'desc')
                 ->limit($limit)

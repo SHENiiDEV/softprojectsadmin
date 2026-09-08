@@ -12,12 +12,20 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 
-#[Fillable(['name', 'email', 'password', 'telegram_id', 'telegram_username', 'tg_link_token', 'notification_settings', 'avatar_path', 'timezone', 'language'])]
+#[Fillable(['name', 'email', 'password', 'color', 'telegram_id', 'telegram_username', 'tg_link_token', 'notification_settings', 'avatar_path', 'timezone', 'language'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, HasRoles, Notifiable;
+
+    /**
+     * Get user assignee color (fallback to default #3b82f6 if empty).
+     */
+    public function getColorAttribute(?string $value): string
+    {
+        return $value ?: '#3b82f6';
+    }
 
     /**
      * Get the URL to the user's avatar.

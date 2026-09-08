@@ -33,6 +33,8 @@ class Index extends Component
 
     public string $role = 'worker';
 
+    public string $color = '#3b82f6';
+
     public string $newPassword = '';
 
     protected $queryString = [
@@ -71,6 +73,7 @@ class Index extends Component
         $this->email = '';
         $this->password = '';
         $this->role = 'worker';
+        $this->color = '#3b82f6';
         $this->showModal = true;
     }
 
@@ -86,6 +89,7 @@ class Index extends Component
         $this->email = $user->email;
         $this->password = '';
         $this->role = $user->roles->first()?->name ?? 'worker';
+        $this->color = $user->color ?: '#3b82f6';
         $this->showModal = true;
     }
 
@@ -108,6 +112,7 @@ class Index extends Component
         $rules = [
             'name' => 'required|string|max:255',
             'role' => 'required|in:admin,manager,curator,worker',
+            'color' => 'nullable|string|max:30',
         ];
 
         if ($this->editingUserId) {
@@ -124,6 +129,7 @@ class Index extends Component
             $user->update([
                 'name' => $this->name,
                 'email' => $this->email,
+                'color' => $this->color ?: '#3b82f6',
             ]);
             $user->syncRoles([$this->role]);
             session()->flash('message', 'User successfully updated.');
@@ -136,6 +142,7 @@ class Index extends Component
                 'name' => $this->name,
                 'email' => $this->email,
                 'password' => Hash::make($this->password),
+                'color' => $this->color ?: '#3b82f6',
             ]);
             $user->assignRole($this->role);
             session()->flash('message', 'User successfully created.');

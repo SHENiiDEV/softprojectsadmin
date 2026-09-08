@@ -93,6 +93,7 @@
                         <th class="py-4 px-6">User</th>
                         <th class="py-4 px-6">Email</th>
                         <th class="py-4 px-6">Role</th>
+                        <th class="py-4 px-6">Task Card Color</th>
                         <th class="py-4 px-6">Telegram Status</th>
                         <th class="py-4 px-6 text-right">Actions</th>
                     </tr>
@@ -103,7 +104,7 @@
                             <!-- User info name -->
                             <td class="py-4 px-6 font-semibold text-slate-800 dark:text-slate-200">
                                 <div class="flex items-center space-x-3">
-                                    <div class="h-9 w-9 rounded-xl bg-gradient-to-tr from-sky-400 to-indigo-500 flex items-center justify-center font-bold text-white uppercase text-xs">
+                                    <div class="h-9 w-9 rounded-xl bg-gradient-to-tr from-sky-400 to-indigo-500 flex items-center justify-center font-bold text-white uppercase text-xs shadow-sm" style="background: {{ $userItem->color }};">
                                         {{ substr($userItem->name, 0, 2) }}
                                     </div>
                                     <span>{{ $userItem->name }}</span>
@@ -124,6 +125,14 @@
                                     @else bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 @endif">
                                     {{ $userItem->roles->first()?->name ?? 'None' }}
                                 </span>
+                            </td>
+
+                            <!-- Assignee Color Preview -->
+                            <td class="py-4 px-6">
+                                <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                                    <span class="w-3.5 h-3.5 rounded-full shadow-sm" style="background-color: {{ $userItem->color }}; border: 1px solid rgba(0,0,0,0.1);"></span>
+                                    <span class="font-mono text-xs font-bold text-slate-600 dark:text-slate-300">{{ strtoupper($userItem->color) }}</span>
+                                </div>
                             </td>
 
                             <!-- Telegram connection badge -->
@@ -259,6 +268,22 @@
                             <option value="admin">Admin</option>
                         </select>
                         @error('role') <span class="text-xs text-rose-600 mt-1 block">{{ $message }}</span> @enderror
+                    </div>
+
+                    <!-- Assignee Task Card Color -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5">Assignee Task Card Color</label>
+                        <div class="flex items-center space-x-3">
+                            <input type="color" wire:model="color" class="h-10 w-14 p-0.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 cursor-pointer shadow-sm">
+                            <input type="text" wire:model="color" placeholder="#3b82f6" class="flex-1 px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-mono uppercase text-slate-800 dark:text-slate-100 focus:ring-sky-500/20 focus:border-sky-500">
+                        </div>
+                        <!-- Quick Color Swatches -->
+                        <div class="flex flex-wrap gap-1.5 mt-2">
+                            @foreach(['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#6366f1', '#64748b', '#0f172a'] as $presetColor)
+                                <button type="button" @click="$wire.set('color', '{{ $presetColor }}')" class="w-6 h-6 rounded-full border border-black/10 transition-transform hover:scale-110 shadow-sm cursor-pointer" style="background-color: {{ $presetColor }};" title="{{ $presetColor }}"></button>
+                            @endforeach
+                        </div>
+                        @error('color') <span class="text-xs text-rose-600 mt-1 block">{{ $message }}</span> @enderror
                     </div>
 
                     <div class="flex justify-end space-x-3 pt-4 border-t border-slate-100 dark:border-slate-800">

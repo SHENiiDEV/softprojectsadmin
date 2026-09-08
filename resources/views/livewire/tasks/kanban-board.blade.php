@@ -164,7 +164,10 @@
                         <div draggable="true" 
                              data-task-id="{{ $task->id }}"
                              @dragstart="dragStart($event, {{ $task->id }})"
-                             class="group relative bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-xl p-4 shadow-sm hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-150 cursor-grab active:cursor-grabbing">
+                             class="group relative bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-xl p-4 shadow-sm hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-150 cursor-grab active:cursor-grabbing"
+                             @if($task->assignee && $task->assignee->color)
+                                 style="border-left: 4px solid {{ $task->assignee->color }};"
+                             @endif>
                             
                             <!-- Badges -->
                             <div class="flex flex-wrap items-center gap-1.5 mb-2.5">
@@ -304,7 +307,7 @@
                                             <span class="text-[9px] font-semibold text-slate-500 dark:text-slate-400 truncate max-w-[70px]" title="{{ $task->assignee->name }}">
                                                 {{ explode(' ', $task->assignee->name)[0] }}
                                             </span>
-                                            <div class="h-5 w-5 rounded-full bg-gradient-to-tr {{ $task->assignee->gradient }} flex items-center justify-center font-bold text-white text-[8px] uppercase" title="Assignee: {{ $task->assignee->name }}">
+                                            <div class="h-5 w-5 rounded-full flex items-center justify-center font-bold text-white text-[8px] uppercase shadow-sm" style="background-color: {{ $task->assignee->color }};" title="Assignee: {{ $task->assignee->name }}">
                                                 {{ substr($task->assignee->name, 0, 2) }}
                                             </div>
                                         </div>

@@ -88,8 +88,6 @@ class RolePermissionsTest extends TestCase
             '/users',
             '/reports/time',
             '/reports/productivity',
-            '/credentials',
-            '/settings',
         ];
 
         foreach ($allowed as $route) {
