@@ -77,6 +77,12 @@ class GmailSyncRecentCommand extends Command
 
             return 0;
         } catch (\Throwable $e) {
+            if (str_contains($e->getMessage(), '401') || str_contains($e->getMessage(), 'required authentication credential')) {
+                $this->warn('Gmail API not authenticated. Skipping sync.');
+
+                return 0;
+            }
+
             $this->error("❌ Error syncing recent messages: {$e->getMessage()}");
 
             return 1;

@@ -78,21 +78,21 @@ class Comment extends Model
 
     public function getMentionedUsers(): Collection
     {
-        preg_match_all('/\B@([a-zA-Z0-9_]+)\b/', $this->content, $matches);
-        $usernames = $matches[1] ?? [];
+        preg_match_all('/(?:^|\s)@([a-zA-Z0-9_]+)/', $this->content, $matches);
+        $usernames = array_unique($matches[1] ?? []);
 
         if (empty($usernames)) {
             return collect();
         }
 
-        $query = User::query()->whereIn('telegram_username', $usernames);
-
-        foreach ($usernames as $uname) {
-            $cleanName = strtolower(preg_replace('/[^a-zA-Z0-9_]/', '', $uname));
-            $query->orWhereRaw("lower(replace(name, ' ', '')) = ?", [$cleanName])
-                ->orWhereRaw("lower(replace(name, ' ', '_')) = ?", [$cleanName]);
-        }
-
-        return $query->get();
+        return User::where(function ($query) use ($usernames) {
+            $query->whereIn('telegram_username', $usernames);
+            foreach ($usernames as $uname) {
+                $cleanName = strtolower(preg_replace('/[^a-zA-Z0-9_]/', '', $uname));
+                $query->orWhereRaw("lower(telegram_username) = ?", [strtolower($uname)])
+                    ->orWhereRaw("lower(replace(name, ' ', '')) = ?", [$cleanName])
+                    ->orWhereRaw("lower(replace(name, ' ', '_')) = ?", [$cleanName]);
+            }
+        })->get();
     }
 }

@@ -513,12 +513,14 @@ class KanbanBoard extends Component
             return;
         }
 
-        Comment::create([
+        $comment = Comment::create([
             'task_id' => $this->editingTaskId,
             'user_id' => auth()->id(),
             'content' => $this->newCommentContent,
             'is_private' => $this->newCommentIsPrivate,
         ]);
+
+        NotificationService::sendNewCommentNotification($comment);
 
         $this->newCommentContent = '';
         $this->newCommentIsPrivate = false;
@@ -550,12 +552,14 @@ class KanbanBoard extends Component
             return;
         }
 
-        Comment::create([
+        $comment = Comment::create([
             'task_id' => $this->editingTaskId,
             'user_id' => auth()->id(),
             'parent_id' => $commentId,
             'content' => $content,
         ]);
+
+        NotificationService::sendNewCommentNotification($comment);
 
         $this->replyCommentContent[$commentId] = '';
         session()->flash('message', 'Reply added.');

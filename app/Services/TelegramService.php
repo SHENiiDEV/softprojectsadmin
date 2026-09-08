@@ -10,11 +10,10 @@ use Illuminate\Support\Facades\Log;
 
 class TelegramService
 {
-    protected ?string $botToken;
-
-    public function __construct()
+    protected function getBotToken(): ?string
     {
-        $this->botToken = config('services.telegram.bot_token');
+        return config('services.telegram.bot_token')
+            ?: (class_exists(\App\Models\Setting::class) ? \App\Models\Setting::get('telegram_bot_token') : null);
     }
 
     /**
@@ -22,8 +21,10 @@ class TelegramService
      */
     public function sendMessage(int|string $chatId, string $text, ?array $replyMarkup = null): bool
     {
-        if (! $this->botToken) {
-            Log::warning('Telegram Bot Token is not set.');
+        $botToken = $this->getBotToken();
+
+        if (! $botToken) {
+            Log::warning('Telegram Bot Token is not set in config or settings table.');
 
             return false;
         }
@@ -39,10 +40,11 @@ class TelegramService
         }
 
         try {
-            $response = Http::post("https://api.telegram.org/bot{$this->botToken}/sendMessage", $payload);
+            $response = Http::post("https://api.telegram.org/bot{$botToken}/sendMessage", $payload);
 
             if ($response->failed()) {
                 Log::error('Telegram sendMessage failed', [
+                    'chat_id' => $chatId,
                     'status' => $response->status(),
                     'body' => $response->body(),
                 ]);

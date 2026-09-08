@@ -59,7 +59,7 @@ fi
 # 6. Restart Queue Workers & Register Services
 echo "🔄 6. Restarting Queue Workers & Registering Services..."
 php artisan queue:restart || true
-php artisan gmail:watch || true
+php artisan gmail:watch 2>/dev/null || true
 
 # 7. Ensure Storage Permissions
 echo "🔒 7. Ensuring storage permissions..."
