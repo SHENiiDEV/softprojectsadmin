@@ -112,7 +112,7 @@
                 <i class="fa-solid fa-code"></i>
             </button>
             <span class="text-[9px] text-slate-300 dark:text-slate-600 pl-1">|</span>
-            <span class="text-[9px] text-slate-400 dark:text-slate-500 pl-1">Use @mention, **bold**, *italic*, `code`</span>
+            <span class="text-[9px] text-slate-400 dark:text-slate-500 pl-1">Shift+Enter for new line • Enter to send • @mention, **bold**, *italic*, `code`</span>
         </div>
     @endif
 
@@ -120,7 +120,7 @@
               x-ref="commentBox"
               @input="onInput"
               @keydown="onKeyDown"
-              @keydown.enter.prevent="if (!showMentions && !$event.shiftKey) { {{ $submitAction }} }"
+              @keydown.enter="if (!showMentions && !$event.shiftKey) { $event.preventDefault(); {{ $submitAction }} }"
               rows="{{ $rows }}"
               placeholder="{{ $placeholder }}"
               {{ $attributes->merge(['class' => 'w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-150']) }}></textarea>

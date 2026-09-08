@@ -849,6 +849,7 @@
                                                         </button>
                                                         <div x-show="showReply" x-transition class="mt-2 space-y-2 animate-fade-in">
                                                             <textarea wire:model="replyCommentContent.{{ $comment->id }}" rows="2" placeholder="Write a reply..."
+                                                                @keydown.enter="if (!$event.shiftKey) { $event.preventDefault(); $wire.addReply({{ $comment->id }}); showReply = false }"
                                                                 class="w-full px-3 py-2 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all resize-none"></textarea>
                                                             <div class="flex justify-end gap-2">
                                                                 <button type="button" @click="showReply = false" class="px-3 py-1.5 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 text-[10px] font-semibold cursor-pointer">Cancel</button>
@@ -878,6 +879,7 @@
                                             </div>
                                             <div class="flex-1 space-y-2">
                                                 <textarea wire:model="newCommentContent" rows="3" placeholder="Add a comment..."
+                                                    @keydown.enter="if (!$event.shiftKey) { $event.preventDefault(); $wire.addComment() }"
                                                     class="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all resize-none"></textarea>
                                                 @error('newCommentContent') <span class="text-[10px] text-rose-500 block">{{ $message }}</span> @enderror
                                                 <div class="flex justify-end">
