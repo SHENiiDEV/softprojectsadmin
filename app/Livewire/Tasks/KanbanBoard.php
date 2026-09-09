@@ -55,7 +55,7 @@ class KanbanBoard extends Component
 
     public $taskProject = ''; // Nullable
 
-    public $taskAssignee = ''; // Nullable
+    public array $taskAssignees = []; // Nullable array of up to 2 assigned user IDs
 
     public $taskPriority = 'medium';
 
@@ -113,7 +113,8 @@ class KanbanBoard extends Component
             'taskTitle' => 'required|string|max:255',
             'taskDescription' => 'nullable|string',
             'taskProject' => 'nullable|exists:projects,id',
-            'taskAssignee' => 'nullable|exists:users,id',
+            'taskAssignees' => 'nullable|array|max:2',
+            'taskAssignees.*' => 'exists:users,id',
             'taskPriority' => 'required|in:low,medium,high,critical',
             'taskStatus' => 'required|in:email_inbox,todo,in_progress,review,done',
             'taskDueDate' => 'nullable|date',
@@ -302,7 +303,11 @@ class KanbanBoard extends Component
         }
 
         if (! empty($this->filterAssignee)) {
-            $baseQuery->where('assigned_to', $this->filterAssignee);
+            $assigneeId = (int) $this->filterAssignee;
+            $baseQuery->where(function ($q) use ($assigneeId) {
+                $q->where('assigned_to', $assigneeId)
+                    ->orWhereHas('assignees', fn ($aq) => $aq->where('users.id', $assigneeId));
+            });
         }
 
         if (! empty($this->filterPriority)) {
@@ -330,7 +335,7 @@ class KanbanBoard extends Component
             $tasks[$status] = (clone $baseQuery)
                 ->where('status', $status)
                 ->select('id', 'title', 'description', 'status', 'priority', 'due_date', 'assigned_to', 'project_id', 'created_at', 'updated_at', 'archived_at')
-                ->with(['project:id,name,client_id', 'assignee:id,name,color'])
+                ->with(['project:id,name,client_id', 'assignee:id,name,color', 'assignees:id,name,color'])
                 ->orderBy('order', 'asc')
                 ->orderBy('created_at', 'desc')
                 ->limit($limit)
@@ -397,12 +402,15 @@ class KanbanBoard extends Component
         $this->emailReplyBody = '';
 
         if ($taskId) {
-            $task = Task::with('media')->findOrFail($taskId);
+            $task = Task::with(['media', 'assignees'])->findOrFail($taskId);
             $this->editingTaskId = $task->id;
             $this->taskTitle = $task->title;
             $this->taskDescription = $task->description;
             $this->taskProject = $task->project_id;
-            $this->taskAssignee = $task->assigned_to;
+            $this->taskAssignees = $task->assignees->pluck('id')->map(fn ($id) => (string) $id)->toArray();
+            if (empty($this->taskAssignees) && $task->assigned_to) {
+                $this->taskAssignees = [(string) $task->assigned_to];
+            }
             $this->taskPriority = $task->priority;
             $this->taskStatus = $task->status;
             $this->taskDueDate = $task->due_date ? $task->due_date->format('Y-m-d') : '';
@@ -412,7 +420,7 @@ class KanbanBoard extends Component
             $this->taskTitle = '';
             $this->taskDescription = '';
             $this->taskProject = $this->filterProject !== 'global' ? $this->filterProject : '';
-            $this->taskAssignee = '';
+            $this->taskAssignees = [];
             $this->taskPriority = 'medium';
             $this->taskStatus = 'todo';
             $this->taskDueDate = '';
@@ -432,17 +440,21 @@ class KanbanBoard extends Component
 
         $this->validate();
 
+        $assigneeIds = array_values(array_filter(array_unique(array_map('intval', (array) $this->taskAssignees))));
+        $primaryAssignee = $assigneeIds[0] ?? null;
+
         if ($this->editingTaskId) {
             $task = Task::findOrFail($this->editingTaskId);
             $task->update([
                 'title' => $this->taskTitle,
                 'description' => $this->taskDescription,
                 'project_id' => $this->taskProject ?: null,
-                'assigned_to' => $this->taskAssignee ?: null,
+                'assigned_to' => $primaryAssignee,
                 'priority' => $this->taskPriority,
                 'status' => $this->taskStatus,
                 'due_date' => $this->taskDueDate ?: null,
             ]);
+            $task->assignees()->sync($assigneeIds);
 
             session()->flash('message', 'Task updated successfully.');
         } else {
@@ -450,12 +462,13 @@ class KanbanBoard extends Component
                 'title' => $this->taskTitle,
                 'description' => $this->taskDescription,
                 'project_id' => $this->taskProject ?: null,
-                'assigned_to' => $this->taskAssignee ?: null,
+                'assigned_to' => $primaryAssignee,
                 'creator_id' => auth()->id(),
                 'priority' => $this->taskPriority,
                 'status' => $this->taskStatus,
                 'due_date' => $this->taskDueDate ?: null,
             ]);
+            $task->assignees()->sync($assigneeIds);
 
             session()->flash('message', 'Task created successfully.');
         }

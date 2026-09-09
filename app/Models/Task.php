@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
@@ -172,11 +173,33 @@ class Task extends Model implements HasMedia
     }
 
     /**
-     * Get the user assigned to the task.
+     * Get the user assigned to the task (primary assignee).
      */
     public function assignee(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_to');
+    }
+
+    /**
+     * Get all users assigned to the task.
+     */
+    public function assignees(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'task_user')->withTimestamps();
+    }
+
+    /**
+     * Sync assigned users and set primary assigned_to.
+     */
+    public function syncAssignees(array $userIds): void
+    {
+        $userIds = array_values(array_filter(array_unique(array_map('intval', $userIds))));
+        $this->assignees()->sync($userIds);
+
+        $primaryId = $userIds[0] ?? null;
+        if ($this->assigned_to !== $primaryId) {
+            $this->update(['assigned_to' => $primaryId]);
+        }
     }
 
     /**

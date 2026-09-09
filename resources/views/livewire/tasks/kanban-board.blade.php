@@ -302,13 +302,20 @@
                                         </div>
                                     @endif
 
-                                    @if($task->assignee)
+                                    @php
+                                        $cardAssignees = $task->assignees->isNotEmpty() ? $task->assignees : ($task->assignee ? collect([$task->assignee]) : collect());
+                                    @endphp
+                                    @if($cardAssignees->isNotEmpty())
                                         <div class="flex items-center space-x-1.5 bg-slate-50 dark:bg-slate-950/40 py-0.5 pl-2 pr-0.5 rounded-full border border-slate-200/50 dark:border-slate-800/80">
-                                            <span class="text-[9px] font-semibold text-slate-500 dark:text-slate-400 truncate max-w-[70px]" title="{{ $task->assignee->name }}">
-                                                {{ explode(' ', $task->assignee->name)[0] }}
+                                            <span class="text-[9px] font-semibold text-slate-500 dark:text-slate-400 truncate max-w-[85px]" title="{{ $cardAssignees->pluck('name')->implode(', ') }}">
+                                                {{ $cardAssignees->map(fn($u) => explode(' ', $u->name)[0])->implode(', ') }}
                                             </span>
-                                            <div class="h-5 w-5 rounded-full flex items-center justify-center font-bold text-white text-[8px] uppercase shadow-sm" style="background-color: {{ $task->assignee->color }};" title="Assignee: {{ $task->assignee->name }}">
-                                                {{ substr($task->assignee->name, 0, 2) }}
+                                            <div class="flex -space-x-1.5">
+                                                @foreach($cardAssignees as $u)
+                                                    <div class="h-5 w-5 rounded-full flex items-center justify-center font-bold text-white text-[8px] uppercase shadow-sm ring-1 ring-white dark:ring-slate-900" style="background-color: {{ $u->color }};" title="Assignee: {{ $u->name }}">
+                                                        {{ substr($u->name, 0, 2) }}
+                                                    </div>
+                                                @endforeach
                                             </div>
                                         </div>
                                     @else
@@ -1050,23 +1057,36 @@
                                             @error('taskProject') <span class="text-[10px] text-rose-500 mt-1 block">{{ $message }}</span> @enderror
                                         </div>
 
-                                        <!-- Assignee -->
+                                        <!-- Assignees (Up to 2) -->
                                         <div>
                                             <div class="flex items-center justify-between mb-1.5">
-                                                <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Assignee</label>
-                                                @if($taskAssignee !== auth()->id() && !auth()->user()->hasRole('curator'))
-                                                    <button type="button" wire:click="$set('taskAssignee', {{ auth()->id() }})" class="text-[9px] text-indigo-650 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-350 font-bold uppercase hover:underline">
+                                                <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Assignees (Max 2)</label>
+                                                @if(!in_array((string)auth()->id(), (array)$taskAssignees, true) && !auth()->user()->hasRole('curator'))
+                                                    <button type="button" wire:click="$set('taskAssignees', [{{ auth()->id() }}])" class="text-[9px] text-indigo-650 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-350 font-bold uppercase hover:underline">
                                                         Assign to me
                                                     </button>
                                                 @endif
                                             </div>
-                                            <select wire:model="taskAssignee" class="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-150">
-                                                <option value="">Unassigned</option>
+                                            <div class="space-y-1 max-h-36 overflow-y-auto p-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs">
                                                 @foreach($users as $u)
-                                                    <option value="{{ $u->id }}">{{ $u->name }}</option>
+                                                    @php
+                                                        $isCheck = in_array((string)$u->id, (array)$taskAssignees, true);
+                                                        $isMax = count((array)$taskAssignees) >= 2 && !$isCheck;
+                                                    @endphp
+                                                    <label class="flex items-center space-x-2 p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-900 cursor-pointer {{ $isMax ? 'opacity-40 cursor-not-allowed' : '' }}">
+                                                        <input type="checkbox" 
+                                                               value="{{ $u->id }}" 
+                                                               wire:model.live="taskAssignees" 
+                                                               {{ $isMax ? 'disabled' : '' }}
+                                                               class="rounded border-slate-300 text-sky-600 shadow-sm focus:ring-sky-500">
+                                                        <div class="h-4 w-4 rounded-full flex items-center justify-center font-bold text-white text-[7px] uppercase" style="background-color: {{ $u->color }};">
+                                                            {{ substr($u->name, 0, 2) }}
+                                                        </div>
+                                                        <span class="text-xs text-slate-700 dark:text-slate-300 font-medium">{{ $u->name }}</span>
+                                                    </label>
                                                 @endforeach
-                                            </select>
-                                            @error('taskAssignee') <span class="text-[10px] text-rose-500 mt-1 block">{{ $message }}</span> @enderror
+                                            </div>
+                                            @error('taskAssignees') <span class="text-[10px] text-rose-500 mt-1 block">{{ $message }}</span> @enderror
                                         </div>
 
                                         <!-- Reporter (Created By) -->

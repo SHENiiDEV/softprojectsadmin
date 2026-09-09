@@ -152,17 +152,19 @@ class NotificationService
         $message = "{$actorName} commented on '{$task->title}': ".mb_substr($comment->content, 0, 50).'...';
         $url = route('tasks.kanban', ['task_id' => $task->id]);
 
-        // Find users to notify (assignee and creator, excluding comment author)
+        // Find users to notify (all assignees and creator, excluding comment author)
         $recipients = collect();
 
-        if ($task->assigned_to) {
-            $assignee = $task->assignee ?? User::find($task->assigned_to);
-            if ($assignee) {
-                $recipients->push($assignee);
-            }
+        $assignees = $task->assignees->isNotEmpty()
+            ? $task->assignees
+            : ($task->assigned_to ? collect([$task->assignee ?? User::find($task->assigned_to)])->filter() : collect());
+
+        foreach ($assignees as $assignee) {
+            $recipients->push($assignee);
         }
 
-        if ($task->creator_id && $task->creator_id !== $task->assigned_to) {
+        $assignedUserIds = $recipients->pluck('id')->toArray();
+        if ($task->creator_id && ! in_array($task->creator_id, $assignedUserIds, true)) {
             $creator = $task->creator ?? User::find($task->creator_id);
             if ($creator) {
                 $recipients->push($creator);
