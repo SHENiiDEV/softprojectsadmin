@@ -116,4 +116,22 @@ class MultiAssigneeTaskTest extends TestCase
         Livewire::test(\App\Livewire\MyWork::class)
             ->assertSee('Joint Project Task');
     }
+
+    public function test_adding_second_assignee_does_not_send_unassigned_notification_to_first_assignee(): void
+    {
+        Queue::fake();
+
+        $task = Task::create([
+            'title' => 'Initial Assigned Task',
+            'status' => 'todo',
+            'priority' => 'medium',
+            'assigned_to' => $this->agent1->id,
+        ]);
+
+        $task->syncAssignees([$this->agent2->id, $this->agent1->id]);
+
+        Queue::assertNotPushed(SendTelegramMessageJob::class, function ($job) {
+            return (string)$job->chatId === '111111' && str_contains($job->text, 'unassigned');
+        });
+    }
 }

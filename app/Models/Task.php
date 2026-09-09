@@ -92,12 +92,14 @@ class Task extends Model implements HasMedia
                 }
 
                 $originalAssigneeId = $task->getOriginal('assigned_to');
-                if ($originalAssigneeId && $originalAssigneeId !== $newAssigneeId) {
-                    $oldAssignee = User::find($originalAssigneeId);
-                    if ($oldAssignee && $oldAssignee->telegram_id) {
-                        $escapedTitle = TelegramService::escapeMarkdownV2($task->title);
-                        $text = "➖ *Task has been unassigned from you:*\n*Title:* {$escapedTitle}";
-                        SendTelegramMessageJob::dispatch($oldAssignee->telegram_id, $text);
+                if ($originalAssigneeId && (int) $originalAssigneeId !== (int) $newAssigneeId) {
+                    if (! $task->isAssignedToUser((int) $originalAssigneeId)) {
+                        $oldAssignee = User::find($originalAssigneeId);
+                        if ($oldAssignee && $oldAssignee->telegram_id) {
+                            $escapedTitle = TelegramService::escapeMarkdownV2($task->title);
+                            $text = "➖ *Task has been unassigned from you:*\n*Title:* {$escapedTitle}";
+                            SendTelegramMessageJob::dispatchAfterResponse($oldAssignee->telegram_id, $text);
+                        }
                     }
                 }
             }
@@ -194,11 +196,45 @@ class Task extends Model implements HasMedia
     public function syncAssignees(array $userIds): void
     {
         $userIds = array_values(array_filter(array_unique(array_map('intval', $userIds))));
+
+        $oldAssigneeIds = $this->assignees->pluck('id')->toArray();
+        if (empty($oldAssigneeIds) && $this->assigned_to) {
+            $oldAssigneeIds = [(int) $this->assigned_to];
+        }
+
         $this->assignees()->sync($userIds);
 
         $primaryId = $userIds[0] ?? null;
         if ($this->assigned_to !== $primaryId) {
             $this->update(['assigned_to' => $primaryId]);
+        }
+
+        $actor = auth()->user();
+
+        // Notify newly added assignees
+        $addedUserIds = array_diff($userIds, $oldAssigneeIds);
+        foreach ($addedUserIds as $addedId) {
+            if ($actor && $addedId === $actor->id) {
+                continue;
+            }
+            $addedUser = User::find($addedId);
+            if ($addedUser) {
+                NotificationService::sendTaskAssigned($this, $addedUser, $actor, false);
+            }
+        }
+
+        // Notify truly removed assignees
+        $removedUserIds = array_diff($oldAssigneeIds, $userIds);
+        foreach ($removedUserIds as $removedId) {
+            if ($actor && $removedId === $actor->id) {
+                continue;
+            }
+            $oldUser = User::find($removedId);
+            if ($oldUser && $oldUser->telegram_id) {
+                $escapedTitle = TelegramService::escapeMarkdownV2($this->title);
+                $text = "➖ *Task has been unassigned from you:*\n*Title:* {$escapedTitle}";
+                SendTelegramMessageJob::dispatchAfterResponse($oldUser->telegram_id, $text);
+            }
         }
     }
 
