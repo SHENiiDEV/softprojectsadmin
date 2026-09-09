@@ -42,16 +42,16 @@ class ProductivityReport extends Component
         $users = $query->get();
 
         return $users->map(function (User $user) use ($from, $to) {
-            $tasksCompleted = Task::where('assigned_to', $user->id)
+            $tasksCompleted = Task::assignedToUser($user->id)
                 ->where('status', 'done')
                 ->whereBetween('updated_at', [$from, $to])
                 ->count();
 
-            $tasksTotal = Task::where('assigned_to', $user->id)
+            $tasksTotal = Task::assignedToUser($user->id)
                 ->whereBetween('created_at', [$from, $to])
                 ->count();
 
-            $overdueTasks = Task::where('assigned_to', $user->id)
+            $overdueTasks = Task::assignedToUser($user->id)
                 ->whereNotNull('due_date')
                 ->where('due_date', '<', now()->startOfDay())
                 ->whereNotIn('status', ['done'])

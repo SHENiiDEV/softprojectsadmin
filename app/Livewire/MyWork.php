@@ -55,8 +55,8 @@ class MyWork extends Component
 
     protected function loadTasks(): void
     {
-        $query = Task::where('assigned_to', Auth::id())
-            ->with(['project', 'assignee', 'timeLogs' => fn ($q) => $q->whereNull('stopped_at')])
+        $query = Task::assignedToUser(Auth::id())
+            ->with(['project', 'assignee', 'assignees', 'timeLogs' => fn ($q) => $q->whereNull('stopped_at')])
             ->withCount(['timeLogs'])
             ->orderByRaw("CASE status
                 WHEN 'in_progress' THEN 1
@@ -103,7 +103,7 @@ class MyWork extends Component
         $user = Auth::user();
         $task = Task::findOrFail($taskId);
 
-        if ($task->assigned_to !== $user->id) {
+        if (! $task->isAssignedToUser($user)) {
             session()->flash('error', 'This is not your task! You can only start timers on tasks assigned to you.');
 
             return;
@@ -214,11 +214,12 @@ class MyWork extends Component
 
     public function render()
     {
+        $userId = Auth::id();
         $stats = [
-            'total' => Task::where('assigned_to', Auth::id())->count(),
-            'in_progress' => Task::where('assigned_to', Auth::id())->where('status', 'in_progress')->count(),
-            'overdue' => Task::where('assigned_to', Auth::id())->whereNotNull('due_date')->where('due_date', '<', now()->startOfDay())->whereNotIn('status', ['done'])->count(),
-            'done_today' => Task::where('assigned_to', Auth::id())->where('status', 'done')->whereDate('updated_at', today())->count(),
+            'total' => Task::assignedToUser($userId)->count(),
+            'in_progress' => Task::assignedToUser($userId)->where('status', 'in_progress')->count(),
+            'overdue' => Task::assignedToUser($userId)->whereNotNull('due_date')->where('due_date', '<', now()->startOfDay())->whereNotIn('status', ['done'])->count(),
+            'done_today' => Task::assignedToUser($userId)->where('status', 'done')->whereDate('updated_at', today())->count(),
         ];
 
         // Active timer info for currently running

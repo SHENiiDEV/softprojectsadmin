@@ -266,22 +266,23 @@ class KanbanBoard extends Component
             $baseQuery->where(function ($q) use ($user) {
                 $q->whereNull('assigned_to')
                     ->orWhere('assigned_to', $user->id)
-                    ->orWhereHas('assignee', function ($qSub) {
-                        $qSub->role(['manager', 'worker']);
-                    });
+                    ->orWhereHas('assignees', fn ($aq) => $aq->where('users.id', $user->id))
+                    ->orWhereHas('assignee', fn ($qSub) => $qSub->role(['manager', 'worker']))
+                    ->orWhereHas('assignees', fn ($qSub) => $qSub->role(['manager', 'worker']));
             });
         } elseif ($user->hasRole('manager')) {
             $baseQuery->where(function ($q) use ($user) {
                 $q->whereNull('assigned_to')
                     ->orWhere('assigned_to', $user->id)
-                    ->orWhereHas('assignee', function ($qSub) {
-                        $qSub->role('worker');
-                    });
+                    ->orWhereHas('assignees', fn ($aq) => $aq->where('users.id', $user->id))
+                    ->orWhereHas('assignee', fn ($qSub) => $qSub->role('worker'))
+                    ->orWhereHas('assignees', fn ($qSub) => $qSub->role('worker'));
             });
         } elseif ($user->hasRole('worker')) {
             $baseQuery->where(function ($q) use ($user) {
                 $q->whereNull('assigned_to')
-                    ->orWhere('assigned_to', $user->id);
+                    ->orWhere('assigned_to', $user->id)
+                    ->orWhereHas('assignees', fn ($aq) => $aq->where('users.id', $user->id));
             });
         }
 
@@ -367,7 +368,7 @@ class KanbanBoard extends Component
             return;
         }
 
-        if ($user->hasRole('worker') && $task->assigned_to !== $user->id) {
+        if ($user->hasRole('worker') && ! $task->isAssignedToUser($user)) {
             session()->flash('error', 'Workers are only allowed to modify their own tasks.');
 
             return;

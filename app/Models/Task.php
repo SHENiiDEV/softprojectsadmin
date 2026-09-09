@@ -203,6 +203,31 @@ class Task extends Model implements HasMedia
     }
 
     /**
+     * Scope query to tasks assigned to a specific user (primary or secondary assignee).
+     */
+    public function scopeAssignedToUser($query, int $userId)
+    {
+        return $query->where(function ($q) use ($userId) {
+            $q->where('assigned_to', $userId)
+                ->orWhereHas('assignees', fn ($aq) => $aq->where('users.id', $userId));
+        });
+    }
+
+    /**
+     * Check if a task is assigned to a specific user.
+     */
+    public function isAssignedToUser(int|User $user): bool
+    {
+        $userId = $user instanceof User ? $user->id : (int) $user;
+
+        if ((int) $this->assigned_to === $userId) {
+            return true;
+        }
+
+        return $this->assignees->contains('id', $userId) || $this->assignees()->where('users.id', $userId)->exists();
+    }
+
+    /**
      * Get the support ticket associated with this task.
      */
     public function supportTicket(): HasOne

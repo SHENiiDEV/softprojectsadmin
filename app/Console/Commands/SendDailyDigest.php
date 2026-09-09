@@ -23,17 +23,17 @@ class SendDailyDigest extends Command
             ->get();
 
         foreach ($users as $user) {
-            $activeTasks = Task::where('assigned_to', $user->id)
+            $activeTasks = Task::assignedToUser($user->id)
                 ->whereNotIn('status', ['done'])
                 ->count();
 
-            $overdue = Task::where('assigned_to', $user->id)
+            $overdue = Task::assignedToUser($user->id)
                 ->whereNotNull('due_date')
                 ->where('due_date', '<', now()->startOfDay())
                 ->whereNotIn('status', ['done'])
                 ->count();
 
-            $dueToday = Task::where('assigned_to', $user->id)
+            $dueToday = Task::assignedToUser($user->id)
                 ->whereDate('due_date', today())
                 ->whereNotIn('status', ['done'])
                 ->count();

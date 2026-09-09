@@ -90,4 +90,30 @@ class MultiAssigneeTaskTest extends TestCase
             return (string)$job->chatId === '222222';
         });
     }
+
+    public function test_both_assignees_can_see_task_on_kanban_and_my_work(): void
+    {
+        $task = Task::create([
+            'title' => 'Joint Project Task',
+            'status' => 'todo',
+            'priority' => 'high',
+        ]);
+        $task->syncAssignees([$this->agent1->id, $this->agent2->id]);
+
+        // Test Agent 1 (Primary)
+        $this->actingAs($this->agent1);
+        Livewire::test(KanbanBoard::class)
+            ->assertSee('Joint Project Task');
+
+        Livewire::test(\App\Livewire\MyWork::class)
+            ->assertSee('Joint Project Task');
+
+        // Test Agent 2 (Secondary)
+        $this->actingAs($this->agent2);
+        Livewire::test(KanbanBoard::class)
+            ->assertSee('Joint Project Task');
+
+        Livewire::test(\App\Livewire\MyWork::class)
+            ->assertSee('Joint Project Task');
+    }
 }
