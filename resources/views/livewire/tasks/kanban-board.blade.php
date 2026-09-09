@@ -311,6 +311,13 @@
                                         </div>
                                     @endif
 
+                                    @if(($task->subtask_progress['total'] ?? 0) > 0)
+                                        <div class="flex items-center text-slate-500 dark:text-slate-400 mr-1" title="Subtasks: {{ $task->subtask_progress['completed'] }}/{{ $task->subtask_progress['total'] }} ({{ $task->subtask_progress['percentage'] }}%)">
+                                            <i class="fa-regular fa-square-check text-xs mr-0.5 {{ $task->subtask_progress['completed'] === $task->subtask_progress['total'] ? 'text-emerald-500' : 'text-sky-500' }}"></i>
+                                            <span class="font-bold text-[10px]">{{ $task->subtask_progress['completed'] }}/{{ $task->subtask_progress['total'] }}</span>
+                                        </div>
+                                    @endif
+
                                     @php
                                         $cardAssignees = $task->assignees->isNotEmpty() ? $task->assignees : ($task->assignee ? collect([$task->assignee]) : collect());
                                     @endphp
@@ -388,8 +395,14 @@
                                         <span>/</span>
                                         @if($editingTaskId)
                                             @php
-                                                $tempTask = \App\Models\Task::with('project.client')->find($editingTaskId);
+                                                $tempTask = \App\Models\Task::with(['project.client', 'parent'])->find($editingTaskId);
                                             @endphp
+                                            @if($tempTask && $tempTask->parent)
+                                                <span class="text-sky-600 dark:text-sky-400 font-bold">
+                                                    Subtask of: <button type="button" wire:click="openTaskModal({{ $tempTask->parent->id }})" class="hover:underline">TASK-{{ $tempTask->parent->id }} ({{ Str::limit($tempTask->parent->title, 15) }})</button>
+                                                </span>
+                                                <span>/</span>
+                                            @endif
                                             @if($tempTask && $tempTask->project)
                                                 @if($tempTask->project->client)
                                                     <span class="text-indigo-650 dark:text-indigo-400 font-extrabold">{{ $tempTask->project->client->name }}</span>
@@ -421,7 +434,7 @@
                         </div>
 
                         @php
-                            $modalTask = $editingTaskId ? \App\Models\Task::with(['creator', 'assignee', 'timeLogs.user'])->find($editingTaskId) : null;
+                            $modalTask = $editingTaskId ? \App\Models\Task::with(['creator', 'assignee', 'timeLogs.user', 'subtasks'])->find($editingTaskId) : null;
                         @endphp
 
                         <div class="p-6">
@@ -523,6 +536,90 @@
                                                 Uploading attachments...
                                             </div>
                                         @error('attachments.*') <span class="text-[10px] text-rose-500 mt-1 block">{{ $message }}</span> @enderror
+                                    </div>
+                                    @endif
+
+                                    <!-- Subtasks Section -->
+                                    @if($editingTaskId)
+                                    @php
+                                        $subtasksList = $modalTask ? $modalTask->subtasks : collect();
+                                        $subtotal = $subtasksList->count();
+                                        $subcompleted = $subtasksList->where('status', 'done')->count();
+                                        $subpercent = $subtotal > 0 ? (int)round(($subcompleted / $subtotal) * 100) : 0;
+                                    @endphp
+                                    <div class="border-t border-slate-100 dark:border-slate-800/80 pt-5 mt-5">
+                                        <div class="flex items-center justify-between mb-3">
+                                            <div class="flex items-center gap-2">
+                                                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                                    <i class="fa-solid fa-list-check text-sky-500 mr-1"></i> Subtasks
+                                                </h4>
+                                                @if($subtotal > 0)
+                                                    <span class="px-2 py-0.5 text-[10px] font-bold rounded-full {{ $subcompleted === $subtotal ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-sky-100 text-sky-800 dark:bg-sky-950/60 dark:text-sky-300' }}">
+                                                        {{ $subcompleted }}/{{ $subtotal }} ({{ $subpercent }}%)
+                                                    </span>
+                                                @endif
+                                            </div>
+                                        </div>
+
+                                        @if($subtotal > 0)
+                                            <!-- Progress Bar -->
+                                            <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 mb-3 overflow-hidden">
+                                                <div class="h-1.5 rounded-full transition-all duration-300 {{ $subcompleted === $subtotal ? 'bg-emerald-500' : 'bg-sky-500' }}" style="width: {{ $subpercent }}%"></div>
+                                            </div>
+
+                                            <!-- Subtasks list -->
+                                            <div class="space-y-1.5 mb-3">
+                                                @foreach($subtasksList as $st)
+                                                    <div class="flex items-center justify-between p-2 rounded-xl bg-slate-50 hover:bg-slate-100/80 dark:bg-slate-950/40 dark:hover:bg-slate-950/80 border border-slate-200/60 dark:border-slate-800/60 transition-colors group">
+                                                        <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                                                            <button type="button" 
+                                                                    wire:click="toggleSubtaskStatus({{ $st->id }})" 
+                                                                    class="flex-shrink-0 w-4 h-4 rounded border flex items-center justify-center transition-colors {{ $st->status === 'done' ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 dark:border-slate-700 hover:border-sky-500 bg-white dark:bg-slate-900' }}">
+                                                                @if($st->status === 'done')
+                                                                    <i class="fa-solid fa-check text-[9px]"></i>
+                                                                @endif
+                                                            </button>
+
+                                                            <button type="button" 
+                                                                    wire:click="openTaskModal({{ $st->id }})" 
+                                                                    class="text-xs font-medium text-left truncate hover:underline focus:outline-none {{ $st->status === 'done' ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-700 dark:text-slate-200 hover:text-sky-600 dark:hover:text-sky-400' }}">
+                                                                {{ $st->title }}
+                                                            </button>
+                                                        </div>
+
+                                                        <div class="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
+                                                            <button type="button" 
+                                                                    wire:click="openTaskModal({{ $st->id }})" 
+                                                                    title="Open subtask" 
+                                                                    class="p-1 text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 rounded transition-colors text-xs">
+                                                                <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                                                            </button>
+                                                            <button type="button" 
+                                                                    wire:click="deleteSubtask({{ $st->id }})" 
+                                                                    wire:confirm="Are you sure you want to delete this subtask?" 
+                                                                    title="Delete subtask" 
+                                                                    class="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors text-xs">
+                                                                <i class="fa-solid fa-trash-can text-[10px]"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        @endif
+
+                                        <!-- Quick add subtask input -->
+                                        <div class="flex items-center gap-2">
+                                            <input type="text" 
+                                                   wire:model="newSubtaskTitle" 
+                                                   wire:keydown.enter.prevent="createSubtask" 
+                                                   placeholder="Add a subtask (press Enter to save)..." 
+                                                   class="flex-1 px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
+                                            <button type="button" 
+                                                    wire:click="createSubtask" 
+                                                    class="px-3 py-1.5 bg-sky-600 hover:bg-sky-500 dark:bg-sky-500 dark:hover:bg-sky-400 text-white font-semibold rounded-xl text-xs transition-all shadow-sm flex-shrink-0 cursor-pointer">
+                                                <i class="fa-solid fa-plus mr-1"></i> Add
+                                            </button>
+                                        </div>
                                     </div>
                                     @endif
 

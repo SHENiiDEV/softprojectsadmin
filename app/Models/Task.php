@@ -17,7 +17,7 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
-#[Fillable(['project_id', 'creator_id', 'assigned_to', 'title', 'description', 'status', 'priority', 'due_date', 'order', 'archived_at'])]
+#[Fillable(['project_id', 'parent_id', 'creator_id', 'assigned_to', 'title', 'description', 'status', 'priority', 'due_date', 'order', 'archived_at'])]
 class Task extends Model implements HasMedia
 {
     use HasFactory, InteractsWithMedia;
@@ -164,6 +164,51 @@ class Task extends Model implements HasMedia
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
+    }
+
+    /**
+     * Get the parent task if this is a subtask.
+     */
+    public function parent(): BelongsTo
+    {
+        return $this->belongsTo(Task::class, 'parent_id');
+    }
+
+    /**
+     * Get all subtasks under this task.
+     */
+    public function subtasks(): HasMany
+    {
+        return $this->hasMany(Task::class, 'parent_id')->orderBy('order', 'asc')->orderBy('created_at', 'asc');
+    }
+
+    /**
+     * Check if task is a subtask.
+     */
+    public function isSubtask(): bool
+    {
+        return $this->parent_id !== null;
+    }
+
+    /**
+     * Get progress breakdown of subtasks.
+     */
+    public function getSubtaskProgressAttribute(): array
+    {
+        $subtasks = $this->subtasks;
+        $total = $subtasks->count();
+        if ($total === 0) {
+            return ['total' => 0, 'completed' => 0, 'percent' => 0, 'percentage' => 0];
+        }
+        $completed = $subtasks->where('status', 'done')->count();
+        $percent = (int) round(($completed / $total) * 100);
+
+        return [
+            'total' => $total,
+            'completed' => $completed,
+            'percent' => $percent,
+            'percentage' => $percent,
+        ];
     }
 
     /**

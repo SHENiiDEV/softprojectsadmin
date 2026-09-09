@@ -67,6 +67,9 @@ class KanbanBoard extends Component
 
     public $existingMedia = [];
 
+    // Subtask field
+    public string $newSubtaskTitle = '';
+
     // Comments fields & filtering
     public $newCommentContent = '';
 
@@ -250,8 +253,8 @@ class KanbanBoard extends Component
     {
         $user = auth()->user();
 
-        // Build base query
-        $baseQuery = Task::query();
+        // Build base query (only root tasks on main Kanban columns)
+        $baseQuery = Task::whereNull('parent_id');
 
         // Apply Archiving Filter (Active vs Archived)
         if ($this->showArchived === '1') {
@@ -336,7 +339,7 @@ class KanbanBoard extends Component
             $tasks[$status] = (clone $baseQuery)
                 ->where('status', $status)
                 ->select('id', 'title', 'description', 'status', 'priority', 'due_date', 'assigned_to', 'project_id', 'created_at', 'updated_at', 'archived_at')
-                ->with(['project:id,name,client_id', 'assignee:id,name,color', 'assignees:id,name,color'])
+                ->with(['project:id,name,client_id', 'assignee:id,name,color', 'assignees:id,name,color', 'subtasks:id,parent_id,title,status,assigned_to'])
                 ->orderBy('order', 'asc')
                 ->orderBy('created_at', 'desc')
                 ->limit($limit)
@@ -660,5 +663,41 @@ class KanbanBoard extends Component
         ]);
 
         $this->emailReplyBody = $renderedText;
+    }
+
+    public function createSubtask(): void
+    {
+        if (! $this->editingTaskId || empty(trim($this->newSubtaskTitle))) {
+            return;
+        }
+
+        $parent = Task::findOrFail($this->editingTaskId);
+
+        $subtask = Task::create([
+            'title' => trim($this->newSubtaskTitle),
+            'parent_id' => $parent->id,
+            'project_id' => $parent->project_id,
+            'creator_id' => auth()->id(),
+            'status' => 'todo',
+            'priority' => $parent->priority,
+        ]);
+
+        $this->newSubtaskTitle = '';
+        session()->flash('message', 'Subtask added.');
+    }
+
+    public function toggleSubtaskStatus(int $subtaskId): void
+    {
+        $subtask = Task::findOrFail($subtaskId);
+        $newStatus = $subtask->status === 'done' ? 'todo' : 'done';
+        $subtask->update(['status' => $newStatus]);
+        session()->flash('message', 'Subtask status updated.');
+    }
+
+    public function deleteSubtask(int $subtaskId): void
+    {
+        $subtask = Task::findOrFail($subtaskId);
+        $subtask->delete();
+        session()->flash('message', 'Subtask deleted.');
     }
 }
