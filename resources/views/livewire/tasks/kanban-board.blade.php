@@ -164,7 +164,8 @@
                         <div draggable="true" 
                              data-task-id="{{ $task->id }}"
                              @dragstart="dragStart($event, {{ $task->id }})"
-                             class="group relative bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-xl p-4 shadow-sm hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-150 cursor-grab active:cursor-grabbing overflow-hidden">
+                             wire:click="openTaskModal({{ $task->id }})"
+                             class="group relative bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 shadow-sm hover:shadow-md hover:border-sky-300 dark:hover:border-sky-700/60 transition-all duration-200 cursor-pointer overflow-hidden flex flex-col justify-between">
                             
                             {{-- Left Assignee Color Strip (split 50/50 if multiple assignees) --}}
                             @php
@@ -178,56 +179,56 @@
                                 </div>
                             @endif
                             
-                            <!-- Badges -->
-                            <div class="flex flex-wrap items-center gap-1.5 mb-2.5">
-                                <!-- Priority -->
-                                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider
-                                    @if($task->priority === 'low') bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400
-                                    @elseif($task->priority === 'medium') bg-sky-50 text-sky-700 dark:bg-sky-950/30 dark:text-sky-400
-                                    @elseif($task->priority === 'high') bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400
-                                    @else bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400 @endif">
-                                    {{ $task->priority }}
-                                </span>
+                            <div>
+                                <!-- Badges -->
+                                <div class="flex flex-wrap items-center gap-1.5 mb-2">
+                                    <!-- Priority -->
+                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider
+                                        @if($task->priority === 'low') bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400
+                                        @elseif($task->priority === 'medium') bg-sky-50 text-sky-700 dark:bg-sky-950/30 dark:text-sky-400
+                                        @elseif($task->priority === 'high') bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400
+                                        @else bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400 @endif">
+                                        {{ $task->priority }}
+                                    </span>
 
-                                <!-- Project label -->
-                                @if($task->project)
-                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-400 max-w-[120px] truncate" title="{{ $task->project->name }}">
-                                        {{ $task->project->name }}
-                                    </span>
-                                @else
-                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                                        Global
-                                    </span>
+                                    <!-- Project label -->
+                                    @if($task->project)
+                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-400 max-w-[120px] truncate" title="{{ $task->project->name }}">
+                                            {{ $task->project->name }}
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                                            Global
+                                        </span>
+                                    @endif
+                                </div>
+
+                                <!-- Title -->
+                                <h4 class="font-outfit font-bold text-sm text-slate-800 dark:text-slate-100 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors leading-snug">
+                                    {{ $task->title }}
+                                </h4>
+
+                                <!-- Description Snippet -->
+                                @if($task->excerpt)
+                                    <p class="text-xs text-slate-400 dark:text-slate-500 mt-1.5 line-clamp-2 leading-relaxed">
+                                        {{ $task->excerpt }}
+                                    </p>
                                 @endif
                             </div>
 
-                            <!-- Title -->
-                            <h4 class="font-semibold text-sm text-slate-800 dark:text-slate-200 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors">
-                                <button type="button" wire:click="openTaskModal({{ $task->id }})" class="text-left hover:underline focus:outline-none">
-                                    {{ $task->title }}
-                                </button>
-                            </h4>
-
-                            <!-- Description Snippet -->
-                            @if($task->excerpt)
-                                <p class="text-xs text-slate-400 dark:text-slate-500 mt-1.5 line-clamp-2">
-                                    {{ $task->excerpt }}
-                                </p>
-                            @endif
-
-                            <!-- Footer Info -->
-                            <div class="flex items-center justify-between mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/60 text-[10px] text-slate-400">
-                                <!-- Due Date & Timer Info -->
-                                <div class="flex flex-col space-y-1.5">
+                            <!-- Footer Info (Structured 2-Row Layout) -->
+                            <div class="mt-3.5 pt-2.5 border-t border-slate-100 dark:border-slate-800/80 space-y-2">
+                                <!-- Row 1: Deadline & Quick Status Badges -->
+                                <div class="flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-500">
                                     <!-- Due Date -->
-                                    <div class="flex items-center space-x-1">
+                                    <div class="flex items-center space-x-1.5">
                                         @if($task->due_date)
                                             @php
                                                 $dueDate = \Carbon\Carbon::parse($task->due_date);
                                                 $isPast = $dueDate->isPast() && !$dueDate->isToday();
                                                 $isTodayOrTomorrow = $dueDate->isToday() || $dueDate->isTomorrow();
                                                 
-                                                $colorClass = 'text-slate-400';
+                                                $colorClass = 'text-slate-500 dark:text-slate-400';
                                                 $svgClass = 'text-slate-400';
                                                 if ($task->status !== 'done') {
                                                     if ($isPast) {
@@ -245,110 +246,115 @@
                                             <svg class="h-3.5 w-3.5 {{ $svgClass }}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                                             </svg>
-                                            <span class="{{ $colorClass }}">
+                                            <span class="{{ $colorClass }} font-mono text-[10px]">
                                                 {{ $dueDate->format('d.m.Y') }}
                                             </span>
                                         @else
-                                            <span>No deadline</span>
+                                            <span class="text-[10px] text-slate-400/80">No deadline</span>
                                         @endif
                                     </div>
 
-                                    <!-- Timer Section (if assigned) -->
-                                    @if(config('features.task_time_logs', true) && $task->assigned_to)
-                                        @php
-                                            $activeTimer = $task->activeTimer();
-                                        @endphp
-                                        <div class="flex items-center space-x-1.5 flex-wrap">
-                                            @if($activeTimer)
-                                                <button type="button" wire:click="toggleTimer({{ $task->id }})" class="px-1.5 py-0.5 rounded bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-100/40 dark:border-rose-900/30 flex items-center space-x-1 text-[8px] font-bold animate-pulse" title="Stop tracking time">
-                                                    <span class="w-1.5 h-1.5 rounded-full bg-rose-600 dark:bg-rose-400"></span>
-                                                    <span>Stop</span>
-                                                </button>
-                                                <!-- Live ticking timer via Alpine JS -->
-                                                <div x-data="{ 
-                                                     elapsed: {{ (int) $activeTimer->started_at->diffInSeconds(now(), true) }},
-                                                     init() {
-                                                         setInterval(() => {
-                                                             this.elapsed++;
-                                                         }, 1000);
-                                                     },
-                                                     formatTime(seconds) {
-                                                         const hrs = Math.floor(seconds / 3600);
-                                                         const mins = Math.floor((seconds % 3600) / 60);
-                                                         const secs = seconds % 60;
-                                                         return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-                                                     }
-                                                }" class="font-mono text-emerald-600 dark:text-emerald-400 font-bold text-[9px] leading-none whitespace-nowrap">
-                                                    <span x-text="formatTime(elapsed)"></span>
-                                                </div>
-                                            @else
-                                                @if($task->isAssignedToUser(auth()->id()) || auth()->user()->hasAnyRole(['admin', 'manager']))
-                                                    <button type="button" wire:click="toggleTimer({{ $task->id }})" class="px-1.5 py-0.5 rounded bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 flex items-center space-x-1 text-[8px] font-bold transition-all duration-150 whitespace-nowrap" title="Start tracking time">
-                                                        <svg class="h-2 w-2 text-slate-500" fill="currentColor" viewBox="0 0 24 24">
-                                                            <path d="M8 5v14l11-7z"/>
-                                                        </svg>
-                                                        <span>Start</span>
-                                                    </button>
-                                                @endif
-                                                @if($task->total_duration > 0)
-                                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded font-mono text-[9px] bg-slate-50 dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/80 text-slate-500 dark:text-slate-400 whitespace-nowrap" title="Total tracked time">
-                                                        ⏱️ {{ $task->human_formatted_duration }}
-                                                    </span>
-                                                @endif
-                                            @endif
-                                        </div>
-                                    @endif
+                                    <!-- Indicators: Attachments & Subtasks -->
+                                    <div class="flex items-center space-x-2.5">
+                                        @if(config('features.task_attachments', true) && $task->media->count() > 0)
+                                            <div class="flex items-center text-slate-400" title="Attached files">
+                                                <svg class="h-3.5 w-3.5 mr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                                                </svg>
+                                                <span class="font-bold text-[10px]">{{ $task->media->count() }}</span>
+                                            </div>
+                                        @endif
+
+                                        @if(($task->subtask_progress['total'] ?? 0) > 0)
+                                            <div class="flex items-center text-slate-500 dark:text-slate-400" title="Subtasks: {{ $task->subtask_progress['completed'] }}/{{ $task->subtask_progress['total'] }} ({{ $task->subtask_progress['percentage'] }}%)">
+                                                <i class="fa-regular fa-square-check text-xs mr-1 {{ $task->subtask_progress['completed'] === $task->subtask_progress['total'] ? 'text-emerald-500' : 'text-sky-500' }}"></i>
+                                                <span class="font-bold text-[10px]">{{ $task->subtask_progress['completed'] }}/{{ $task->subtask_progress['total'] }}</span>
+                                            </div>
+                                        @endif
+                                    </div>
                                 </div>
 
-                                <!-- Assignee Info / Avatar -->
-                                <div class="flex items-center space-x-1.5 self-end">
-                                    @if(config('features.task_attachments', true) && $task->media->count() > 0)
-                                        <div class="flex items-center text-slate-400 mr-1" title="Attached files">
-                                            <svg class="h-3.5 w-3.5 mr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                                            </svg>
-                                            <span class="font-bold">{{ $task->media->count() }}</span>
-                                        </div>
-                                    @endif
-
-                                    @if(($task->subtask_progress['total'] ?? 0) > 0)
-                                        <div class="flex items-center text-slate-500 dark:text-slate-400 mr-1" title="Subtasks: {{ $task->subtask_progress['completed'] }}/{{ $task->subtask_progress['total'] }} ({{ $task->subtask_progress['percentage'] }}%)">
-                                            <i class="fa-regular fa-square-check text-xs mr-0.5 {{ $task->subtask_progress['completed'] === $task->subtask_progress['total'] ? 'text-emerald-500' : 'text-sky-500' }}"></i>
-                                            <span class="font-bold text-[10px]">{{ $task->subtask_progress['completed'] }}/{{ $task->subtask_progress['total'] }}</span>
-                                        </div>
-                                    @endif
-
-                                    @php
-                                        $cardAssignees = $task->assignees->isNotEmpty() ? $task->assignees : ($task->assignee ? collect([$task->assignee]) : collect());
-                                    @endphp
-                                    @if($cardAssignees->isNotEmpty())
-                                        <div class="flex items-center space-x-1.5 bg-slate-50 dark:bg-slate-950/40 py-0.5 pl-2 pr-0.5 rounded-full border border-slate-200/50 dark:border-slate-800/80">
-                                            <span class="text-[9px] font-semibold text-slate-500 dark:text-slate-400 truncate max-w-[85px]" title="{{ $cardAssignees->pluck('name')->implode(', ') }}">
-                                                {{ $cardAssignees->map(fn($u) => explode(' ', $u->name)[0])->implode(', ') }}
-                                            </span>
-                                            <div class="flex -space-x-1.5">
-                                                @foreach($cardAssignees as $u)
-                                                    <div class="h-5 w-5 rounded-full flex items-center justify-center font-bold text-white text-[8px] uppercase shadow-sm ring-1 ring-white dark:ring-slate-900" style="background-color: {{ $u->color }};" title="Assignee: {{ $u->name }}">
-                                                        {{ substr($u->name, 0, 2) }}
+                                <!-- Row 2: Timer & Assignees / Action Buttons -->
+                                <div class="flex items-center justify-between pt-0.5 min-h-[26px]">
+                                    <!-- Left: Timer controls -->
+                                    <div @click.stop>
+                                        @if(config('features.task_time_logs', true) && $task->assigned_to)
+                                            @php
+                                                $activeTimer = $task->activeTimer();
+                                            @endphp
+                                            <div class="flex items-center space-x-1.5">
+                                                @if($activeTimer)
+                                                    <button type="button" wire:click.stop="toggleTimer({{ $task->id }})" class="px-2 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/40 text-rose-600 dark:text-rose-400 border border-rose-200/50 dark:border-rose-900/40 flex items-center space-x-1 text-[9px] font-bold animate-pulse cursor-pointer" title="Stop tracking time">
+                                                        <span class="w-1.5 h-1.5 rounded-full bg-rose-600 dark:bg-rose-400"></span>
+                                                        <span>Stop</span>
+                                                    </button>
+                                                    <!-- Live ticking timer via Alpine JS -->
+                                                    <div x-data="{ 
+                                                         elapsed: {{ (int) $activeTimer->started_at->diffInSeconds(now(), true) }},
+                                                         init() {
+                                                             setInterval(() => {
+                                                                 this.elapsed++;
+                                                             }, 1000);
+                                                         },
+                                                         formatTime(seconds) {
+                                                             const hrs = Math.floor(seconds / 3600);
+                                                             const mins = Math.floor((seconds % 3600) / 60);
+                                                             const secs = seconds % 60;
+                                                             return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                                                         }
+                                                    }" class="font-mono text-emerald-600 dark:text-emerald-400 font-bold text-[10px] leading-none whitespace-nowrap bg-emerald-50 dark:bg-emerald-950/30 px-1.5 py-1 rounded-md border border-emerald-200/40 dark:border-emerald-900/40">
+                                                        <span x-text="formatTime(elapsed)"></span>
                                                     </div>
-                                                @endforeach
+                                                @else
+                                                    @if($task->isAssignedToUser(auth()->id()) || auth()->user()->hasAnyRole(['admin', 'manager']))
+                                                        <button type="button" wire:click.stop="toggleTimer({{ $task->id }})" class="px-2 py-1 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 flex items-center space-x-1 text-[9px] font-bold transition-all duration-150 whitespace-nowrap cursor-pointer" title="Start tracking time">
+                                                            <svg class="h-2.5 w-2.5 text-slate-500" fill="currentColor" viewBox="0 0 24 24">
+                                                                <path d="M8 5v14l11-7z"/>
+                                                            </svg>
+                                                            <span>Start</span>
+                                                        </button>
+                                                    @endif
+                                                    @if($task->total_duration > 0)
+                                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded font-mono text-[9px] bg-slate-50 dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/80 text-slate-500 dark:text-slate-400 whitespace-nowrap" title="Total tracked time">
+                                                            ⏱️ {{ $task->human_formatted_duration }}
+                                                        </span>
+                                                    @endif
+                                                @endif
                                             </div>
-                                        </div>
-                                    @else
-                                        <button type="button" wire:click="takeTask({{ $task->id }})" class="px-2 py-1 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 rounded-lg text-[9px] font-bold border border-indigo-100/40 dark:border-indigo-900/30 transition-all duration-150 flex items-center space-x-1" title="Take this task">
-                                            <svg class="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-                                            </svg>
-                                            <span>Take</span>
-                                        </button>
-                                    @endif
+                                        @endif
+                                    </div>
 
-                                    @if($showArchived === '1' || $task->isArchived())
-                                        <button type="button" wire:click="restoreTask({{ $task->id }})" class="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-lg text-[9px] font-bold border border-emerald-100/40 dark:border-emerald-900/30 transition-all duration-150 flex items-center space-x-1" title="Restore task to active board">
-                                            <i class="fa-solid fa-rotate-left text-[9px]"></i>
-                                            <span>Restore</span>
-                                        </button>
-                                    @endif
+                                    <!-- Right: Assignees / Take Button / Restore Button -->
+                                    <div class="flex items-center space-x-1.5" @click.stop>
+                                        @if($cardAssignees->isNotEmpty())
+                                            <div class="flex items-center space-x-1.5 bg-slate-50 dark:bg-slate-950/40 py-0.5 pl-2 pr-0.5 rounded-full border border-slate-200/60 dark:border-slate-800">
+                                                <span class="text-[9px] font-semibold text-slate-600 dark:text-slate-400 truncate max-w-[85px]" title="{{ $cardAssignees->pluck('name')->implode(', ') }}">
+                                                    {{ $cardAssignees->map(fn($u) => explode(' ', $u->name)[0])->implode(', ') }}
+                                                </span>
+                                                <div class="flex -space-x-1.5">
+                                                    @foreach($cardAssignees as $u)
+                                                        <div class="h-5 w-5 rounded-full flex items-center justify-center font-bold text-white text-[8px] uppercase shadow-sm ring-1 ring-white dark:ring-slate-900" style="background-color: {{ $u->color }};" title="Assignee: {{ $u->name }}">
+                                                            {{ substr($u->name, 0, 2) }}
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+                                            </div>
+                                        @else
+                                            <button type="button" wire:click.stop="takeTask({{ $task->id }})" class="px-2.5 py-1 bg-sky-50 hover:bg-sky-100 dark:bg-sky-950/40 dark:hover:bg-sky-900/50 text-sky-700 dark:text-sky-300 rounded-lg text-[9px] font-bold border border-sky-200/60 dark:border-sky-800/50 transition-all duration-150 flex items-center space-x-1 cursor-pointer" title="Take this task">
+                                                <svg class="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                                                </svg>
+                                                <span>Take</span>
+                                            </button>
+                                        @endif
+
+                                        @if($showArchived === '1' || $task->isArchived())
+                                            <button type="button" wire:click.stop="restoreTask({{ $task->id }})" class="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-lg text-[9px] font-bold border border-emerald-100/40 dark:border-emerald-900/30 transition-all duration-150 flex items-center space-x-1 cursor-pointer" title="Restore task to active board">
+                                                <i class="fa-solid fa-rotate-left text-[9px]"></i>
+                                                <span>Restore</span>
+                                            </button>
+                                        @endif
+                                    </div>
                                 </div>
                             </div>
                         </div>
