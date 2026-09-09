@@ -13,7 +13,7 @@ return [
     'settings_panel' => env('ENABLE_SETTINGS_PANEL', true),
     'company_changelog' => env('ENABLE_COMPANY_CHANGELOG', false),
     'global_search_notes' => env('ENABLE_GLOBAL_SEARCH_NOTES', true),
-    'calendar' => env('ENABLE_CALENDAR', false),
+    'calendar' => env('ENABLE_CALENDAR', true),
 
     // New Feature Toggles
     'clients' => env('ENABLE_CLIENTS', true),

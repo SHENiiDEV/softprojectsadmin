@@ -6,52 +6,150 @@
     <!-- Header bar -->
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800/60">
         <div>
-            <h1 class="font-outfit font-extrabold text-3xl text-slate-700 dark:text-white tracking-tight">Calendar Dashboard</h1>
-            <p class="text-sm text-slate-400 dark:text-slate-500 mt-1">Deadlines, compliance filing dates, and scheduled project tasks.</p>
+            <h1 class="font-outfit font-extrabold text-3xl text-slate-800 dark:text-white tracking-tight">Calendar Dashboard</h1>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Deadlines, compliance filing dates, and scheduled project tasks.</p>
         </div>
         
-        <!-- Legend -->
-        <div class="flex flex-wrap items-center gap-3 text-xs font-semibold">
-            <span class="inline-flex items-center px-2.5 py-1 rounded-lg bg-sky-50 dark:bg-sky-950/20 text-sky-600 dark:text-sky-400 border border-sky-100/50 dark:border-sky-900/30">
-                <span class="w-1.5 h-1.5 rounded-full bg-sky-500 mr-1.5"></span> Tasks
+        <!-- Legend Badges -->
+        <div class="flex flex-wrap items-center gap-2.5 text-xs font-semibold">
+            <span class="inline-flex items-center px-2.5 py-1 rounded-xl bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border border-sky-200/50 dark:border-sky-800/50 shadow-sm">
+                <span class="w-2 h-2 rounded-full bg-sky-500 mr-1.5"></span> Tasks (Medium)
             </span>
-            <span class="inline-flex items-center px-2.5 py-1 rounded-lg bg-purple-50 dark:bg-purple-950/20 text-purple-600 dark:text-purple-400 border border-purple-100/55 dark:border-purple-900/30">
-                <span class="w-1.5 h-1.5 rounded-full bg-purple-500 mr-1.5"></span> Accounts Due
+            <span class="inline-flex items-center px-2.5 py-1 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200/50 dark:border-amber-800/50 shadow-sm">
+                <span class="w-2 h-2 rounded-full bg-amber-500 mr-1.5"></span> High Priority
             </span>
-            <span class="inline-flex items-center px-2.5 py-1 rounded-lg bg-pink-50 dark:bg-pink-950/20 text-pink-600 dark:text-pink-400 border border-pink-100/55 dark:border-pink-900/30">
-                <span class="w-1.5 h-1.5 rounded-full bg-pink-500 mr-1.5"></span> Statements Due
+            <span class="inline-flex items-center px-2.5 py-1 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200/50 dark:border-rose-800/50 shadow-sm">
+                <span class="w-2 h-2 rounded-full bg-rose-500 mr-1.5"></span> Critical
+            </span>
+            <span class="inline-flex items-center px-2.5 py-1 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200/50 dark:border-purple-800/50 shadow-sm">
+                <span class="w-2 h-2 rounded-full bg-purple-500 mr-1.5"></span> Accounts Due
+            </span>
+            <span class="inline-flex items-center px-2.5 py-1 rounded-xl bg-pink-50 dark:bg-pink-950/40 text-pink-700 dark:text-pink-300 border border-pink-200/50 dark:border-pink-800/50 shadow-sm">
+                <span class="w-2 h-2 rounded-full bg-pink-500 mr-1.5"></span> Statements Due
             </span>
         </div>
     </div>
 
-    <!-- Calendar Wrapper Card -->
-    <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-2xl p-6 shadow-sm">
-        <div id="calendar" class="min-h-[600px] text-slate-700 dark:text-slate-200"></div>
+    <!-- Alert / Messages -->
+    @if (session()->has('message'))
+        <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 4000)" x-transition class="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-800/40 text-emerald-800 dark:text-emerald-400 flex items-center justify-between shadow-sm">
+            <div class="flex items-center space-x-3">
+                <i class="fa-solid fa-circle-check text-emerald-600 dark:text-emerald-400"></i>
+                <span class="text-sm font-medium">{{ session('message') }}</span>
+            </div>
+            <button @click="show = false" class="text-emerald-500 hover:text-emerald-700 dark:hover:text-emerald-300">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+    @endif
+
+    @if (session()->has('error'))
+        <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)" x-transition class="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-800/40 text-rose-800 dark:text-rose-400 flex items-center justify-between shadow-sm">
+            <div class="flex items-center space-x-3">
+                <i class="fa-solid fa-triangle-exclamation text-rose-600 dark:text-rose-400"></i>
+                <span class="text-sm font-medium">{{ session('error') }}</span>
+            </div>
+            <button @click="show = false" class="text-rose-500 hover:text-rose-700 dark:hover:text-rose-300">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+    @endif
+
+    <!-- Interactive Filters Bar -->
+    <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-2xl p-5 shadow-sm space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4">
+            <!-- Project Filter -->
+            <div class="lg:col-span-4">
+                <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">Company / Project</label>
+                <select wire:model.live="filterProject" class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800/80 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
+                    <option value="">All Companies (Projects)</option>
+                    <option value="global">Global Tasks Only</option>
+                    @foreach($projects as $p)
+                        <option value="{{ $p->id }}">{{ $p->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <!-- Assignee Filter -->
+            <div class="lg:col-span-4">
+                <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">Assignee / Team Member</label>
+                <select wire:model.live="filterAssignee" class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800/80 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
+                    <option value="">All Team Members</option>
+                    @foreach($users as $u)
+                        <option value="{{ $u->id }}">{{ $u->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <!-- Task Status Filter -->
+            <div class="lg:col-span-4">
+                <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">Task Status</label>
+                <select wire:model.live="filterStatus" class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800/80 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
+                    <option value="active">Active Tasks Only</option>
+                    <option value="all">All Tasks (Active & Completed)</option>
+                    <option value="done">Completed Tasks Only</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Event Type Toggles -->
+        <div class="pt-3 border-t border-slate-100 dark:border-slate-800/60 flex flex-wrap items-center gap-5 text-xs">
+            <span class="font-bold text-slate-400 dark:text-slate-500 text-[10px] uppercase tracking-wider">Show on Calendar:</span>
+            
+            <label class="inline-flex items-center gap-2 cursor-pointer select-none">
+                <input type="checkbox" wire:model.live="showTasks" class="w-4 h-4 rounded text-sky-600 focus:ring-sky-500/20 dark:bg-slate-950 dark:border-slate-800">
+                <span class="font-semibold text-slate-700 dark:text-slate-300">📝 Tasks & Deadlines</span>
+            </label>
+
+            <label class="inline-flex items-center gap-2 cursor-pointer select-none">
+                <input type="checkbox" wire:model.live="showReports" class="w-4 h-4 rounded text-purple-600 focus:ring-purple-500/20 dark:bg-slate-950 dark:border-slate-800">
+                <span class="font-semibold text-slate-700 dark:text-slate-300">🏦 Compliance Filing Dates</span>
+            </label>
+
+            <label class="inline-flex items-center gap-2 cursor-pointer select-none">
+                <input type="checkbox" wire:model.live="showTimeLogs" class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500/20 dark:bg-slate-950 dark:border-slate-800">
+                <span class="font-semibold text-slate-700 dark:text-slate-300">⏱️ Tracked Work Time</span>
+            </label>
+        </div>
     </div>
 
-    <!-- FullCalendar Script -->
+    <!-- Calendar Card Container -->
+    <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-2xl p-6 shadow-sm">
+        <div id="calendar" class="min-h-[650px] text-slate-700 dark:text-slate-200" wire:ignore></div>
+    </div>
+
+    <!-- FullCalendar v6 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
     <script>
-        document.addEventListener('livewire:navigated', () => {
-            initializeCalendar();
+        let calendarInstance = null;
+
+        document.addEventListener('livewire:initialized', () => {
+            initCalendar();
+            Livewire.hook('morph.updated', () => {
+                refreshCalendarEvents();
+            });
         });
 
-        document.addEventListener('DOMContentLoaded', () => {
-            initializeCalendar();
-        });
-
-        function initializeCalendar() {
+        function initCalendar() {
             const calendarEl = document.getElementById('calendar');
             if (!calendarEl) return;
 
             const events = @json(json_decode($eventsJson));
 
-            const calendar = new FullCalendar.Calendar(calendarEl, {
+            if (calendarInstance) {
+                calendarInstance.destroy();
+            }
+
+            calendarInstance = new FullCalendar.Calendar(calendarEl, {
                 initialView: 'dayGridMonth',
                 locale: 'en',
+                editable: true,
+                droppable: true,
+                firstDay: 1, // Start week on Monday
                 headerToolbar: {
                     left: 'prev,next today',
                     center: 'title',
-                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth'
                 },
                 events: events,
                 eventClick: function(info) {
@@ -64,21 +162,37 @@
                         }
                     }
                 },
+                eventDrop: function(info) {
+                    const eventId = info.event.id;
+                    if (eventId && eventId.startsWith('task_')) {
+                        const taskId = parseInt(eventId.replace('task_', ''));
+                        const newDate = info.event.startStr; // YYYY-MM-DD
+                        if (taskId && newDate) {
+                            @this.call('updateTaskDueDate', taskId, newDate);
+                        }
+                    } else {
+                        info.revert();
+                    }
+                },
                 themeSystem: 'standard',
-                height: 'auto',
-                firstDay: 1, // Start week on Monday
-                eventTimeFormat: {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    meridiem: false
-                }
+                height: 'auto'
             });
 
-            calendar.render();
+            calendarInstance.render();
+        }
+
+        function refreshCalendarEvents() {
+            if (!calendarInstance) {
+                initCalendar();
+                return;
+            }
+            const events = @json(json_decode($eventsJson));
+            calendarInstance.removeAllEvents();
+            calendarInstance.addEventSource(events);
         }
     </script>
 
-    <!-- Custom Styling to theme FullCalendar for Premium Dark Mode -->
+    <!-- Custom Styling for FullCalendar Dark Mode -->
     <style>
         .fc {
             --fc-border-color: rgba(226, 232, 240, 0.8);
