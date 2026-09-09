@@ -453,55 +453,134 @@
                                         <input type="text" wire:model="taskTitle" placeholder="What needs to be done?" class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-150">
                                         @error('taskTitle') <span class="text-[10px] text-rose-500 mt-1 block">{{ $message }}</span> @enderror
                                     </div>
-                                    <!-- Description -->
-                                    <div>
-                                        <div class="flex items-center justify-between mb-1.5">
+                                    <!-- Description Section with Jira-style Rich Text Editor -->
+                                    <div x-data="{
+                                            content: @entangle('taskDescription'),
+                                            quill: null,
+                                            mode: 'editor',
+                                            initQuill() {
+                                                if (this.quill) return;
+                                                this.quill = new Quill(this.$refs.editorContainer, {
+                                                    theme: 'snow',
+                                                    placeholder: 'Describe the task in detail (headings, formatting, lists, tables)...',
+                                                    modules: {
+                                                        toolbar: [
+                                                            [{ 'header': [1, 2, 3, false] }],
+                                                            ['bold', 'italic', 'underline', 'strike'],
+                                                            [{ 'color': [] }, { 'background': [] }],
+                                                            [{ 'list': 'ordered'}, { 'list': 'bullet' }, { 'list': 'check' }],
+                                                            ['blockquote', 'code-block'],
+                                                            ['link', 'clean']
+                                                        ]
+                                                    }
+                                                });
+                                                this.quill.root.innerHTML = this.content || '';
+                                                this.quill.on('text-change', () => {
+                                                    this.content = this.quill.root.innerHTML;
+                                                });
+                                                this.$watch('content', value => {
+                                                    if (this.quill && value !== this.quill.root.innerHTML) {
+                                                        this.quill.root.innerHTML = value || '';
+                                                    }
+                                                });
+                                            },
+                                            insertTable() {
+                                                const tableHtml = `<table class='w-full border-collapse border border-slate-300 dark:border-slate-700 text-xs my-2'><thead><tr class='bg-slate-100 dark:bg-slate-800'><th class='border border-slate-300 dark:border-slate-700 p-2'>Header 1</th><th class='border border-slate-300 dark:border-slate-700 p-2'>Header 2</th><th class='border border-slate-300 dark:border-slate-700 p-2'>Header 3</th></tr></thead><tbody><tr><td class='border border-slate-300 dark:border-slate-700 p-2'>Data 1</td><td class='border border-slate-300 dark:border-slate-700 p-2'>Data 2</td><td class='border border-slate-300 dark:border-slate-700 p-2'>Data 3</td></tr></tbody></table><p><br></p>`;
+                                                this.quill.clipboard.dangerouslyPasteHTML(this.quill.getLength() - 1, tableHtml);
+                                            }
+                                         }"
+                                         x-init="$nextTick(() => initQuill())"
+                                         wire:ignore
+                                         class="space-y-2">
+                                        
+                                        <div class="flex items-center justify-between">
                                             <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Description</label>
-                                            @if(str_contains($taskDescription ?? '', '<div'))
-                                                <span class="text-[10px] font-bold text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/40 border border-sky-200/50 dark:border-sky-800/50 px-2 py-0.5 rounded-md">
-                                                    <i class="fa-solid fa-sparkles mr-1"></i> Formatted Campaign Card
-                                                </span>
-                                            @endif
-                                        </div>
-                                        @if(str_contains($taskDescription ?? '', '<div'))
-                                            <div class="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-h-[420px] overflow-y-auto mb-3 shadow-inner">
-                                                {!! $taskDescription !!}
+                                            <div class="flex items-center gap-2">
+                                                <button type="button" @click="insertTable()" class="px-2 py-0.5 text-[10px] font-bold text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/40 border border-sky-200/50 dark:border-sky-800/50 rounded-md hover:bg-sky-100 dark:hover:bg-sky-900/50 transition-colors">
+                                                    <i class="fa-solid fa-table mr-1"></i> + Table Template
+                                                </button>
+                                                <button type="button" @click="mode = mode === 'editor' ? 'code' : 'editor'" class="text-[10px] font-semibold text-slate-500 hover:text-sky-600 dark:text-slate-400 dark:hover:text-sky-400 transition-colors">
+                                                    <i class="fa-solid" :class="mode === 'editor' ? 'fa-code' : 'fa-pen-to-square'"></i>
+                                                    <span x-text="mode === 'editor' ? 'Edit Raw Code' : 'Rich Editor'"></span>
+                                                </button>
                                             </div>
-                                            <details class="text-[11px] text-slate-400">
-                                                <summary class="cursor-pointer hover:text-slate-600 dark:hover:text-slate-200 font-semibold mb-1">Edit Raw HTML Code</summary>
-                                                <textarea wire:model="taskDescription" rows="5" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-mono text-slate-800 dark:text-slate-100 focus:outline-none"></textarea>
-                                            </details>
-                                        @else
-                                            <textarea wire:model="taskDescription" rows="6" placeholder="Describe the task in detail..." class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-150"></textarea>
-                                        @endif
+                                        </div>
+
+                                        <!-- Rich Text Editor Container -->
+                                        <div x-show="mode === 'editor'" class="bg-white dark:bg-slate-950 rounded-xl overflow-hidden shadow-sm">
+                                            <div x-ref="editorContainer" class="min-h-[180px] text-xs text-slate-800 dark:text-slate-100"></div>
+                                        </div>
+
+                                        <!-- Raw HTML Code Editor Container -->
+                                        <div x-show="mode === 'code'" x-cloak>
+                                            <textarea x-model="content" rows="7" placeholder="Paste HTML or raw text..." class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-mono text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20"></textarea>
+                                        </div>
                                         @error('taskDescription') <span class="text-[10px] text-rose-500 mt-1 block">{{ $message }}</span> @enderror
                                     </div>
 
-                                    <!-- Document Upload Section -->
+                                    <!-- Document Upload Section & Lightbox Image Viewer -->
                                     @if(config('features.task_attachments', true))
                                     <div class="border-t border-slate-100 dark:border-slate-800/80 pt-5">
                                         <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2.5">Documents and Attachments</label>
                                         
                                         <!-- Existing attachments -->
                                         @if(!empty($existingMedia))
-                                            <div class="space-y-2 mb-4">
+                                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-4">
                                                 @foreach($existingMedia as $mediaItem)
-                                                    <div class="flex items-center justify-between p-2.5 bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800/60 rounded-xl">
-                                                        <div class="flex items-center space-x-2.5 overflow-hidden">
-                                                            <svg class="h-4 w-4 text-slate-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                                                            </svg>
-                                                            <a href="{{ Storage::url($mediaItem['id'] . '/' . $mediaItem['file_name']) }}" target="_blank" class="text-xs font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300 truncate hover:underline" title="{{ $mediaItem['file_name'] }}">
-                                                                {{ $mediaItem['file_name'] }}
-                                                            </a>
-                                                            <span class="text-[10px] text-slate-400">({{ number_format($mediaItem['size'] / 1024, 1) }} KB)</span>
+                                                    @php
+                                                        $fileName = is_object($mediaItem) ? $mediaItem->file_name : $mediaItem['file_name'];
+                                                        $fileSize = is_object($mediaItem) ? $mediaItem->size : $mediaItem['size'];
+                                                        $mediaId = is_object($mediaItem) ? $mediaItem->id : $mediaItem['id'];
+                                                        $mimeType = is_object($mediaItem) ? ($mediaItem->mime_type ?? '') : ($mediaItem['mime_type'] ?? '');
+                                                        $url = Storage::url($mediaId . '/' . $fileName);
+                                                        $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+                                                        $isImage = str_starts_with($mimeType, 'image/') || in_array($ext, ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg']);
+                                                    @endphp
+
+                                                    @if($isImage)
+                                                        <div class="flex items-center justify-between p-2.5 bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 rounded-xl group hover:border-sky-300 dark:hover:border-sky-700/60 transition-all">
+                                                            <div class="flex items-center space-x-3 min-w-0 flex-1">
+                                                                <a href="{{ $url }}" class="glightbox flex-shrink-0 relative overflow-hidden rounded-lg group/img" data-gallery="task-attachments-{{ $editingTaskId }}" data-title="{{ $fileName }}">
+                                                                    <img src="{{ $url }}" alt="{{ $fileName }}" class="h-11 w-11 object-cover rounded-lg border border-slate-200 dark:border-slate-800 group-hover/img:scale-105 transition-transform">
+                                                                    <div class="absolute inset-0 bg-slate-950/40 opacity-0 group-hover/img:opacity-100 flex items-center justify-center transition-opacity text-white text-[10px]">
+                                                                        <i class="fa-solid fa-magnifying-glass-plus"></i>
+                                                                    </div>
+                                                                </a>
+                                                                <div class="min-w-0 flex-1">
+                                                                    <a href="{{ $url }}" class="glightbox text-xs font-semibold text-slate-800 hover:text-sky-600 dark:text-slate-200 dark:hover:text-sky-400 truncate block hover:underline" data-gallery="task-attachments-{{ $editingTaskId }}" data-title="{{ $fileName }}">
+                                                                        {{ $fileName }}
+                                                                    </a>
+                                                                    <div class="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5">
+                                                                        <span>{{ number_format($fileSize / 1024, 1) }} KB</span>
+                                                                        <span>•</span>
+                                                                        <a href="{{ $url }}" class="glightbox text-sky-600 dark:text-sky-400 hover:underline font-bold" data-gallery="task-attachments-{{ $editingTaskId }}" data-title="{{ $fileName }}">
+                                                                            <i class="fa-solid fa-expand mr-0.5"></i> Preview
+                                                                        </a>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <button type="button" wire:click="deleteAttachment({{ $mediaId }})" class="p-1.5 rounded-lg text-slate-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-600 transition-colors flex-shrink-0 ml-1" title="Delete file">
+                                                                <i class="fa-solid fa-trash-can text-xs"></i>
+                                                            </button>
                                                         </div>
-                                                        <button type="button" wire:click="deleteAttachment({{ $mediaItem['id'] }})" class="p-1 rounded text-slate-400 hover:bg-rose-50 dark:hover:bg-rose-950/20 hover:text-rose-600 transition-colors" title="Delete file">
-                                                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                            </svg>
-                                                        </button>
-                                                    </div>
+                                                    @else
+                                                        <div class="flex items-center justify-between p-2.5 bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 rounded-xl">
+                                                            <div class="flex items-center space-x-2.5 overflow-hidden flex-1 min-w-0">
+                                                                <div class="h-9 w-9 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center flex-shrink-0 text-xs font-bold">
+                                                                    <i class="fa-solid fa-file-lines"></i>
+                                                                </div>
+                                                                <div class="min-w-0 flex-1">
+                                                                    <a href="{{ $url }}" target="_blank" class="text-xs font-semibold text-slate-800 hover:text-sky-600 dark:text-slate-200 dark:hover:text-sky-400 truncate block hover:underline" title="{{ $fileName }}">
+                                                                        {{ $fileName }}
+                                                                    </a>
+                                                                    <span class="text-[10px] text-slate-400">({{ number_format($fileSize / 1024, 1) }} KB)</span>
+                                                                </div>
+                                                            </div>
+                                                            <button type="button" wire:click="deleteAttachment({{ $mediaId }})" class="p-1.5 rounded-lg text-slate-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-600 transition-colors flex-shrink-0 ml-1" title="Delete file">
+                                                                <i class="fa-solid fa-trash-can text-xs"></i>
+                                                            </button>
+                                                        </div>
+                                                    @endif
                                                 @endforeach
                                             </div>
                                         @endif
@@ -1346,18 +1425,83 @@
         </div>
     @endif
 
-    {{-- SortableJS for drag & drop --}}
+    {{-- Quill Rich Editor & GLightbox Styles & Scripts --}}
+    <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/glightbox/dist/css/glightbox.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/glightbox/dist/js/glightbox.min.js"></script>
+    
     <style>
         .kanban-ghost { opacity: 0.4 !important; }
         .kanban-dragged { box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25) !important; transform: rotate(1deg) scale(1.02) !important; }
         .kanban-chosen { outline: 2px solid #38bdf8 !important; outline-offset: 2px !important; }
+
+        /* Quill Editor Custom Theme Tweaks */
+        .ql-toolbar.ql-snow {
+            border-color: rgba(226, 232, 240, 0.8) !important;
+            border-top-left-radius: 0.75rem;
+            border-top-right-radius: 0.75rem;
+            background-color: rgba(248, 250, 252, 0.8);
+        }
+        .dark .ql-toolbar.ql-snow {
+            border-color: rgba(30, 41, 59, 0.8) !important;
+            background-color: rgba(15, 23, 42, 0.8);
+        }
+        .dark .ql-stroke {
+            stroke: #94a3b8 !important;
+        }
+        .dark .ql-fill {
+            fill: #94a3b8 !important;
+        }
+        .dark .ql-picker {
+            color: #94a3b8 !important;
+        }
+        .dark .ql-picker-options {
+            background-color: #0f172a !important;
+            border-color: #1e293b !important;
+        }
+        .ql-container.ql-snow {
+            border-color: rgba(226, 232, 240, 0.8) !important;
+            border-bottom-left-radius: 0.75rem;
+            border-bottom-right-radius: 0.75rem;
+            font-family: inherit;
+        }
+        .dark .ql-container.ql-snow {
+            border-color: rgba(30, 41, 59, 0.8) !important;
+        }
+        .ql-editor {
+            min-height: 160px;
+            font-size: 0.875rem;
+        }
+        .ql-editor.ql-blank::before {
+            color: #94a3b8 !important;
+            font-style: normal;
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
     <script>
     document.addEventListener('livewire:initialized', () => {
         initKanbanSortable();
-        Livewire.hook('morph.updated', () => { initKanbanSortable(); });
+        initGLightbox();
+        Livewire.hook('morph.updated', () => { 
+            initKanbanSortable(); 
+            initGLightbox();
+        });
     });
+
+    function initGLightbox() {
+        if (window._glightboxInstance) {
+            try { window._glightboxInstance.destroy(); } catch(e) {}
+        }
+        if (document.querySelector('.glightbox')) {
+            window._glightboxInstance = GLightbox({
+                selector: '.glightbox',
+                touchNavigation: true,
+                loop: true,
+                zoomable: true
+            });
+        }
+    }
 
     function initKanbanSortable() {
         const columns = document.querySelectorAll('[data-kanban-column]');
