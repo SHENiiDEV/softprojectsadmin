@@ -225,6 +225,23 @@
                                 </span>
                             @endif
 
+                            {{-- Assignees --}}
+                            @php
+                                $rowAssignees = $task->assignees->isNotEmpty() ? $task->assignees : ($task->assignee ? collect([$task->assignee]) : collect());
+                            @endphp
+                            @if($rowAssignees->isNotEmpty())
+                                <span class="flex items-center gap-1 text-slate-500 dark:text-slate-400">
+                                    <div class="flex -space-x-1">
+                                        @foreach($rowAssignees as $u)
+                                            <div class="h-4 w-4 rounded-full flex items-center justify-center font-bold text-white text-[7px] uppercase shadow-sm ring-1 ring-white dark:ring-slate-900" style="background-color: {{ $u->color }};" title="{{ $u->name }}">
+                                                {{ substr($u->name, 0, 2) }}
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                    <span class="truncate max-w-[120px]">{{ $rowAssignees->map(fn($u) => explode(' ', $u->name)[0])->implode(', ') }}</span>
+                                </span>
+                            @endif
+
                             {{-- Timer display --}}
                             @if($hasTimer)
                                 <span class="flex items-center gap-1 text-indigo-600 dark:text-indigo-400 font-semibold tabular-nums font-mono">
