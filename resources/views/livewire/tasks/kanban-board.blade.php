@@ -164,10 +164,19 @@
                         <div draggable="true" 
                              data-task-id="{{ $task->id }}"
                              @dragstart="dragStart($event, {{ $task->id }})"
-                             class="group relative bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-xl p-4 shadow-sm hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-150 cursor-grab active:cursor-grabbing"
-                             @if($task->assignee && $task->assignee->color)
-                                 style="border-left: 4px solid {{ $task->assignee->color }};"
-                             @endif>
+                             class="group relative bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-xl p-4 shadow-sm hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-150 cursor-grab active:cursor-grabbing overflow-hidden">
+                            
+                            {{-- Left Assignee Color Strip (split 50/50 if multiple assignees) --}}
+                            @php
+                                $cardAssignees = $task->assignees->isNotEmpty() ? $task->assignees : ($task->assignee ? collect([$task->assignee]) : collect());
+                            @endphp
+                            @if($cardAssignees->isNotEmpty())
+                                <div class="absolute left-0 top-0 bottom-0 w-1 flex flex-col pointer-events-none">
+                                    @foreach($cardAssignees as $u)
+                                        <div class="flex-1 w-full" style="background-color: {{ $u->color }};" title="Assignee: {{ $u->name }}"></div>
+                                    @endforeach
+                                </div>
+                            @endif
                             
                             <!-- Badges -->
                             <div class="flex flex-wrap items-center gap-1.5 mb-2.5">
@@ -273,7 +282,7 @@
                                                     <span x-text="formatTime(elapsed)"></span>
                                                 </div>
                                             @else
-                                                @if($task->assigned_to === auth()->id() || auth()->user()->hasAnyRole(['admin', 'manager']))
+                                                @if($task->isAssignedToUser(auth()->id()) || auth()->user()->hasAnyRole(['admin', 'manager']))
                                                     <button type="button" wire:click="toggleTimer({{ $task->id }})" class="px-1.5 py-0.5 rounded bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 flex items-center space-x-1 text-[8px] font-bold transition-all duration-150 whitespace-nowrap" title="Start tracking time">
                                                         <svg class="h-2 w-2 text-slate-500" fill="currentColor" viewBox="0 0 24 24">
                                                             <path d="M8 5v14l11-7z"/>

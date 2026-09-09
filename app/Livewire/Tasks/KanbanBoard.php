@@ -175,8 +175,8 @@ class KanbanBoard extends Component
         $user = auth()->user();
         $task = Task::findOrFail($taskId);
 
-        // Check if task is assigned to the current user
-        if ($task->assigned_to !== $user->id) {
+        // Check if task is assigned to the current user (primary or secondary)
+        if (! $task->isAssignedToUser($user)) {
             session()->flash('error', 'This is not your task! You can only start timers on tasks assigned to you.');
 
             return;
