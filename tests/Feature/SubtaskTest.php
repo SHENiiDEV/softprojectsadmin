@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Livewire\MyWork;
 use App\Livewire\Tasks\KanbanBoard;
 use App\Models\Task;
 use App\Models\User;
@@ -125,5 +126,40 @@ class SubtaskTest extends TestCase
             ->call('deleteSubtask', $subtask->id);
 
         $this->assertDatabaseMissing('tasks', ['id' => $subtask->id]);
+    }
+
+    public function test_can_assign_subtask_to_another_user_and_toggle_status_in_my_work(): void
+    {
+        $userA = User::factory()->create(['name' => 'User A']);
+        $userB = User::factory()->create(['name' => 'User B']);
+
+        $parent = Task::create([
+            'title' => 'Main Task for User A',
+            'status' => 'in_progress',
+            'priority' => 'high',
+            'assigned_to' => $userA->id,
+        ]);
+        $parent->syncAssignees([$userA->id]);
+
+        $this->actingAs($userA);
+
+        Livewire::test(KanbanBoard::class)
+            ->set('editingTaskId', $parent->id)
+            ->set('newSubtaskTitle', 'Backend Subtask for User B')
+            ->set('newSubtaskAssignee', (string) $userB->id)
+            ->call('createSubtask');
+
+        $subtask = Task::where('parent_id', $parent->id)->first();
+        $this->assertNotNull($subtask);
+        $this->assertEquals($userB->id, $subtask->assigned_to);
+
+        // Act as User B on MyWork page
+        $this->actingAs($userB);
+
+        Livewire::test(MyWork::class)
+            ->call('changeStatus', $subtask->id, 'done');
+
+        $this->assertEquals('done', $subtask->fresh()->status);
+        $this->assertEquals(100, $parent->fresh()->subtask_progress['percentage']);
     }
 }

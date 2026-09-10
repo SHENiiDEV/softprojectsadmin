@@ -182,9 +182,19 @@
                          x-init="setInterval(() => elapsed++, 1000)"
                      @endif>
 
-                    {{-- Left: Status indicator --}}
-                    <div class="flex-shrink-0">
-                        <div class="w-3 h-3 rounded-full mt-1
+                    {{-- Left: Checkbox & Status indicator --}}
+                    <div class="flex items-center gap-2.5 flex-shrink-0">
+                        <button type="button" 
+                                wire:click="changeStatus({{ $task->id }}, '{{ $task->status === 'done' ? 'todo' : 'done' }}')"
+                                title="{{ $task->status === 'done' ? 'Mark as To Do' : 'Mark as Done' }}"
+                                class="w-4 h-4 rounded border flex items-center justify-center transition-colors cursor-pointer {{ $task->status === 'done' ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 dark:border-slate-600 hover:border-indigo-500 bg-white dark:bg-slate-900' }}">
+                            @if($task->status === 'done')
+                                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                                </svg>
+                            @endif
+                        </button>
+                        <div class="w-2.5 h-2.5 rounded-full
                                     {{ $task->status === 'done' ? 'bg-green-500' :
                                        ($task->status === 'in_progress' ? 'bg-blue-500 animate-pulse' :
                                        ($task->status === 'review' ? 'bg-purple-500' : 'bg-slate-300 dark:bg-slate-600')) }}">
@@ -194,7 +204,12 @@
                     {{-- Middle: Task info --}}
                     <div class="flex-1 min-w-0">
                         <div class="flex flex-wrap items-center gap-2 mb-1">
-                            <h3 class="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">
+                            @if($task->parent)
+                                <span class="text-[10px] font-bold tracking-wide px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800/60" title="Parent Task: {{ $task->parent->title }}">
+                                    📌 Subtask of: {{ $task->parent->title }}
+                                </span>
+                            @endif
+                            <h3 class="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate {{ $task->status === 'done' ? 'line-through text-slate-400 dark:text-slate-500' : '' }}">
                                 {{ $task->title }}
                             </h3>
                             {{-- Priority --}}

@@ -70,6 +70,8 @@ class KanbanBoard extends Component
     // Subtask field
     public string $newSubtaskTitle = '';
 
+    public string $newSubtaskAssignee = '';
+
     // Comments fields & filtering
     public $newCommentContent = '';
 
@@ -672,18 +674,29 @@ class KanbanBoard extends Component
         }
 
         $parent = Task::findOrFail($this->editingTaskId);
+        $assigneeId = ! empty($this->newSubtaskAssignee) ? (int) $this->newSubtaskAssignee : null;
 
         $subtask = Task::create([
             'title' => trim($this->newSubtaskTitle),
             'parent_id' => $parent->id,
             'project_id' => $parent->project_id,
             'creator_id' => auth()->id(),
+            'assigned_to' => $assigneeId,
             'status' => 'todo',
             'priority' => $parent->priority,
         ]);
 
+        if ($assigneeId) {
+            $subtask->syncAssignees([$assigneeId]);
+            $assignedUser = User::find($assigneeId);
+            if ($assignedUser && $assignedUser->id !== auth()->id()) {
+                NotificationService::sendTaskAssigned($subtask, $assignedUser, auth()->user(), false);
+            }
+        }
+
         $this->newSubtaskTitle = '';
-        session()->flash('message', 'Subtask added.');
+        $this->newSubtaskAssignee = '';
+        session()->flash('message', 'Subtask added and assigned.');
     }
 
     public function toggleSubtaskStatus(int $subtaskId): void

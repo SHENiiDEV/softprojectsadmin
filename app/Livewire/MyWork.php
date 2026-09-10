@@ -56,7 +56,7 @@ class MyWork extends Component
     protected function loadTasks(): void
     {
         $query = Task::assignedToUser(Auth::id())
-            ->with(['project', 'assignee', 'assignees', 'timeLogs' => fn ($q) => $q->whereNull('stopped_at')])
+            ->with(['project', 'assignee', 'assignees', 'parent', 'timeLogs' => fn ($q) => $q->whereNull('stopped_at')])
             ->withCount(['timeLogs'])
             ->orderByRaw("CASE status
                 WHEN 'in_progress' THEN 1

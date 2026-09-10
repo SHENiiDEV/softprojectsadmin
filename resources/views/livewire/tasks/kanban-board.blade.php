@@ -440,7 +440,7 @@
                         </div>
 
                         @php
-                            $modalTask = $editingTaskId ? \App\Models\Task::with(['creator', 'assignee', 'timeLogs.user', 'subtasks'])->find($editingTaskId) : null;
+                            $modalTask = $editingTaskId ? \App\Models\Task::with(['creator', 'assignee', 'timeLogs.user', 'subtasks', 'subtasks.assignees', 'subtasks.assignee'])->find($editingTaskId) : null;
                         @endphp
 
                         <div class="p-6">
@@ -655,6 +655,9 @@
                                             <!-- Subtasks list -->
                                             <div class="space-y-1.5 mb-3">
                                                 @foreach($subtasksList as $st)
+                                                    @php
+                                                        $stAssignee = $st->assignee ?? $st->assignees->first();
+                                                    @endphp
                                                     <div class="flex items-center justify-between p-2 rounded-xl bg-slate-50 hover:bg-slate-100/80 dark:bg-slate-950/40 dark:hover:bg-slate-950/80 border border-slate-200/60 dark:border-slate-800/60 transition-colors group">
                                                         <div class="flex items-center gap-2.5 min-w-0 flex-1">
                                                             <button type="button" 
@@ -672,20 +675,31 @@
                                                             </button>
                                                         </div>
 
-                                                        <div class="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
-                                                            <button type="button" 
-                                                                    wire:click="openTaskModal({{ $st->id }})" 
-                                                                    title="Open subtask" 
-                                                                    class="p-1 text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 rounded transition-colors text-xs">
-                                                                <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
-                                                            </button>
-                                                            <button type="button" 
-                                                                    wire:click="deleteSubtask({{ $st->id }})" 
-                                                                    wire:confirm="Are you sure you want to delete this subtask?" 
-                                                                    title="Delete subtask" 
-                                                                    class="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors text-xs">
-                                                                <i class="fa-solid fa-trash-can text-[10px]"></i>
-                                                            </button>
+                                                        <div class="flex items-center gap-2">
+                                                            @if($stAssignee)
+                                                                <div class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-200/70 dark:bg-slate-800 text-[10px] font-medium text-slate-600 dark:text-slate-300" title="Assigned to {{ $stAssignee->name }}">
+                                                                    <div class="w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8px] font-bold text-white uppercase shadow-sm" style="background-color: {{ $stAssignee->color ?? '#6366f1' }};">
+                                                                        {{ substr($stAssignee->name, 0, 1) }}
+                                                                    </div>
+                                                                    <span class="truncate max-w-[90px]">{{ explode(' ', $stAssignee->name)[0] }}</span>
+                                                                </div>
+                                                            @endif
+
+                                                            <div class="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
+                                                                <button type="button" 
+                                                                        wire:click="openTaskModal({{ $st->id }})" 
+                                                                        title="Open subtask" 
+                                                                        class="p-1 text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 rounded transition-colors text-xs">
+                                                                    <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                                                                </button>
+                                                                <button type="button" 
+                                                                        wire:click="deleteSubtask({{ $st->id }})" 
+                                                                        wire:confirm="Are you sure you want to delete this subtask?" 
+                                                                        title="Delete subtask" 
+                                                                        class="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors text-xs">
+                                                                    <i class="fa-solid fa-trash-can text-[10px]"></i>
+                                                                </button>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 @endforeach
@@ -699,6 +713,17 @@
                                                    wire:keydown.enter.prevent="createSubtask" 
                                                    placeholder="Add a subtask (press Enter to save)..." 
                                                    class="flex-1 px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
+                                            
+                                            @php
+                                                $availableUsers = \App\Models\User::orderBy('name')->get();
+                                            @endphp
+                                            <select wire:model="newSubtaskAssignee" class="px-2.5 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all max-w-[130px]">
+                                                <option value="">Unassigned</option>
+                                                @foreach($availableUsers as $u)
+                                                    <option value="{{ $u->id }}">{{ $u->name }}</option>
+                                                @endforeach
+                                            </select>
+
                                             <button type="button" 
                                                     wire:click="createSubtask" 
                                                     class="px-3 py-1.5 bg-sky-600 hover:bg-sky-500 dark:bg-sky-500 dark:hover:bg-sky-400 text-white font-semibold rounded-xl text-xs transition-all shadow-sm flex-shrink-0 cursor-pointer">
