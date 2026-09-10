@@ -272,6 +272,7 @@ class KanbanBoard extends Component
                 $q->whereNull('assigned_to')
                     ->orWhere('assigned_to', $user->id)
                     ->orWhereHas('assignees', fn ($aq) => $aq->where('users.id', $user->id))
+                    ->orWhereHas('subtasks', fn ($sq) => $sq->assignedToUser($user->id))
                     ->orWhereHas('assignee', fn ($qSub) => $qSub->role(['manager', 'worker']))
                     ->orWhereHas('assignees', fn ($qSub) => $qSub->role(['manager', 'worker']));
             });
@@ -280,6 +281,7 @@ class KanbanBoard extends Component
                 $q->whereNull('assigned_to')
                     ->orWhere('assigned_to', $user->id)
                     ->orWhereHas('assignees', fn ($aq) => $aq->where('users.id', $user->id))
+                    ->orWhereHas('subtasks', fn ($sq) => $sq->assignedToUser($user->id))
                     ->orWhereHas('assignee', fn ($qSub) => $qSub->role('worker'))
                     ->orWhereHas('assignees', fn ($qSub) => $qSub->role('worker'));
             });
@@ -287,7 +289,8 @@ class KanbanBoard extends Component
             $baseQuery->where(function ($q) use ($user) {
                 $q->whereNull('assigned_to')
                     ->orWhere('assigned_to', $user->id)
-                    ->orWhereHas('assignees', fn ($aq) => $aq->where('users.id', $user->id));
+                    ->orWhereHas('assignees', fn ($aq) => $aq->where('users.id', $user->id))
+                    ->orWhereHas('subtasks', fn ($sq) => $sq->assignedToUser($user->id));
             });
         }
 
@@ -312,7 +315,8 @@ class KanbanBoard extends Component
             $assigneeId = (int) $this->filterAssignee;
             $baseQuery->where(function ($q) use ($assigneeId) {
                 $q->where('assigned_to', $assigneeId)
-                    ->orWhereHas('assignees', fn ($aq) => $aq->where('users.id', $assigneeId));
+                    ->orWhereHas('assignees', fn ($aq) => $aq->where('users.id', $assigneeId))
+                    ->orWhereHas('subtasks', fn ($sq) => $sq->assignedToUser($assigneeId));
             });
         }
 

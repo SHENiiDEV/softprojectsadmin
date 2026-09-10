@@ -162,4 +162,30 @@ class SubtaskTest extends TestCase
         $this->assertEquals('done', $subtask->fresh()->status);
         $this->assertEquals(100, $parent->fresh()->subtask_progress['percentage']);
     }
+
+    public function test_parent_task_visible_on_kanban_board_for_subtask_assignee(): void
+    {
+        $userA = User::factory()->create(['name' => 'User A']);
+        $userB = User::factory()->create(['name' => 'User B']);
+
+        $parent = Task::create([
+            'title' => 'Main Task Assigned to User A',
+            'status' => 'in_progress',
+            'priority' => 'high',
+            'assigned_to' => $userA->id,
+        ]);
+
+        Task::create([
+            'title' => 'Subtask for User B',
+            'parent_id' => $parent->id,
+            'status' => 'todo',
+            'priority' => 'medium',
+            'assigned_to' => $userB->id,
+        ]);
+
+        $this->actingAs($userB);
+
+        Livewire::test(KanbanBoard::class)
+            ->assertSee('Main Task Assigned to User A');
+    }
 }

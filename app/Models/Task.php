@@ -305,7 +305,14 @@ class Task extends Model implements HasMedia
             return true;
         }
 
-        return $this->assignees->contains('id', $userId) || $this->assignees()->where('users.id', $userId)->exists();
+        if ($this->assignees->contains('id', $userId) || $this->assignees()->where('users.id', $userId)->exists()) {
+            return true;
+        }
+
+        return $this->subtasks()->where(function ($q) use ($userId) {
+            $q->where('assigned_to', $userId)
+                ->orWhereHas('assignees', fn ($aq) => $aq->where('users.id', $userId));
+        })->exists();
     }
 
     /**
