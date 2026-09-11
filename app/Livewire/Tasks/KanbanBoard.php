@@ -300,9 +300,14 @@ class KanbanBoard extends Component
             });
         }
 
-        // Apply Created By Me Filter
+        // Apply Created By Me Filter (tasks created by user assigned to others or unassigned)
         if ($this->filterCreatedOnly) {
-            $baseQuery->where('creator_id', $user->id);
+            $baseQuery->where('creator_id', $user->id)
+                ->where(function ($q) use ($user) {
+                    $q->whereNull('assigned_to')
+                        ->orWhere('assigned_to', '!=', $user->id);
+                })
+                ->whereDoesntHave('assignees', fn ($aq) => $aq->where('users.id', $user->id));
         }
 
         // Apply search & dropdown filters
@@ -346,7 +351,15 @@ class KanbanBoard extends Component
 
         // Total count of archived tasks and created tasks for header button badges
         $archivedCount = Task::archived()->count();
-        $createdCount = Task::whereNull('parent_id')->notArchived()->where('creator_id', $user->id)->count();
+        $createdCount = Task::whereNull('parent_id')
+            ->notArchived()
+            ->where('creator_id', $user->id)
+            ->where(function ($q) use ($user) {
+                $q->whereNull('assigned_to')
+                    ->orWhere('assigned_to', '!=', $user->id);
+            })
+            ->whereDoesntHave('assignees', fn ($aq) => $aq->where('users.id', $user->id))
+            ->count();
 
         // 2. Fetch tasks per column with column-specific limits & optimized selects
         $statuses = ['email_inbox', 'todo', 'in_progress', 'review', 'done'];

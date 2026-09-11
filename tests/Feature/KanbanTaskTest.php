@@ -396,10 +396,18 @@ class KanbanTaskTest extends TestCase
         $creator = User::factory()->create(['name' => 'Task Reporter User']);
         $otherUser = User::factory()->create(['name' => 'Other User']);
 
-        $createdTask = Task::create([
-            'title' => 'Task Created By Reporter',
+        $createdForOther = Task::create([
+            'title' => 'Task Created By Reporter For Other',
             'creator_id' => $creator->id,
             'assigned_to' => $otherUser->id,
+            'status' => 'todo',
+            'priority' => 'high',
+        ]);
+
+        $createdForSelf = Task::create([
+            'title' => 'Task Created By Reporter For Self',
+            'creator_id' => $creator->id,
+            'assigned_to' => $creator->id,
             'status' => 'todo',
             'priority' => 'high',
         ]);
@@ -414,10 +422,12 @@ class KanbanTaskTest extends TestCase
 
         Livewire::actingAs($creator)
             ->test(KanbanBoard::class)
-            ->assertSee('Task Created By Reporter')
+            ->assertSee('Task Created By Reporter For Other')
+            ->assertSee('Task Created By Reporter For Self')
             ->assertSee('Task Created By Other')
             ->set('filterCreatedOnly', true)
-            ->assertSee('Task Created By Reporter')
+            ->assertSee('Task Created By Reporter For Other')
+            ->assertDontSee('Task Created By Reporter For Self')
             ->assertDontSee('Task Created By Other');
     }
 }
