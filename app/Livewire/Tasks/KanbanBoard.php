@@ -34,6 +34,9 @@ class KanbanBoard extends Component
     // Archive view mode ('0' = Active tasks, '1' = Archived tasks)
     public string $showArchived = '0';
 
+    // Created by me filter
+    public bool $filterCreatedOnly = false;
+
     // Per-column pagination limits for ultra-fast rendering
     public array $perPage = [
         'email_inbox' => 30,
@@ -271,6 +274,7 @@ class KanbanBoard extends Component
             $baseQuery->where(function ($q) use ($user) {
                 $q->whereNull('assigned_to')
                     ->orWhere('assigned_to', $user->id)
+                    ->orWhere('creator_id', $user->id)
                     ->orWhereHas('assignees', fn ($aq) => $aq->where('users.id', $user->id))
                     ->orWhereHas('subtasks', fn ($sq) => $sq->assignedToUser($user->id))
                     ->orWhereHas('assignee', fn ($qSub) => $qSub->role(['manager', 'worker']))
@@ -280,6 +284,7 @@ class KanbanBoard extends Component
             $baseQuery->where(function ($q) use ($user) {
                 $q->whereNull('assigned_to')
                     ->orWhere('assigned_to', $user->id)
+                    ->orWhere('creator_id', $user->id)
                     ->orWhereHas('assignees', fn ($aq) => $aq->where('users.id', $user->id))
                     ->orWhereHas('subtasks', fn ($sq) => $sq->assignedToUser($user->id))
                     ->orWhereHas('assignee', fn ($qSub) => $qSub->role('worker'))
@@ -289,9 +294,15 @@ class KanbanBoard extends Component
             $baseQuery->where(function ($q) use ($user) {
                 $q->whereNull('assigned_to')
                     ->orWhere('assigned_to', $user->id)
+                    ->orWhere('creator_id', $user->id)
                     ->orWhereHas('assignees', fn ($aq) => $aq->where('users.id', $user->id))
                     ->orWhereHas('subtasks', fn ($sq) => $sq->assignedToUser($user->id));
             });
+        }
+
+        // Apply Created By Me Filter
+        if ($this->filterCreatedOnly) {
+            $baseQuery->where('creator_id', $user->id);
         }
 
         // Apply search & dropdown filters
@@ -333,8 +344,9 @@ class KanbanBoard extends Component
             'done' => (clone $baseQuery)->where('status', 'done')->count(),
         ];
 
-        // Total count of archived tasks for header button badge
+        // Total count of archived tasks and created tasks for header button badges
         $archivedCount = Task::archived()->count();
+        $createdCount = Task::whereNull('parent_id')->notArchived()->where('creator_id', $user->id)->count();
 
         // 2. Fetch tasks per column with column-specific limits & optimized selects
         $statuses = ['email_inbox', 'todo', 'in_progress', 'review', 'done'];
@@ -356,6 +368,7 @@ class KanbanBoard extends Component
             'tasks' => $tasks,
             'statusCounts' => $statusCounts,
             'archivedCount' => $archivedCount,
+            'createdCount' => $createdCount,
             'projects' => Project::select('id', 'name', 'client_id')->with('client:id,name')->orderBy('name')->get(),
             'users' => User::select('id', 'name')->orderBy('name')->get(),
             'clients' => Client::select('id', 'name')->orderBy('name')->get(),

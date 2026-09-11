@@ -68,7 +68,7 @@ class KanbanTaskTest extends TestCase
             ->set('taskTitle', 'New Task')
             ->set('taskDescription', 'Task description')
             ->set('taskProject', $this->project->id)
-            ->set('taskAssignee', $this->workerUser->id)
+            ->set('taskAssignees', [(string) $this->workerUser->id])
             ->set('taskPriority', 'high')
             ->set('taskStatus', 'todo')
             ->call('saveTask')
@@ -89,7 +89,7 @@ class KanbanTaskTest extends TestCase
             ->test(KanbanBoard::class)
             ->set('taskTitle', 'Global Task')
             ->set('taskProject', '') // Nullable
-            ->set('taskAssignee', $this->workerUser->id)
+            ->set('taskAssignees', [(string) $this->workerUser->id])
             ->set('taskPriority', 'low')
             ->set('taskStatus', 'todo')
             ->call('saveTask')
@@ -389,5 +389,35 @@ class KanbanTaskTest extends TestCase
             ->assertSee('Manager Task')
             ->assertSee('Worker Task')
             ->assertSee('Unassigned Task');
+    }
+
+    public function test_can_filter_kanban_board_by_created_tasks(): void
+    {
+        $creator = User::factory()->create(['name' => 'Task Reporter User']);
+        $otherUser = User::factory()->create(['name' => 'Other User']);
+
+        $createdTask = Task::create([
+            'title' => 'Task Created By Reporter',
+            'creator_id' => $creator->id,
+            'assigned_to' => $otherUser->id,
+            'status' => 'todo',
+            'priority' => 'high',
+        ]);
+
+        $otherTask = Task::create([
+            'title' => 'Task Created By Other',
+            'creator_id' => $otherUser->id,
+            'assigned_to' => $creator->id,
+            'status' => 'todo',
+            'priority' => 'high',
+        ]);
+
+        Livewire::actingAs($creator)
+            ->test(KanbanBoard::class)
+            ->assertSee('Task Created By Reporter')
+            ->assertSee('Task Created By Other')
+            ->set('filterCreatedOnly', true)
+            ->assertSee('Task Created By Reporter')
+            ->assertDontSee('Task Created By Other');
     }
 }

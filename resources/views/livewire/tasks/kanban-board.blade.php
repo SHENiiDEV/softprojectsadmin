@@ -23,6 +23,18 @@
             <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Track the progress of team tasks.</p>
         </div>
         <div class="flex items-center gap-2">
+            <!-- Created Tasks Toggle -->
+            <button wire:click="$toggle('filterCreatedOnly')" 
+                    class="inline-flex items-center justify-center px-4 py-2.5 text-sm font-semibold rounded-xl border transition-all duration-200 cursor-pointer shadow-sm {{ $filterCreatedOnly ? 'bg-indigo-50 text-indigo-800 border-indigo-300 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-200 dark:border-slate-800 dark:hover:bg-slate-800' }}">
+                <i class="fa-solid fa-user-pen mr-2 {{ $filterCreatedOnly ? 'text-indigo-500' : 'text-slate-400' }}"></i>
+                <span>{{ $filterCreatedOnly ? 'Show All Tasks' : 'Created Tasks' }}</span>
+                @if(($createdCount ?? 0) > 0)
+                    <span class="ml-2 px-2 py-0.5 text-xs font-bold rounded-lg {{ $filterCreatedOnly ? 'bg-indigo-200 text-indigo-900 dark:bg-indigo-900 dark:text-indigo-100' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400' }}">
+                        {{ $createdCount }}
+                    </span>
+                @endif
+            </button>
+
             <!-- Show Archive Toggle -->
             <button wire:click="$set('showArchived', '{{ $showArchived === '0' ? '1' : '0' }}')" 
                     class="inline-flex items-center justify-center px-4 py-2.5 text-sm font-semibold rounded-xl border transition-all duration-200 cursor-pointer shadow-sm {{ $showArchived === '1' ? 'bg-amber-50 text-amber-800 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-200 dark:border-slate-800 dark:hover:bg-slate-800' }}">
