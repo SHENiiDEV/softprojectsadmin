@@ -394,7 +394,10 @@ class KanbanTaskTest extends TestCase
     public function test_can_filter_kanban_board_by_created_tasks(): void
     {
         $creator = User::factory()->create(['name' => 'Task Reporter User']);
+        $creator->assignRole('worker');
+
         $otherUser = User::factory()->create(['name' => 'Other User']);
+        $otherUser->assignRole('worker');
 
         $createdForOther = Task::create([
             'title' => 'Task Created By Reporter For Other',
@@ -422,11 +425,11 @@ class KanbanTaskTest extends TestCase
 
         Livewire::actingAs($creator)
             ->test(KanbanBoard::class)
-            ->assertSee('Task Created By Reporter For Other')
+            ->assertDontSee('Task Created By Reporter For Other') // Hidden in regular view
             ->assertSee('Task Created By Reporter For Self')
             ->assertSee('Task Created By Other')
             ->set('filterCreatedOnly', true)
-            ->assertSee('Task Created By Reporter For Other')
+            ->assertSee('Task Created By Reporter For Other') // Shown in Created Tasks view
             ->assertDontSee('Task Created By Reporter For Self')
             ->assertDontSee('Task Created By Other');
     }

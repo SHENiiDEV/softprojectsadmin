@@ -268,46 +268,44 @@ class KanbanBoard extends Component
             $baseQuery->notArchived();
         }
 
-        if ($user->hasRole('admin')) {
-            // Admin sees all tasks
-        } elseif ($user->hasRole('curator')) {
-            $baseQuery->where(function ($q) use ($user) {
-                $q->whereNull('assigned_to')
-                    ->orWhere('assigned_to', $user->id)
-                    ->orWhere('creator_id', $user->id)
-                    ->orWhereHas('assignees', fn ($aq) => $aq->where('users.id', $user->id))
-                    ->orWhereHas('subtasks', fn ($sq) => $sq->assignedToUser($user->id))
-                    ->orWhereHas('assignee', fn ($qSub) => $qSub->role(['manager', 'worker']))
-                    ->orWhereHas('assignees', fn ($qSub) => $qSub->role(['manager', 'worker']));
-            });
-        } elseif ($user->hasRole('manager')) {
-            $baseQuery->where(function ($q) use ($user) {
-                $q->whereNull('assigned_to')
-                    ->orWhere('assigned_to', $user->id)
-                    ->orWhere('creator_id', $user->id)
-                    ->orWhereHas('assignees', fn ($aq) => $aq->where('users.id', $user->id))
-                    ->orWhereHas('subtasks', fn ($sq) => $sq->assignedToUser($user->id))
-                    ->orWhereHas('assignee', fn ($qSub) => $qSub->role('worker'))
-                    ->orWhereHas('assignees', fn ($qSub) => $qSub->role('worker'));
-            });
-        } elseif ($user->hasRole('worker')) {
-            $baseQuery->where(function ($q) use ($user) {
-                $q->whereNull('assigned_to')
-                    ->orWhere('assigned_to', $user->id)
-                    ->orWhere('creator_id', $user->id)
-                    ->orWhereHas('assignees', fn ($aq) => $aq->where('users.id', $user->id))
-                    ->orWhereHas('subtasks', fn ($sq) => $sq->assignedToUser($user->id));
-            });
-        }
-
-        // Apply Created By Me Filter (tasks created by user assigned to others or unassigned)
         if ($this->filterCreatedOnly) {
+            // Created Tasks view: tasks created by current user assigned to others or unassigned
             $baseQuery->where('creator_id', $user->id)
                 ->where(function ($q) use ($user) {
                     $q->whereNull('assigned_to')
                         ->orWhere('assigned_to', '!=', $user->id);
                 })
                 ->whereDoesntHave('assignees', fn ($aq) => $aq->where('users.id', $user->id));
+        } else {
+            // Regular Kanban view: role-based visibility (created tasks assigned to others are hidden by default)
+            if ($user->hasRole('admin')) {
+                // Admin sees all tasks
+            } elseif ($user->hasRole('curator')) {
+                $baseQuery->where(function ($q) use ($user) {
+                    $q->whereNull('assigned_to')
+                        ->orWhere('assigned_to', $user->id)
+                        ->orWhereHas('assignees', fn ($aq) => $aq->where('users.id', $user->id))
+                        ->orWhereHas('subtasks', fn ($sq) => $sq->assignedToUser($user->id))
+                        ->orWhereHas('assignee', fn ($qSub) => $qSub->role(['manager', 'worker']))
+                        ->orWhereHas('assignees', fn ($qSub) => $qSub->role(['manager', 'worker']));
+                });
+            } elseif ($user->hasRole('manager')) {
+                $baseQuery->where(function ($q) use ($user) {
+                    $q->whereNull('assigned_to')
+                        ->orWhere('assigned_to', $user->id)
+                        ->orWhereHas('assignees', fn ($aq) => $aq->where('users.id', $user->id))
+                        ->orWhereHas('subtasks', fn ($sq) => $sq->assignedToUser($user->id))
+                        ->orWhereHas('assignee', fn ($qSub) => $qSub->role('worker'))
+                        ->orWhereHas('assignees', fn ($qSub) => $qSub->role('worker'));
+                });
+            } elseif ($user->hasRole('worker')) {
+                $baseQuery->where(function ($q) use ($user) {
+                    $q->whereNull('assigned_to')
+                        ->orWhere('assigned_to', $user->id)
+                        ->orWhereHas('assignees', fn ($aq) => $aq->where('users.id', $user->id))
+                        ->orWhereHas('subtasks', fn ($sq) => $sq->assignedToUser($user->id));
+                });
+            }
         }
 
         // Apply search & dropdown filters
