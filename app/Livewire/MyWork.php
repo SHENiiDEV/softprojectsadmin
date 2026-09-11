@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Models\ActivityLog;
+use App\Models\Comment;
 use App\Models\Task;
 use App\Models\TaskTimeLog;
 use App\Services\NotificationService;
@@ -18,6 +19,8 @@ class MyWork extends Component
     public string $filterStatus = '';
 
     public string $filterPriority = '';
+
+    public string $sortBy = 'default'; // default | latest_comment | due_date
 
     public string $search = '';
 
@@ -48,6 +51,11 @@ class MyWork extends Component
         $this->loadTasks();
     }
 
+    public function updatedSortBy(): void
+    {
+        $this->loadTasks();
+    }
+
     public function updatedSearch(): void
     {
         $this->loadTasks();
@@ -56,15 +64,40 @@ class MyWork extends Component
     protected function loadTasks(): void
     {
         $query = Task::assignedToUser(Auth::id())
-            ->with(['project', 'assignee', 'assignees', 'parent', 'timeLogs' => fn ($q) => $q->whereNull('stopped_at')])
-            ->withCount(['timeLogs'])
-            ->orderByRaw("CASE status
+            ->with([
+                'project',
+                'assignee',
+                'assignees',
+                'parent',
+                'latestComment.user',
+                'latestComment.client',
+                'timeLogs' => fn ($q) => $q->whereNull('stopped_at'),
+            ])
+            ->withCount(['timeLogs']);
+
+        if ($this->sortBy === 'latest_comment') {
+            $query->select('tasks.*')
+                ->selectSub(
+                    Comment::select('created_at')
+                        ->whereColumn('comments.task_id', 'tasks.id')
+                        ->latest('created_at')
+                        ->limit(1),
+                    'latest_comment_at'
+                )
+                ->orderByRaw('latest_comment_at IS NULL, latest_comment_at DESC')
+                ->orderBy('id', 'desc');
+        } elseif ($this->sortBy === 'due_date') {
+            $query->orderByRaw('due_date IS NULL, due_date ASC')
+                ->orderBy('id', 'desc');
+        } else {
+            $query->orderByRaw("CASE status
                 WHEN 'in_progress' THEN 1
                 WHEN 'review'      THEN 2
                 WHEN 'todo'        THEN 3
                 WHEN 'done'        THEN 4
                 ELSE 5 END")
-            ->orderByRaw('due_date IS NULL, due_date ASC');
+                ->orderByRaw('due_date IS NULL, due_date ASC');
+        }
 
         if ($this->filterStatus) {
             $query->where('status', $this->filterStatus);

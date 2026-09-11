@@ -130,6 +130,15 @@
             <option value="medium">Medium</option>
             <option value="low">Low</option>
         </select>
+
+        {{-- Sort --}}
+        <select wire:model.live="sortBy"
+                class="px-3 py-2 text-sm rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700
+                       text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer">
+            <option value="default">Default Sort</option>
+            <option value="latest_comment">💬 Newest Comment First</option>
+            <option value="due_date">📅 Due Date</option>
+        </select>
     </div>
 
     {{-- ═══════════════════════════════════════════════════════════
@@ -273,6 +282,33 @@
                             <p class="text-xs text-slate-500 dark:text-slate-400 mt-1.5 line-clamp-1">
                                 {{ $task->excerpt }}
                             </p>
+                        @endif
+
+                        {{-- Latest Comment --}}
+                        @if($task->latestComment)
+                            @php
+                                $cmt = $task->latestComment;
+                                $authorName = $cmt->user?->name ?? $cmt->client?->name ?? 'System';
+                                $isClient = (bool) $cmt->client_id;
+                                $cleanComment = Str::limit(strip_tags($cmt->content), 130);
+                            @endphp
+                            <div class="mt-2.5 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800/80 text-xs">
+                                <div class="flex items-center justify-between gap-2 mb-1">
+                                    <div class="flex items-center gap-1.5 font-semibold text-slate-700 dark:text-slate-200">
+                                        <i class="fa-regular fa-comment-dots {{ $isClient ? 'text-purple-500' : 'text-sky-500' }}"></i>
+                                        <span>{{ $authorName }}</span>
+                                        @if($isClient)
+                                            <span class="px-1.5 py-0.2 text-[9px] font-bold rounded bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300">Client</span>
+                                        @endif
+                                    </div>
+                                    <span class="text-[10px] text-slate-400 font-medium" title="{{ $cmt->created_at->format('d.m.Y H:i') }}">
+                                        {{ $cmt->created_at->diffForHumans() }}
+                                    </span>
+                                </div>
+                                <p class="text-slate-600 dark:text-slate-400 line-clamp-2 leading-relaxed">
+                                    {{ $cleanComment }}
+                                </p>
+                            </div>
                         @endif
                     </div>
 

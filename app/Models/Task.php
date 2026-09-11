@@ -324,6 +324,14 @@ class Task extends Model implements HasMedia
     }
 
     /**
+     * Get the latest comment for the task.
+     */
+    public function latestComment(): HasOne
+    {
+        return $this->hasOne(Comment::class)->latestOfMany();
+    }
+
+    /**
      * Register media collections.
      */
     public function registerMediaCollections(): void
