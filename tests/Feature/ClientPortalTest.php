@@ -467,4 +467,101 @@ class ClientPortalTest extends TestCase
                 return $siteRow && $siteRow[3] === "FR 50%\nES 50%" && $siteRow[2] === '500 UV/day';
             });
     }
+
+    public function test_client_portal_save_traffic_launch_creates_consolidated_task_with_rich_description_and_updates_it(): void
+    {
+        $client = Client::create([
+            'name' => 'Consolidated Client',
+            'hash' => 'consolidated1234567890123456789',
+        ]);
+
+        $company = Project::factory()->create([
+            'name' => 'Consolidated Company',
+            'client_id' => $client->id,
+        ]);
+
+        Website::create([
+            'project_id' => $company->id,
+            'name' => 'Site One',
+            'url' => 'https://site-one.com',
+            'status' => 'Live',
+        ]);
+
+        Website::create([
+            'project_id' => $company->id,
+            'name' => 'Site Two',
+            'url' => 'https://site-two.com',
+            'status' => 'Live',
+        ]);
+
+        $rows = [
+            [
+                '01.01.2027-31.01.2027', // Date
+                'site-one.com',          // Domain
+                '1000 UV/day',           // Plan
+                "US: 60%\nUK: 40%",      // GEO
+                '45%',                   // BR
+                '2-3',                   // Pages
+                '25',                    // Time
+                '15%',                   // Referral
+                'https://ref1.com',      // Ref links
+                '10%',                   // Social
+                'https://fb.com/site1',  // Social links
+                '50%',                   // Organic
+                '25%',                   // Direct
+                'casino, slots',         // Keys
+                'Urgent launch',         // Comment
+                'Pending',               // Status
+            ],
+            [
+                '01.01.2027-31.01.2027', // Date
+                'site-two.com',          // Domain
+                '500 UV/day',            // Plan
+                'DE: 100%',              // GEO
+                '50%',                   // BR
+                '2',                     // Pages
+                '30',                    // Time
+                '0%',                    // Referral
+                '',                      // Ref links
+                '0%',                    // Social
+                '',                      // Social links
+                '70%',                   // Organic
+                '30%',                   // Direct
+                'betting online',        // Keys
+                'Standard launch',       // Comment
+                'Pending',               // Status
+            ],
+        ];
+
+        // 1. Initial save creates 1 consolidated task
+        Livewire::test(ClientPortal::class, ['hash' => $client->hash])
+            ->set('trafficTargetMonth', 'January 2027')
+            ->call('saveTrafficLaunch', $rows, 'January 2027')
+            ->assertDispatched('notify');
+
+        $tasks = Task::where('project_id', $company->id)->get();
+        $this->assertCount(1, $tasks);
+
+        $task = $tasks->first();
+        $this->assertEquals('🚀 Traffic Launch: January 2027 (2 websites)', $task->title);
+        $this->assertStringContainsString('site-one.com', $task->description);
+        $this->assertStringContainsString('site-two.com', $task->description);
+        $this->assertStringContainsString('US: 60%<br />', $task->description);
+        $this->assertStringContainsString('UK: 40%', $task->description);
+        $this->assertStringContainsString('DE: 100%', $task->description);
+        $this->assertStringContainsString('1000 UV/day', $task->description);
+        $this->assertStringContainsString('500 UV/day', $task->description);
+
+        // 2. Second save with updated GEO updates the existing task, no duplicate task created
+        $rows[0][3] = "US: 80%\nUK: 20%";
+        Livewire::test(ClientPortal::class, ['hash' => $client->hash])
+            ->set('trafficTargetMonth', 'January 2027')
+            ->call('saveTrafficLaunch', $rows, 'January 2027')
+            ->assertDispatched('notify');
+
+        $this->assertEquals(1, Task::where('project_id', $company->id)->count());
+        $task->refresh();
+        $this->assertStringContainsString('US: 80%<br />', $task->description);
+        $this->assertStringContainsString('UK: 20%', $task->description);
+    }
 }
