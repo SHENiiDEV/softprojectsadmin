@@ -497,8 +497,25 @@
                 </div>
             </div>
 
+            <!-- Loading Spinner State -->
+            <div x-show="isLoading" class="flex flex-col items-center justify-center py-20 text-slate-400 dark:text-slate-500">
+                <i class="fa-solid fa-circle-notch fa-spin text-2xl text-indigo-500 mb-3"></i>
+                <span class="text-xs font-medium">Loading spreadsheet table...</span>
+            </div>
+
+            <!-- Error State -->
+            <div x-show="loadError" class="p-4 mb-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 rounded-xl text-rose-700 dark:text-rose-300 text-xs flex items-center justify-between" style="display: none;">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-circle-exclamation text-rose-500"></i>
+                    <span x-text="loadError"></span>
+                </div>
+                <button type="button" @click="loadError = null; mountTable()" class="px-2.5 py-1 bg-rose-100 hover:bg-rose-200 dark:bg-rose-900/60 dark:hover:bg-rose-900 text-rose-800 dark:text-rose-200 rounded-lg font-semibold transition-colors cursor-pointer">
+                    Retry
+                </button>
+            </div>
+
             <!-- Jspreadsheet Mount Target -->
-            <div class="traffic-sheet-wrapper overflow-x-auto rounded-xl border border-slate-200 dark:border-white/10 shadow-inner">
+            <div x-show="!isLoading" class="traffic-sheet-wrapper overflow-x-auto rounded-xl border border-slate-200 dark:border-white/10 shadow-inner min-h-[300px]">
                 <div x-ref="spreadsheetContainer" class="w-full"></div>
             </div>
         </div>
@@ -945,98 +962,174 @@
     }
     </style>
 
-    @script
     <script>
-        Alpine.data('trafficSpreadsheetComponent', () => ({
-            tableInstance: null,
-            isSaving: false,
+        function trafficSpreadsheetComponent() {
+            return {
+                tableInstance: null,
+                isSaving: false,
+                isLoading: false,
+                loadError: null,
+                cachedData: null,
 
-            init() {
-                this.$nextTick(() => {
-                    this.mountTable();
-                });
+                init() {
+                    // Watch tab changes to mount when tab becomes visible
+                    this.$watch('tab', (val) => {
+                        if (val === 'launch-traffic') {
+                            this.ensureMounted();
+                        }
+                    });
 
-                this.$watch('tab', (val) => {
-                    if (val === 'launch-traffic') {
-                        this.$nextTick(() => {
-                            if (!this.tableInstance) {
-                                this.mountTable();
+                    // If active tab is already launch-traffic on load
+                    if (this.tab === 'launch-traffic') {
+                        this.ensureMounted();
+                    }
+
+                    // Listen for Livewire updates (e.g. month change or copy previous month)
+                    window.addEventListener('traffic-data-loaded', (e) => {
+                        const rows = (e.detail && e.detail.data) || (Array.isArray(e.detail) ? e.detail[0]?.data : null);
+                        if (rows) {
+                            this.cachedData = rows;
+                            if (this.tableInstance) {
+                                this.tableInstance.setData(rows);
+                            } else if (this.tab === 'launch-traffic') {
+                                this.ensureMounted();
                             }
-                        });
+                        }
+                    });
+                },
+
+                ensureMounted() {
+                    this.$nextTick(() => {
+                        const container = this.$refs.spreadsheetContainer;
+                        if (!container) return;
+
+                        // If element is not displayed yet (e.g. still transitioning), retry shortly
+                        if (container.offsetWidth === 0 && container.offsetHeight === 0) {
+                            setTimeout(() => {
+                                this.ensureMounted();
+                            }, 50);
+                            return;
+                        }
+
+                        if (!this.tableInstance || container.children.length === 0) {
+                            this.mountTable();
+                        }
+                    });
+                },
+
+                mountTable() {
+                    const container = this.$refs.spreadsheetContainer;
+                    if (!container) return;
+
+                    const getLib = () => window.jspreadsheet || window.jexcel;
+
+                    if (!getLib()) {
+                        this.isLoading = true;
+                        this.loadError = null;
+
+                        // Dynamically inject fallback script if not loaded
+                        if (!document.getElementById('jspreadsheet-script-fallback')) {
+                            const script = document.createElement('script');
+                            script.id = 'jspreadsheet-script-fallback';
+                            script.src = 'https://bossanova.uk/jspreadsheet/v4/jexcel.js';
+                            document.head.appendChild(script);
+                        }
+
+                        let attempts = 0;
+                        const checkInterval = setInterval(() => {
+                            attempts++;
+                            const lib = getLib();
+                            if (lib) {
+                                clearInterval(checkInterval);
+                                this.isLoading = false;
+                                this.buildTable(container, lib);
+                            } else if (attempts >= 40) {
+                                clearInterval(checkInterval);
+                                this.isLoading = false;
+                                this.loadError = 'Failed to load spreadsheet library. Please check your internet or disable ad-blockers and click Retry.';
+                            }
+                        }, 100);
+                        return;
                     }
-                });
 
-                window.addEventListener('traffic-data-loaded', (e) => {
-                    if (this.tableInstance && e.detail && e.detail.data) {
-                        this.tableInstance.setData(e.detail.data);
+                    this.isLoading = false;
+                    this.buildTable(container, getLib());
+                },
+
+                buildTable(container, lib) {
+                    container.innerHTML = '';
+
+                    const initialData = this.cachedData || @json($this->getPrefilledTrafficData());
+                    this.cachedData = initialData;
+
+                    const columns = [
+                        { type: 'text', title: 'Date', width: 140 },
+                        { type: 'text', title: 'Domain', width: 170 },
+                        { type: 'text', title: 'Plan', width: 90 },
+                        { type: 'text', title: 'GEO', width: 150 },
+                        { type: 'text', title: 'BR', width: 90 },
+                        { type: 'text', title: 'Pages', width: 80 },
+                        { type: 'text', title: 'Time', width: 80 },
+                        { type: 'text', title: 'Referal traf', width: 110 },
+                        { type: 'text', title: 'Referal traf links', width: 180 },
+                        { type: 'text', title: 'Social traf', width: 110 },
+                        { type: 'text', title: 'Social traf links', width: 180 },
+                        { type: 'text', title: 'Organic traf', width: 110 },
+                        { type: 'text', title: 'Direct traf', width: 110 },
+                        { type: 'text', title: 'Keys', width: 160 },
+                        { type: 'text', title: 'Comment', width: 220 },
+                        { type: 'dropdown', title: 'Status', width: 110, source: ['Pending', 'Active', 'Completed', 'Paused'] }
+                    ];
+
+                    const options = {
+                        data: initialData,
+                        columns: columns,
+                        tableOverflow: true,
+                        tableHeight: '580px',
+                        tableWidth: '100%',
+                        minDimensions: [16, Math.max(initialData.length, 5)],
+                        allowInsertRow: true,
+                        allowManualInsertRow: true,
+                        allowDeleteRow: true,
+                        columnSorting: true,
+                        contextMenu: true,
+                    };
+
+                    try {
+                        this.tableInstance = lib(container, options);
+                    } catch (err) {
+                        console.error('Error instantiating spreadsheet:', err);
+                        this.loadError = 'Error initializing spreadsheet: ' + err.message;
                     }
-                });
-            },
+                },
 
-            mountTable() {
-                const container = this.$refs.spreadsheetContainer;
-                if (!container) return;
-                container.innerHTML = '';
+                addRow() {
+                    if (this.tableInstance) {
+                        this.tableInstance.insertRow();
+                    }
+                },
 
-                const initialData = @json($this->getPrefilledTrafficData());
-
-                const columns = [
-                    { type: 'text', title: 'Date', width: 140 },
-                    { type: 'text', title: 'Domain', width: 170 },
-                    { type: 'text', title: 'Plan', width: 90 },
-                    { type: 'text', title: 'GEO', width: 150 },
-                    { type: 'text', title: 'BR', width: 90 },
-                    { type: 'text', title: 'Pages', width: 80 },
-                    { type: 'text', title: 'Time', width: 80 },
-                    { type: 'text', title: 'Referal traf', width: 100 },
-                    { type: 'text', title: 'Referal traf links', width: 180 },
-                    { type: 'text', title: 'Social traf', width: 100 },
-                    { type: 'text', title: 'Social traf links', width: 180 },
-                    { type: 'text', title: 'Organic traf', width: 100 },
-                    { type: 'text', title: 'Direct traf', width: 100 },
-                    { type: 'text', title: 'Keys', width: 160 },
-                    { type: 'text', title: 'Comment', width: 220 },
-                    { type: 'dropdown', title: 'Status', width: 110, source: ['Pending', 'Active', 'Completed', 'Paused'] }
-                ];
-
-                const options = {
-                    data: initialData,
-                    columns: columns,
-                    tableOverflow: true,
-                    tableHeight: '580px',
-                    tableWidth: '100%',
-                    minDimensions: [16, Math.max(initialData.length, 5)],
-                    allowInsertRow: true,
-                    allowManualInsertRow: true,
-                    allowDeleteRow: true,
-                    columnSorting: true,
-                    contextMenu: true,
-                };
-
-                if (typeof jspreadsheet !== 'undefined') {
-                    this.tableInstance = jspreadsheet(container, options);
-                } else if (typeof jexcel !== 'undefined') {
-                    this.tableInstance = jexcel(container, options);
+                saveTable() {
+                    if (!this.tableInstance) return;
+                    this.isSaving = true;
+                    const data = this.tableInstance.getData();
+                    this.$wire.saveTrafficLaunch(data).then(() => {
+                        this.isSaving = false;
+                    }).catch((err) => {
+                        console.error('Save failed:', err);
+                        this.isSaving = false;
+                    });
                 }
-            },
+            };
+        }
 
-            addRow() {
-                if (this.tableInstance) {
-                    this.tableInstance.insertRow();
-                }
-            },
-
-            saveTable() {
-                if (!this.tableInstance) return;
-                this.isSaving = true;
-                const data = this.tableInstance.getData();
-                $wire.saveTrafficLaunch(data).then(() => {
-                    this.isSaving = false;
-                }).catch(() => {
-                    this.isSaving = false;
-                });
-            }
-        }));
+        // Register with Alpine
+        if (window.Alpine) {
+            window.Alpine.data('trafficSpreadsheetComponent', trafficSpreadsheetComponent);
+        } else {
+            document.addEventListener('alpine:init', () => {
+                Alpine.data('trafficSpreadsheetComponent', trafficSpreadsheetComponent);
+            });
+        }
     </script>
-    @endscript
 </div>
