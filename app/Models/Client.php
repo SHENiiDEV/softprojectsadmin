@@ -31,4 +31,12 @@ class Client extends Model
     {
         return $this->hasMany(Project::class, 'client_id');
     }
+
+    /**
+     * Get the traffic launches for the client.
+     */
+    public function trafficLaunches(): HasMany
+    {
+        return $this->hasMany(TrafficLaunch::class);
+    }
 }

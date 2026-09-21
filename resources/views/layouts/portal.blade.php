@@ -37,6 +37,12 @@
         <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.min.css" rel="stylesheet">
         <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
 
+        <!-- Jspreadsheet CE & jSuites -->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jspreadsheet-ce@4/dist/jspreadsheet.css" type="text/css" />
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsuites/dist/jsuites.css" type="text/css" />
+        <script src="https://cdn.jsdelivr.net/npm/jsuites/dist/jsuites.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/jspreadsheet-ce@4/dist/jspreadsheet.js"></script>
+
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
         @livewireStyles

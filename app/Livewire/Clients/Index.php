@@ -37,6 +37,13 @@ class Index extends Component
         'sortBy' => ['except' => 'id_desc'],
     ];
 
+    public function mount(): void
+    {
+        if (! auth()->user()?->hasAnyRole(['admin', 'manager', 'curator'])) {
+            abort(403);
+        }
+    }
+
     public function updatingSearch(): void
     {
         $this->resetPage();

@@ -7,6 +7,7 @@ use App\Livewire\Clients\Index;
 use App\Models\Client;
 use App\Models\Project;
 use App\Models\Task;
+use App\Models\TrafficLaunch;
 use App\Models\User;
 use App\Models\Website;
 use Database\Seeders\RolesAndPermissionsSeeder;
@@ -164,5 +165,148 @@ class ClientPortalTest extends TestCase
             'title' => '[Portal] General Question: Main Site',
             'priority' => 'critical',
         ]);
+    }
+
+    public function test_client_portal_prefills_traffic_data_for_active_websites(): void
+    {
+        $client = Client::create([
+            'name' => 'Traffic Client',
+            'hash' => 'traffichash123456789012345678901',
+        ]);
+
+        $company = Project::factory()->create([
+            'name' => 'Traffic Company',
+            'client_id' => $client->id,
+        ]);
+
+        $website1 = Website::create([
+            'project_id' => $company->id,
+            'name' => 'Alpha Site',
+            'url' => 'https://alpha.com',
+            'status' => 'Live',
+        ]);
+
+        $website2 = Website::create([
+            'project_id' => $company->id,
+            'name' => 'Beta Site',
+            'url' => 'https://beta.org',
+            'status' => 'Live',
+        ]);
+
+        $component = Livewire::test(ClientPortal::class, ['hash' => $client->hash]);
+        $rows = $component->instance()->getPrefilledTrafficData('October 2026');
+
+        $this->assertCount(2, $rows);
+        $domains = array_column($rows, 1);
+        $this->assertContains('alpha.com', $domains);
+        $this->assertContains('beta.org', $domains);
+    }
+
+    public function test_client_portal_save_traffic_launch_creates_records_and_tasks(): void
+    {
+        $client = Client::create([
+            'name' => 'Launch Client',
+            'hash' => 'launchhash1234567890123456789012',
+        ]);
+
+        $company = Project::factory()->create([
+            'name' => 'Launch Company',
+            'client_id' => $client->id,
+        ]);
+
+        $website = Website::create([
+            'project_id' => $company->id,
+            'name' => 'Gamma Site',
+            'url' => 'https://gamma.io',
+            'status' => 'Live',
+        ]);
+
+        $rows = [
+            [
+                '01.10.2026-31.10.2026', // Date
+                'gamma.io',              // Domain
+                '1000 UV/day',           // Plan
+                'USA 70%, GBR 30%',      // GEO
+                '40%',                   // BR
+                '3',                     // Pages
+                '30',                    // Time
+                '10%',                   // Referral
+                'https://ref.com',       // Ref links
+                '20%',                   // Social
+                'https://fb.com',        // Social links
+                '50%',                   // Organic
+                '20%',                   // Direct
+                'seo keywords',          // Keys
+                'Please launch on 1st',  // Comment
+                'Pending',               // Status
+            ],
+        ];
+
+        Livewire::test(ClientPortal::class, ['hash' => $client->hash])
+            ->set('trafficTargetMonth', 'October 2026')
+            ->call('saveTrafficLaunch', $rows, 'October 2026')
+            ->assertDispatched('notify');
+
+        // Check TrafficLaunch model record
+        $this->assertDatabaseHas('traffic_launches', [
+            'client_id' => $client->id,
+            'website_id' => $website->id,
+            'target_month' => 'October 2026',
+            'domain' => 'gamma.io',
+            'plan' => '1000 UV/day',
+            'geo' => 'USA 70%, GBR 30%',
+        ]);
+
+        // Check Task created
+        $this->assertDatabaseHas('tasks', [
+            'project_id' => $company->id,
+            'title' => '🚀 Traffic Launch: gamma.io (October 2026)',
+            'status' => 'todo',
+            'priority' => 'high',
+        ]);
+    }
+
+    public function test_client_portal_copy_previous_month_traffic(): void
+    {
+        $client = Client::create([
+            'name' => 'Copy Client',
+            'hash' => 'copyhash123456789012345678901234',
+        ]);
+
+        $company = Project::factory()->create([
+            'name' => 'Copy Company',
+            'client_id' => $client->id,
+        ]);
+
+        Website::create([
+            'project_id' => $company->id,
+            'name' => 'Delta Site',
+            'url' => 'https://delta.com',
+            'status' => 'Live',
+        ]);
+
+        // Seed previous month traffic record
+        TrafficLaunch::create([
+            'client_id' => $client->id,
+            'project_id' => $company->id,
+            'target_month' => 'September 2026',
+            'domain' => 'delta.com',
+            'plan' => '500 UV/day',
+            'geo' => 'CHE 100%',
+            'bounce_rate' => '45%',
+            'pages' => '2',
+            'time_on_page' => '20',
+            'status' => 'Completed',
+        ]);
+
+        Livewire::test(ClientPortal::class, ['hash' => $client->hash])
+            ->set('trafficTargetMonth', 'October 2026')
+            ->call('copyPreviousMonthTraffic')
+            ->assertDispatched('traffic-data-loaded', function ($event, $data) {
+                $rows = $data['data'] ?? [];
+                $firstRow = $rows[0] ?? [];
+
+                return ($firstRow[1] ?? '') === 'delta.com' && ($firstRow[2] ?? '') === '500 UV/day';
+            });
     }
 }

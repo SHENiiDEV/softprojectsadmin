@@ -35,6 +35,12 @@
                 <i class="fa-solid fa-plus-circle text-[11px]"></i>
                 <span class="hidden sm:inline">New Request</span>
             </button>
+            <button @click="tab = 'launch-traffic'; $wire.set('activeTab', 'launch-traffic')"
+                    :class="tab === 'launch-traffic' ? 'bg-gradient-to-r from-sky-500 to-indigo-600 text-white shadow-md shadow-indigo-500/20' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5'"
+                    class="flex items-center space-x-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer">
+                <i class="fa-solid fa-rocket text-[11px]"></i>
+                <span class="hidden sm:inline">Launch Traffic</span>
+            </button>
             <button @click="tab = 'tickets'; $wire.set('activeTab', 'tickets')"
                     :class="tab === 'tickets' ? 'bg-gradient-to-r from-sky-500 to-indigo-600 text-white shadow-md shadow-indigo-500/20' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5'"
                     class="flex items-center space-x-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer">
@@ -166,6 +172,16 @@
                         <div class="text-left">
                             <p class="text-sm font-semibold text-slate-700 dark:text-slate-300">Open Tickets</p>
                             <p class="text-[10px] text-slate-400 dark:text-slate-500">{{ $stats['open'] }} awaiting resolution</p>
+                        </div>
+                    </button>
+                    <button @click="tab = 'launch-traffic'; $wire.set('activeTab', 'launch-traffic')"
+                            class="w-full flex items-center space-x-3 p-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/5 hover:bg-slate-100 dark:hover:bg-white/10 rounded-xl transition-all duration-200 cursor-pointer">
+                        <div class="p-2 bg-purple-50 dark:bg-purple-950/40 rounded-lg">
+                            <i class="fa-solid fa-rocket text-purple-500 text-sm"></i>
+                        </div>
+                        <div class="text-left">
+                            <p class="text-sm font-semibold text-slate-700 dark:text-slate-300">Launch Traffic</p>
+                            <p class="text-[10px] text-slate-400 dark:text-slate-500">Spreadsheet campaign manager</p>
                         </div>
                     </button>
                 </div>
@@ -307,7 +323,6 @@
                                 <select wire:model.live="requestType"
                                         class="w-full px-4 py-3 bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all duration-200">
                                     <option value="General Question">General Question</option>
-                                    <option value="Traffic Launch">🚀 Traffic Launch</option>
                                     <option value="Design Changes">Design Changes</option>
                                     <option value="Integration Changes">Integration Changes</option>
                                     <option value="Bug Report">Bug Report</option>
@@ -320,7 +335,7 @@
                                 <select wire:model="urgency"
                                         class="w-full px-4 py-3 bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all duration-200">
                                     <option value="low">🟢 Low</option>
-                                    <option value="medium">🔵 Medium</option>
+                                    <option value="medium">🟡 Medium</option>
                                     <option value="high">🟠 High</option>
                                     <option value="critical">🔴 Critical</option>
                                 </select>
@@ -328,224 +343,16 @@
                             </div>
                         </div>
 
-                        {{-- TRAFFIC LAUNCH FORM FIELDS --}}
-                        @if($requestType === 'Traffic Launch')
-                            <div class="space-y-6 bg-slate-50/50 dark:bg-white/3 border border-slate-200/80 dark:border-white/10 rounded-2xl p-5 animate-fade-in">
-                                <div class="flex items-center space-x-2 pb-3 border-b border-slate-200/60 dark:border-white/10">
-                                    <span class="p-2 rounded-xl bg-sky-500/10 text-sky-500">
-                                        <i class="fa-solid fa-rocket text-base"></i>
-                                    </span>
-                                    <div>
-                                        <h4 class="text-sm font-bold text-slate-800 dark:text-white">Traffic Launch Campaign Details</h4>
-                                        <p class="text-xs text-slate-500 dark:text-slate-400">Configure target metrics, GEO distribution, and traffic sources for the campaign.</p>
-                                    </div>
-                                </div>
-
-                                <!-- Month & Plan -->
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div>
-                                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Target Month <span class="text-rose-500">*</span></label>
-                                        <select wire:model.live="trafficMonth" class="w-full px-3.5 py-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
-                                            <option value="">Select Month...</option>
-                                            @foreach($this->getMonthOptions() as $mKey => $mLabel)
-                                                <option value="{{ $mKey }}">{{ $mLabel }}</option>
-                                            @endforeach
-                                        </select>
-                                        @error('trafficMonth') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
-                                    </div>
-
-                                    <div>
-                                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Plan Name <span class="text-rose-500">*</span></label>
-                                        <input type="text" wire:model="trafficPlan" placeholder="e.g. Main Traffic Launch Plan" class="w-full px-3.5 py-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
-                                        @error('trafficPlan') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
-                                    </div>
-                                </div>
-
-                                <!-- GEO Distribution Header & Total Counter -->
-                                <div class="space-y-3">
-                                    <div class="flex items-center justify-between">
-                                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                                            GEO Distribution (Must equal 100%) <span class="text-rose-500">*</span>
-                                        </label>
-                                        <div class="flex items-center space-x-2">
-                                            @php $geoTotal = $this->geoTotalPercent; @endphp
-                                            <span class="px-2.5 py-1 rounded-full text-xs font-bold {{ $geoTotal === 100 ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400' : 'bg-rose-100 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400' }}">
-                                                Total: {{ $geoTotal }}% / 100%
-                                            </span>
-                                            <button type="button" wire:click="addGeoRow" class="px-2.5 py-1 bg-sky-500/10 hover:bg-sky-500/20 text-sky-600 dark:text-sky-400 rounded-lg text-xs font-semibold transition-all">
-                                                <i class="fa-solid fa-plus text-[10px] mr-1"></i> Add Country
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <!-- GEO Rows -->
-                                    <div class="space-y-2">
-                                        @foreach($trafficGeo as $index => $geo)
-                                            <div class="flex items-center gap-2">
-                                                <!-- Country Select (Searchable & Grouped by Region) -->
-                                                <div x-data="{
-                                                         ts: null,
-                                                         init() {
-                                                             this.$nextTick(() => {
-                                                                 const el = this.$refs.countrySelect;
-                                                                 if (!el) return;
-                                                                 if (el.tomselect) { el.tomselect.destroy(); }
-                                                                 this.ts = new TomSelect(el, {
-                                                                     placeholder: 'Search country or region...',
-                                                                     allowEmptyOption: true,
-                                                                     maxOptions: null,
-                                                                     onChange: (val) => {
-                                                                         @this.set('trafficGeo.{{ $index }}.code', val);
-                                                                     }
-                                                                 });
-                                                             });
-                                                         }
-                                                      }"
-                                                      wire:key="geo-country-select-{{ $index }}"
-                                                      class="flex-1">
-                                                     <select x-ref="countrySelect" wire:model="trafficGeo.{{ $index }}.code" class="w-full">
-                                                         <option value="">Search country or region...</option>
-                                                         @foreach($this->getGroupedCountries() as $regionName => $regionCountries)
-                                                             <optgroup label="{{ $regionName }}">
-                                                                 @foreach($regionCountries as $cCode => $cName)
-                                                                     <option value="{{ $cCode }}">{{ $cName }}</option>
-                                                                 @endforeach
-                                                             </optgroup>
-                                                         @endforeach
-                                                     </select>
-                                                 </div>
-
-                                                <!-- Percentage Input -->
-                                                <div class="w-28 relative">
-                                                    <input type="number" wire:model.live="trafficGeo.{{ $index }}.percent" min="1" max="100" placeholder="70" class="w-full pl-3 pr-7 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
-                                                    <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">%</span>
-                                                </div>
-
-                                                <!-- Remove Button -->
-                                                @if(count($trafficGeo) > 1)
-                                                    <button type="button" wire:click="removeGeoRow({{ $index }})" class="p-2 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer">
-                                                        <i class="fa-solid fa-trash-can text-xs"></i>
-                                                    </button>
-                                                @endif
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                    @error('trafficGeo') <span class="text-xs text-rose-500 block">{{ $message }}</span> @enderror
-                                </div>
-
-                                <!-- Bounce Rate, Pages, Time -->
-                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                    <div>
-                                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Bounce Rate <span class="text-rose-500">*</span></label>
-                                        <input type="text" wire:model="trafficBounceRate" placeholder="e.g. 25-30%" class="w-full px-3.5 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
-                                        @error('trafficBounceRate') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
-                                    </div>
-
-                                    <div>
-                                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Pages <span class="text-rose-500">*</span></label>
-                                        <input type="text" wire:model="trafficPages" placeholder="e.g. 3-5 pages" class="w-full px-3.5 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
-                                        @error('trafficPages') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
-                                    </div>
-
-                                    <div>
-                                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Time on Page (sec) <span class="text-rose-500">*</span></label>
-                                        <input type="number" min="1" wire:model="trafficTime" placeholder="e.g. 15" class="w-full px-3.5 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
-                                        @error('trafficTime') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
-                                    </div>
-                                </div>
-
-                                <!-- Channels Breakdown -->
-                                <div class="space-y-4 pt-2 border-t border-slate-200/60 dark:border-white/10">
-                                    <h5 class="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider">Traffic Channels Breakdown</h5>
-
-                                    <!-- Referral Traffic -->
-                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                        <div class="sm:col-span-1">
-                                            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Referral Traffic (%)</label>
-                                            <div class="relative">
-                                                <input type="number" wire:model="trafficReferralPercent" min="0" max="100" placeholder="15" class="w-full pl-3 pr-7 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
-                                                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">%</span>
-                                            </div>
-                                        </div>
-                                        <div class="sm:col-span-2">
-                                            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Referral Links (One per line)</label>
-                                            <textarea wire:model="trafficReferralLinks" rows="2" placeholder="https://example1.com&#10;https://example2.com" class="w-full px-3 py-1.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-mono text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 resize-none"></textarea>
-                                        </div>
-                                    </div>
-
-                                    <!-- Social Traffic Block (Total + Facebook/Instagram Breakdown) -->
-                                    <div class="p-3 bg-white/60 dark:bg-slate-900/60 border border-slate-200/60 dark:border-white/10 rounded-xl space-y-3">
-                                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
-                                            <div>
-                                                <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Social Traffic Total (%)</label>
-                                                <div class="relative">
-                                                    <input type="number" wire:model="trafficSocialPercent" min="0" max="100" placeholder="20" class="w-full pl-3 pr-7 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
-                                                    <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">%</span>
-                                                </div>
-                                            </div>
-
-                                            <div class="sm:col-span-2 grid grid-cols-2 gap-3">
-                                                <div>
-                                                    <label class="block text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1 flex items-center gap-1">
-                                                        <i class="fa-brands fa-facebook text-xs"></i> Facebook (%)
-                                                    </label>
-                                                    <div class="relative">
-                                                        <input type="number" wire:model="trafficSocialFbPercent" min="0" max="100" placeholder="10" class="w-full pl-3 pr-7 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
-                                                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">%</span>
-                                                    </div>
-                                                </div>
-
-                                                <div>
-                                                    <label class="block text-xs font-semibold text-pink-600 dark:text-pink-400 mb-1 flex items-center gap-1">
-                                                        <i class="fa-brands fa-instagram text-xs"></i> Instagram (%)
-                                                    </label>
-                                                    <div class="relative">
-                                                        <input type="number" wire:model="trafficSocialInstPercent" min="0" max="100" placeholder="10" class="w-full pl-3 pr-7 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
-                                                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">%</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Organic & Direct Traffic -->
-                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        <div>
-                                            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Organic Traffic (%)</label>
-                                            <div class="relative">
-                                                <input type="number" wire:model="trafficOrganicPercent" min="0" max="100" placeholder="35" class="w-full pl-3 pr-7 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
-                                                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">%</span>
-                                            </div>
-                                        </div>
-
-                                        <div>
-                                            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Direct Traffic (%)</label>
-                                            <div class="relative">
-                                                <input type="number" wire:model="trafficDirectPercent" min="0" max="100" placeholder="30" class="w-full pl-3 pr-7 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
-                                                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">%</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Comment -->
-                                <div>
-                                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Comment (Optional)</label>
-                                    <textarea wire:model="trafficComment" rows="3" placeholder="Any additional notes or instructions for the campaign..." class="w-full px-3.5 py-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 resize-none"></textarea>
-                                </div>
-                            </div>
-                        @else
-                            <!-- Description for Standard Request Types -->
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">Description <span class="text-rose-500">*</span></label>
-                                <textarea wire:model="description"
-                                          x-on:input="localStorage.setItem('portal_draft_description', $event.target.value)"
-                                          rows="5"
-                                          placeholder="Describe your issue or request in detail. The more details you provide, the faster we can help..."
-                                          class="w-full px-4 py-3 bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all duration-200 resize-none"></textarea>
-                                @error('description') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
-                            </div>
-                        @endif
+                        <!-- Description -->
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">Description <span class="text-rose-500">*</span></label>
+                            <textarea wire:model="description"
+                                      x-on:input="localStorage.setItem('portal_draft_description', $event.target.value)"
+                                      rows="5"
+                                      placeholder="Describe your issue or request in detail. The more details you provide, the faster we can help..."
+                                      class="w-full px-4 py-3 bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all duration-200 resize-none"></textarea>
+                            @error('description') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
+                        </div>
 
                         @if(config('features.task_attachments', true))
                             <!-- Attachments -->
@@ -597,6 +404,103 @@
                     </form>
                 </div>
             @endif
+        </div>
+    </div>
+
+    {{-- ============================================ --}}
+    {{-- LAUNCH TRAFFIC TAB (SPREADSHEET) --}}
+    {{-- ============================================ --}}
+    <div x-show="tab === 'launch-traffic'" 
+         x-transition:enter="transition ease-out duration-200" 
+         x-transition:enter-start="opacity-0 translate-y-2" 
+         x-transition:enter-end="opacity-100 translate-y-0"
+         x-data="trafficSpreadsheetComponent()"
+         class="space-y-4">
+
+        <!-- Header Controls Panel -->
+        <div class="glass-panel rounded-2xl p-5 border border-slate-200/80 dark:border-white/10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div>
+                    <div class="flex items-center space-x-2.5">
+                        <span class="p-2 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 text-white shadow-sm shadow-indigo-500/20">
+                            <i class="fa-solid fa-rocket text-sm"></i>
+                        </span>
+                        <div>
+                            <h2 class="font-outfit font-bold text-base text-slate-900 dark:text-white leading-tight">Launch Traffic Campaign</h2>
+                            <p class="text-xs text-slate-400 dark:text-slate-500">Configure monthly traffic settings across all your domains in an Excel-like spreadsheet</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions Bar -->
+                <div class="flex flex-wrap items-center gap-2.5">
+                    <!-- Month Selector -->
+                    <div class="flex items-center space-x-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-1.5">
+                        <i class="fa-regular fa-calendar text-slate-400 text-xs"></i>
+                        <span class="text-xs font-semibold text-slate-600 dark:text-slate-300">Month:</span>
+                        <select wire:model.live="trafficTargetMonth" class="bg-transparent border-0 text-xs font-bold text-indigo-600 dark:text-indigo-400 focus:ring-0 p-0 cursor-pointer">
+                            @foreach($this->getMonthOptions() as $mKey => $mLabel)
+                                <option value="{{ $mKey }}" class="text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900">{{ $mLabel }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <!-- Copy from Previous Month Button -->
+                    <button type="button" 
+                            wire:click="copyPreviousMonthTraffic" 
+                            wire:loading.attr="disabled"
+                            class="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 font-semibold rounded-xl text-xs transition-all duration-150 cursor-pointer">
+                        <i class="fa-solid fa-copy text-indigo-500 text-[11px]"></i>
+                        <span>Copy Previous Month</span>
+                    </button>
+
+                    <!-- Add Row Button -->
+                    <button type="button" 
+                            @click="addRow()" 
+                            class="inline-flex items-center space-x-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 font-semibold rounded-xl text-xs transition-all duration-150 cursor-pointer">
+                        <i class="fa-solid fa-plus text-slate-500 text-[10px]"></i>
+                        <span>Add Row</span>
+                    </button>
+
+                    <!-- Save & Submit Button -->
+                    <button type="button" 
+                            @click="saveTable()" 
+                            :disabled="isSaving"
+                            class="inline-flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white font-bold rounded-xl text-xs transition-all duration-200 hover:-translate-y-0.5 shadow-md shadow-indigo-500/20 cursor-pointer disabled:opacity-50">
+                        <template x-if="!isSaving">
+                            <span class="inline-flex items-center space-x-1.5">
+                                <i class="fa-solid fa-floppy-disk text-[11px]"></i>
+                                <span>Save & Launch</span>
+                            </span>
+                        </template>
+                        <template x-if="isSaving">
+                            <span class="inline-flex items-center space-x-1.5">
+                                <i class="fa-solid fa-spinner fa-spin text-[11px]"></i>
+                                <span>Saving...</span>
+                            </span>
+                        </template>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Spreadsheet Container Panel -->
+        <div class="glass-panel rounded-2xl p-4 border border-slate-200/80 dark:border-white/10 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
+            <div class="mb-3 flex items-center justify-between text-xs text-slate-400 dark:text-slate-500 px-1">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-circle-info text-sky-500"></i>
+                    <span>Pre-filled with all your active domains. Edit cells directly, copy/paste (Ctrl+C / Ctrl+V), or add new rows.</span>
+                </div>
+                <div class="hidden sm:flex items-center space-x-3 text-[11px]">
+                    <span class="font-mono bg-slate-100 dark:bg-white/5 px-2 py-0.5 rounded text-slate-600 dark:text-slate-400">16 Columns</span>
+                    <span class="text-emerald-500 font-semibold"><i class="fa-solid fa-check-double mr-1"></i>Auto-tasks generator</span>
+                </div>
+            </div>
+
+            <!-- Jspreadsheet Mount Target -->
+            <div class="traffic-sheet-wrapper overflow-x-auto rounded-xl border border-slate-200 dark:border-white/10 shadow-inner">
+                <div x-ref="spreadsheetContainer" class="w-full"></div>
+            </div>
         </div>
     </div>
 
@@ -1008,4 +912,131 @@
             </div>
         @endif
     @endif
+
+    <style>
+    .traffic-sheet-wrapper .jexcel {
+        font-family: inherit;
+        font-size: 12px;
+    }
+    .traffic-sheet-wrapper .jexcel thead td {
+        background: #f8fafc;
+        color: #334155;
+        font-weight: 700;
+        padding: 8px 10px;
+        border-color: #e2e8f0;
+    }
+    .dark .traffic-sheet-wrapper .jexcel thead td {
+        background: #0f172a;
+        color: #94a3b8;
+        border-color: #1e293b;
+    }
+    .traffic-sheet-wrapper .jexcel tbody td {
+        padding: 6px 10px;
+        border-color: #e2e8f0;
+        color: #1e293b;
+    }
+    .dark .traffic-sheet-wrapper .jexcel tbody td {
+        background: #020617;
+        color: #f1f5f9;
+        border-color: #1e293b;
+    }
+    .dark .traffic-sheet-wrapper .jexcel tbody tr:nth-child(even) td {
+        background: #0b1120;
+    }
+    </style>
+
+    @script
+    <script>
+        Alpine.data('trafficSpreadsheetComponent', () => ({
+            tableInstance: null,
+            isSaving: false,
+
+            init() {
+                this.$nextTick(() => {
+                    this.mountTable();
+                });
+
+                this.$watch('tab', (val) => {
+                    if (val === 'launch-traffic') {
+                        this.$nextTick(() => {
+                            if (!this.tableInstance) {
+                                this.mountTable();
+                            }
+                        });
+                    }
+                });
+
+                window.addEventListener('traffic-data-loaded', (e) => {
+                    if (this.tableInstance && e.detail && e.detail.data) {
+                        this.tableInstance.setData(e.detail.data);
+                    }
+                });
+            },
+
+            mountTable() {
+                const container = this.$refs.spreadsheetContainer;
+                if (!container) return;
+                container.innerHTML = '';
+
+                const initialData = @json($this->getPrefilledTrafficData());
+
+                const columns = [
+                    { type: 'text', title: 'Date', width: 140 },
+                    { type: 'text', title: 'Domain', width: 170 },
+                    { type: 'text', title: 'Plan', width: 90 },
+                    { type: 'text', title: 'GEO', width: 150 },
+                    { type: 'text', title: 'BR', width: 90 },
+                    { type: 'text', title: 'Pages', width: 80 },
+                    { type: 'text', title: 'Time', width: 80 },
+                    { type: 'text', title: 'Referal traf', width: 100 },
+                    { type: 'text', title: 'Referal traf links', width: 180 },
+                    { type: 'text', title: 'Social traf', width: 100 },
+                    { type: 'text', title: 'Social traf links', width: 180 },
+                    { type: 'text', title: 'Organic traf', width: 100 },
+                    { type: 'text', title: 'Direct traf', width: 100 },
+                    { type: 'text', title: 'Keys', width: 160 },
+                    { type: 'text', title: 'Comment', width: 220 },
+                    { type: 'dropdown', title: 'Status', width: 110, source: ['Pending', 'Active', 'Completed', 'Paused'] }
+                ];
+
+                const options = {
+                    data: initialData,
+                    columns: columns,
+                    tableOverflow: true,
+                    tableHeight: '580px',
+                    tableWidth: '100%',
+                    minDimensions: [16, Math.max(initialData.length, 5)],
+                    allowInsertRow: true,
+                    allowManualInsertRow: true,
+                    allowDeleteRow: true,
+                    columnSorting: true,
+                    contextMenu: true,
+                };
+
+                if (typeof jspreadsheet !== 'undefined') {
+                    this.tableInstance = jspreadsheet(container, options);
+                } else if (typeof jexcel !== 'undefined') {
+                    this.tableInstance = jexcel(container, options);
+                }
+            },
+
+            addRow() {
+                if (this.tableInstance) {
+                    this.tableInstance.insertRow();
+                }
+            },
+
+            saveTable() {
+                if (!this.tableInstance) return;
+                this.isSaving = true;
+                const data = this.tableInstance.getData();
+                $wire.saveTrafficLaunch(data).then(() => {
+                    this.isSaving = false;
+                }).catch(() => {
+                    this.isSaving = false;
+                });
+            }
+        }));
+    </script>
+    @endscript
 </div>

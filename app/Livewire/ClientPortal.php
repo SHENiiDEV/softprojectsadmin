@@ -7,6 +7,7 @@ use App\Models\Client;
 use App\Models\Comment;
 use App\Models\Project;
 use App\Models\Task;
+use App\Models\TrafficLaunch;
 use App\Models\Website;
 use App\Services\NotificationService;
 use Livewire\Component;
@@ -50,40 +51,8 @@ class ClientPortal extends Component
 
     public $attachments = [];
 
-    // Traffic Launch Specific Fields
-    public string $trafficMonth = '';
-
-    public string $trafficPlan = '';
-
-    public array $trafficGeo = [
-        ['code' => '', 'percent' => ''],
-    ];
-
-    public string $trafficBounceRate = '';
-
-    public string $trafficPages = '';
-
-    public string $trafficTime = '';
-
-    public string $trafficReferralPercent = '';
-
-    public string $trafficReferralLinks = '';
-
-    public string $trafficSocialPercent = '';
-
-    public string $trafficSocialFbPercent = '';
-
-    public string $trafficSocialFbLink = '';
-
-    public string $trafficSocialInstPercent = '';
-
-    public string $trafficSocialInstLink = '';
-
-    public string $trafficOrganicPercent = '';
-
-    public string $trafficDirectPercent = '';
-
-    public string $trafficComment = '';
+    // Launch Traffic Spreadsheet Fields
+    public string $trafficTargetMonth = '';
 
     // Success state
     public bool $submitted = false;
@@ -107,32 +76,10 @@ class ClientPortal extends Component
 
     protected function rules(): array
     {
-        if ($this->requestType === 'Traffic Launch') {
-            return [
-                'selectedCompanyId' => 'required|exists:projects,id',
-                'selectedWebsiteId' => 'required|exists:websites,id',
-                'requestType' => 'required',
-                'urgency' => 'required|in:low,medium,high,critical',
-                'trafficMonth' => 'required|string',
-                'trafficPlan' => 'required|string',
-                'trafficGeo' => 'required|array|min:1',
-                'trafficGeo.*.code' => 'required|string',
-                'trafficGeo.*.percent' => 'required|numeric|min:1|max:100',
-                'trafficBounceRate' => 'required|string',
-                'trafficPages' => 'required|string',
-                'trafficTime' => 'required|string',
-                'trafficReferralPercent' => 'nullable|numeric|min:0|max:100',
-                'trafficSocialPercent' => 'nullable|numeric|min:0|max:100',
-                'trafficOrganicPercent' => 'nullable|numeric|min:0|max:100',
-                'trafficDirectPercent' => 'nullable|numeric|min:0|max:100',
-                'attachments.*' => 'nullable|file|max:10240', // 10MB max
-            ];
-        }
-
         return [
             'selectedCompanyId' => 'required|exists:projects,id',
             'selectedWebsiteId' => 'required|exists:websites,id',
-            'requestType' => 'required|in:General Question,Traffic Launch,Design Changes,Integration Changes,Bug Report,Other',
+            'requestType' => 'required|in:General Question,Design Changes,Integration Changes,Bug Report,Other',
             'urgency' => 'required|in:low,medium,high,critical',
             'description' => 'required|string|min:10',
             'attachments.*' => 'nullable|file|max:10240', // 10MB max
@@ -145,13 +92,6 @@ class ClientPortal extends Component
         'requestType.required' => 'Please select a request type.',
         'description.required' => 'Please enter a description.',
         'description.min' => 'Description must be at least 10 characters.',
-        'trafficMonth.required' => 'Please select a target month.',
-        'trafficPlan.required' => 'Please enter a plan name.',
-        'trafficGeo.*.code.required' => 'Please select a country for all GEO entries.',
-        'trafficGeo.*.percent.required' => 'Please enter a percentage for all GEO entries.',
-        'trafficBounceRate.required' => 'Please enter the expected bounce rate.',
-        'trafficPages.required' => 'Please enter the number of pages.',
-        'trafficTime.required' => 'Please enter time on page (e.g. 15).',
         'attachments.*.max' => 'Each file must be no larger than 10MB.',
     ];
 
@@ -159,6 +99,7 @@ class ClientPortal extends Component
     {
         $this->hash = $hash;
         $this->client = Client::where('hash', $hash)->firstOrFail();
+        $this->trafficTargetMonth = now()->format('F Y');
     }
 
     public function getMonthOptions(): array
@@ -269,24 +210,6 @@ class ClientPortal extends Component
         return $flattened;
     }
 
-    public function addGeoRow(): void
-    {
-        $this->trafficGeo[] = ['code' => '', 'percent' => 0];
-    }
-
-    public function removeGeoRow(int $index): void
-    {
-        if (count($this->trafficGeo) > 1) {
-            unset($this->trafficGeo[$index]);
-            $this->trafficGeo = array_values($this->trafficGeo);
-        }
-    }
-
-    public function getGeoTotalPercentProperty(): int
-    {
-        return (int) collect($this->trafficGeo)->sum(fn ($item) => (int) ($item['percent'] ?? 0));
-    }
-
     public function updatedActiveTab(): void
     {
         // Reset modal when switching tabs
@@ -295,11 +218,10 @@ class ClientPortal extends Component
         }
     }
 
-    public function updatedTrafficMonth(string $value): void
+    public function updatedTrafficTargetMonth(string $value): void
     {
-        if (! empty($value)) {
-            $this->trafficPlan = "Traffic Launch {$value}";
-        }
+        $rows = $this->getPrefilledTrafficData($value);
+        $this->dispatch('traffic-data-loaded', data: $rows);
     }
 
     public function updatedSearchQuery(): void
@@ -324,13 +246,6 @@ class ClientPortal extends Component
             $this->urgency = 'high';
         } else {
             $this->urgency = 'medium';
-        }
-
-        if ($value === 'Traffic Report') {
-            if (empty($this->trafficMonth)) {
-                $this->trafficMonth = now()->format('F Y');
-            }
-            $this->trafficPlan = "Traffic Launch {$this->trafficMonth}";
         }
     }
 
@@ -381,171 +296,17 @@ class ClientPortal extends Component
         $website = Website::findOrFail($this->selectedWebsiteId);
         $company = Project::findOrFail($this->selectedCompanyId);
 
-        if ($this->requestType === 'Traffic Launch') {
-            $totalGeo = $this->geoTotalPercent;
-            if ($totalGeo !== 100) {
-                $this->addError('trafficGeo', "Total GEO percentage must equal 100% (currently {$totalGeo}%).");
+        $typeTranslations = [
+            'General Question' => 'General Question',
+            'Design Changes' => 'Design Changes',
+            'Integration Changes' => 'Integration Changes',
+            'Bug Report' => 'Bug Report',
+            'Other' => 'Other',
+        ];
 
-                return;
-            }
-
-            $taskTitle = "{$this->trafficMonth} Traffic";
-
-            $geoRowsHtml = '';
-            foreach ($this->trafficGeo as $geo) {
-                $code = e($geo['code'] ?? '');
-                $percent = e($geo['percent'] ?? 0);
-                $countryName = e($this->getCountriesList()[$code] ?? $code);
-                if ($code) {
-                    $geoRowsHtml .= "
-                    <tr style='border-bottom: 1px solid #f1f5f9;'>
-                        <td style='padding: 8px 12px; font-weight: 600; color: #1e293b;'>{$countryName}</td>
-                        <td style='padding: 8px 12px; text-align: right; font-weight: 800; color: #0284c7;'>{$percent}%</td>
-                    </tr>";
-                }
-            }
-
-            $channelsHtml = '';
-            if ($this->trafficReferralPercent !== '') {
-                $refPercent = e($this->trafficReferralPercent);
-                $refLinksHtml = '';
-                if (! empty($this->trafficReferralLinks)) {
-                    $links = array_filter(explode("\n", trim($this->trafficReferralLinks)));
-                    $linksList = implode('', array_map(function ($l) {
-                        $cleanL = e(trim($l));
-
-                        return "<li style='margin-bottom: 2px;'><a href='{$cleanL}' target='_blank' style='color: #0284c7; text-decoration: underline;'>{$cleanL}</a></li>";
-                    }, $links));
-                    $refLinksHtml = "<ul style='margin: 6px 0 0 0; padding-left: 18px; font-size: 11px; font-family: monospace;'>{$linksList}</ul>";
-                }
-                $channelsHtml .= "
-                <div style='padding: 10px 12px; background: #ffffff; border-radius: 8px; margin-bottom: 8px; border: 1px solid #e2e8f0;'>
-                    <div style='display: flex; justify-content: space-between; align-items: center;'>
-                        <span style='font-weight: 700; color: #334155; font-size: 12px;'>🔗 Referral Traffic</span>
-                        <span style='font-weight: 800; color: #0284c7; font-size: 13px;'>{$refPercent}%</span>
-                    </div>
-                    {$refLinksHtml}
-                </div>";
-            }
-
-            if ($this->trafficSocialPercent !== '') {
-                $socPercent = e($this->trafficSocialPercent);
-                $socialSubHtml = '';
-                if ($this->trafficSocialFbPercent !== '') {
-                    $fbPercent = e($this->trafficSocialFbPercent);
-                    $socialSubHtml .= "<div style='font-size: 11px; color: #475569; margin-top: 4px;'>• <strong>Facebook:</strong> {$fbPercent}%</div>";
-                }
-                if ($this->trafficSocialInstPercent !== '') {
-                    $instPercent = e($this->trafficSocialInstPercent);
-                    $socialSubHtml .= "<div style='font-size: 11px; color: #475569; margin-top: 2px;'>• <strong>Instagram:</strong> {$instPercent}%</div>";
-                }
-                $channelsHtml .= "
-                <div style='padding: 10px 12px; background: #ffffff; border-radius: 8px; margin-bottom: 8px; border: 1px solid #e2e8f0;'>
-                    <div style='display: flex; justify-content: space-between; align-items: center;'>
-                        <span style='font-weight: 700; color: #334155; font-size: 12px;'>📱 Social Traffic</span>
-                        <span style='font-weight: 800; color: #0284c7; font-size: 13px;'>{$socPercent}%</span>
-                    </div>
-                    {$socialSubHtml}
-                </div>";
-            }
-
-            if ($this->trafficOrganicPercent !== '') {
-                $orgPercent = e($this->trafficOrganicPercent);
-                $channelsHtml .= "
-                <div style='padding: 10px 12px; background: #ffffff; border-radius: 8px; margin-bottom: 8px; border: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;'>
-                    <span style='font-weight: 700; color: #334155; font-size: 12px;'>🔍 Organic Traffic</span>
-                    <span style='font-weight: 800; color: #0284c7; font-size: 13px;'>{$orgPercent}%</span>
-                </div>";
-            }
-
-            if ($this->trafficDirectPercent !== '') {
-                $dirPercent = e($this->trafficDirectPercent);
-                $channelsHtml .= "
-                <div style='padding: 10px 12px; background: #ffffff; border-radius: 8px; margin-bottom: 8px; border: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;'>
-                    <span style='font-weight: 700; color: #334155; font-size: 12px;'>🎯 Direct Traffic</span>
-                    <span style='font-weight: 800; color: #0284c7; font-size: 13px;'>{$dirPercent}%</span>
-                </div>";
-            }
-
-            $commentHtml = '';
-            if (! empty($this->trafficComment)) {
-                $commentContent = nl2br(e(trim($this->trafficComment)));
-                $commentHtml = "
-                <div style='margin-top: 14px; background: #fffbe6; border: 1px solid #ffe58f; border-radius: 10px; padding: 12px 14px;'>
-                    <div style='font-size: 11px; font-weight: 800; color: #d48806; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;'>💬 Client Comment</div>
-                    <div style='font-size: 12px; color: #595959; line-height: 1.5;'>{$commentContent}</div>
-                </div>";
-            }
-
-            $trafficMonth = e($this->trafficMonth);
-            $trafficPlan = e($this->trafficPlan);
-            $bounceRate = e($this->trafficBounceRate);
-            $pages = e($this->trafficPages);
-            $timeOnPage = e($this->trafficTime);
-            $websiteName = e($website->name);
-            $websiteUrl = e($website->url);
-
-            $taskDescription = "<div style='font-family: system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif; color: #1e293b; max-width: 100%;'>
-    <div style='background: linear-gradient(135deg, #0284c7 0%, #4f46e5 100%); color: #ffffff; padding: 16px 20px; border-radius: 12px; margin-bottom: 16px;'>
-        <div style='font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.9;'>🚀 TRAFFIC LAUNCH CAMPAIGN</div>
-        <div style='font-size: 18px; font-weight: 800; margin-top: 4px;'>{$trafficMonth} Traffic</div>
-        <div style='font-size: 12px; opacity: 0.95; margin-top: 6px;'>
-            Plan: <strong>{$trafficPlan}</strong> &bull; Website: <a href='{$websiteUrl}' target='_blank' style='color: #ffffff; text-decoration: underline;'>{$websiteUrl}</a>
-        </div>
-    </div>
-
-    <div style='display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px;'>
-        <div style='background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; text-align: center;'>
-            <div style='font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase;'>Bounce Rate</div>
-            <div style='font-size: 16px; font-weight: 800; color: #0284c7; margin-top: 2px;'>{$bounceRate}</div>
-        </div>
-        <div style='background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; text-align: center;'>
-            <div style='font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase;'>Pages</div>
-            <div style='font-size: 16px; font-weight: 800; color: #0284c7; margin-top: 2px;'>{$pages}</div>
-        </div>
-        <div style='background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; text-align: center;'>
-            <div style='font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase;'>Time on Page</div>
-            <div style='font-size: 16px; font-weight: 800; color: #0284c7; margin-top: 2px;'>{$timeOnPage} sec</div>
-        </div>
-    </div>
-
-    <div style='background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; margin-bottom: 16px;'>
-        <div style='font-size: 11px; font-weight: 800; text-transform: uppercase; color: #475569; letter-spacing: 0.05em; margin-bottom: 8px;'>📍 GEO Distribution (100% Total)</div>
-        <table style='width: 100%; border-collapse: collapse; font-size: 12px;'>
-            <thead>
-                <tr style='border-bottom: 2px solid #cbd5e1; color: #64748b; font-size: 10px; text-transform: uppercase; font-weight: 800;'>
-                    <th style='text-align: left; padding: 6px 12px;'>Country</th>
-                    <th style='text-align: right; padding: 6px 12px;'>Percentage</th>
-                </tr>
-            </thead>
-            <tbody>
-                {$geoRowsHtml}
-            </tbody>
-        </table>
-    </div>
-
-    <div style='background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px;'>
-        <div style='font-size: 11px; font-weight: 800; text-transform: uppercase; color: #475569; letter-spacing: 0.05em; margin-bottom: 10px;'>🚦 Traffic Sources</div>
-        {$channelsHtml}
-    </div>
-
-    {$commentHtml}
-</div>";
-
-        } else {
-            // Map request type translation
-            $typeTranslations = [
-                'General Question' => 'General Question',
-                'Design Changes' => 'Design Changes',
-                'Integration Changes' => 'Integration Changes',
-                'Bug Report' => 'Bug Report',
-                'Other' => 'Other',
-            ];
-
-            $translatedType = $typeTranslations[$this->requestType] ?? $this->requestType;
-            $taskTitle = "[Portal] {$translatedType}: {$website->name}";
-            $taskDescription = $this->description;
-        }
+        $translatedType = $typeTranslations[$this->requestType] ?? $this->requestType;
+        $taskTitle = "[Portal] {$translatedType}: {$website->name}";
+        $taskDescription = $this->description;
 
         // Create the task on Kanban Board
         $priority = $this->urgency;
@@ -591,25 +352,425 @@ class ClientPortal extends Component
         $this->attachments = [];
         $this->requestType = 'General Question';
         $this->urgency = 'medium';
+    }
 
-        $this->trafficMonth = '';
-        $this->trafficPlan = '';
-        $this->trafficGeo = [
-            ['code' => '', 'percent' => ''],
-        ];
-        $this->trafficBounceRate = '';
-        $this->trafficPages = '';
-        $this->trafficTime = '';
-        $this->trafficReferralPercent = '';
-        $this->trafficReferralLinks = '';
-        $this->trafficSocialPercent = '';
-        $this->trafficSocialFbPercent = '';
-        $this->trafficSocialFbLink = '';
-        $this->trafficSocialInstPercent = '';
-        $this->trafficSocialInstLink = '';
-        $this->trafficOrganicPercent = '';
-        $this->trafficDirectPercent = '';
-        $this->trafficComment = '';
+    /**
+     * Get prefilled traffic data matrix for Jspreadsheet.
+     */
+    public function getPrefilledTrafficData(?string $month = null): array
+    {
+        $month = $month ?: $this->trafficTargetMonth;
+        if (empty($month)) {
+            $month = now()->format('F Y');
+        }
+
+        $existing = TrafficLaunch::where('client_id', $this->client->id)
+            ->where('target_month', $month)
+            ->get()
+            ->keyBy(fn ($item) => strtolower($item->domain));
+
+        $companies = $this->client->companies()->with('websites')->get();
+        $rows = [];
+        $handledDomains = [];
+
+        $defaultDateRange = now()->startOfMonth()->format('d.m.Y').'-'.now()->endOfMonth()->format('d.m.Y');
+
+        foreach ($companies as $company) {
+            foreach ($company->websites as $website) {
+                $domain = preg_replace('/^https?:\/\//i', '', rtrim($website->url ?: $website->name, '/'));
+                $domain = explode('/', $domain)[0];
+                $cleanKey = strtolower($domain);
+
+                if (in_array($cleanKey, $handledDomains)) {
+                    continue;
+                }
+                $handledDomains[] = $cleanKey;
+
+                $record = $existing->get($cleanKey);
+                $rows[] = [
+                    $record?->date_range ?? $defaultDateRange,
+                    $domain,
+                    $record?->plan ?? '',
+                    $record?->geo ?? '',
+                    $record?->bounce_rate ?? '50-60%',
+                    $record?->pages ?? '2-3',
+                    $record?->time_on_page ?? '15-30',
+                    $record?->referral_traf ?? '0%',
+                    $record?->referral_links ?? '',
+                    $record?->social_traf ?? '0%',
+                    $record?->social_links ?? '',
+                    $record?->organic_traf ?? '0%',
+                    $record?->direct_traf ?? '0%',
+                    $record?->keywords ?? '',
+                    $record?->comment ?? '',
+                    $record?->status ?? 'Pending',
+                ];
+            }
+        }
+
+        // Include any additional records for this month not tied to existing websites
+        foreach ($existing as $key => $record) {
+            if (! in_array($key, $handledDomains)) {
+                $rows[] = [
+                    $record->date_range ?? $defaultDateRange,
+                    $record->domain,
+                    $record->plan ?? '',
+                    $record->geo ?? '',
+                    $record->bounce_rate ?? '50-60%',
+                    $record->pages ?? '2-3',
+                    $record->time_on_page ?? '15-30',
+                    $record->referral_traf ?? '0%',
+                    $record->referral_links ?? '',
+                    $record->social_traf ?? '0%',
+                    $record->social_links ?? '',
+                    $record->organic_traf ?? '0%',
+                    $record->direct_traf ?? '0%',
+                    $record->keywords ?? '',
+                    $record->comment ?? '',
+                    $record->status ?? 'Pending',
+                ];
+            }
+        }
+
+        // If no websites or records exist, provide at least one empty template row
+        if (empty($rows)) {
+            $rows[] = [
+                $defaultDateRange,
+                '',
+                '',
+                '',
+                '50-60%',
+                '2-3',
+                '15-30',
+                '0%',
+                '',
+                '0%',
+                '',
+                '0%',
+                '0%',
+                '',
+                '',
+                'Pending',
+            ];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Copy traffic parameters from previous month.
+     */
+    public function copyPreviousMonthTraffic(): void
+    {
+        $prevLaunch = TrafficLaunch::where('client_id', $this->client->id)
+            ->where('target_month', '!=', $this->trafficTargetMonth)
+            ->orderByDesc('created_at')
+            ->first();
+
+        if (! $prevLaunch) {
+            $this->dispatch('notify', message: 'No previous month data found to copy.', type: 'warning');
+
+            return;
+        }
+
+        $prevMonth = $prevLaunch->target_month;
+        $prevRecords = TrafficLaunch::where('client_id', $this->client->id)
+            ->where('target_month', $prevMonth)
+            ->get()
+            ->keyBy(fn ($item) => strtolower($item->domain));
+
+        $companies = $this->client->companies()->with('websites')->get();
+        $rows = [];
+        $handledDomains = [];
+
+        $defaultDateRange = now()->startOfMonth()->format('d.m.Y').'-'.now()->endOfMonth()->format('d.m.Y');
+
+        foreach ($companies as $company) {
+            foreach ($company->websites as $website) {
+                $domain = preg_replace('/^https?:\/\//i', '', rtrim($website->url ?: $website->name, '/'));
+                $domain = explode('/', $domain)[0];
+                $cleanKey = strtolower($domain);
+
+                if (in_array($cleanKey, $handledDomains)) {
+                    continue;
+                }
+                $handledDomains[] = $cleanKey;
+
+                $prev = $prevRecords->get($cleanKey);
+
+                $rows[] = [
+                    $prev?->date_range ?? $defaultDateRange,
+                    $domain,
+                    $prev?->plan ?? '',
+                    $prev?->geo ?? '',
+                    $prev?->bounce_rate ?? '50-60%',
+                    $prev?->pages ?? '2-3',
+                    $prev?->time_on_page ?? '15-30',
+                    $prev?->referral_traf ?? '0%',
+                    $prev?->referral_links ?? '',
+                    $prev?->social_traf ?? '0%',
+                    $prev?->social_links ?? '',
+                    $prev?->organic_traf ?? '0%',
+                    $prev?->direct_traf ?? '0%',
+                    $prev?->keywords ?? '',
+                    $prev?->comment ?? '',
+                    'Pending',
+                ];
+            }
+        }
+
+        foreach ($prevRecords as $key => $prev) {
+            if (! in_array($key, $handledDomains)) {
+                $rows[] = [
+                    $prev->date_range ?? $defaultDateRange,
+                    $prev->domain,
+                    $prev->plan ?? '',
+                    $prev->geo ?? '',
+                    $prev->bounce_rate ?? '50-60%',
+                    $prev->pages ?? '2-3',
+                    $prev->time_on_page ?? '15-30',
+                    $prev->referral_traf ?? '0%',
+                    $prev->referral_links ?? '',
+                    $prev->social_traf ?? '0%',
+                    $prev->social_links ?? '',
+                    $prev->organic_traf ?? '0%',
+                    $prev->direct_traf ?? '0%',
+                    $prev->keywords ?? '',
+                    $prev->comment ?? '',
+                    'Pending',
+                ];
+            }
+        }
+
+        $this->dispatch('traffic-data-loaded', data: $rows);
+        $this->dispatch('notify', message: "Data copied from {$prevMonth}!", type: 'success');
+    }
+
+    /**
+     * Save traffic spreadsheet rows and create Kanban tasks.
+     */
+    public function saveTrafficLaunch(array $rows, ?string $targetMonth = null): void
+    {
+        $month = $targetMonth ?: $this->trafficTargetMonth;
+        if (empty($month)) {
+            $month = now()->format('F Y');
+        }
+
+        $companies = $this->client->companies()->with('websites')->get();
+        $websiteLookup = [];
+        foreach ($companies as $company) {
+            foreach ($company->websites as $website) {
+                $cleanDomain = strtolower(explode('/', preg_replace('/^https?:\/\//i', '', rtrim($website->url ?: $website->name, '/')))[0]);
+                $websiteLookup[$cleanDomain] = [
+                    'website' => $website,
+                    'project' => $company,
+                ];
+            }
+        }
+
+        $createdTasksCount = 0;
+
+        foreach ($rows as $row) {
+            $dateRange = trim((string) ($row[0] ?? ''));
+            $domain = trim((string) ($row[1] ?? ''));
+            $plan = trim((string) ($row[2] ?? ''));
+            $geo = trim((string) ($row[3] ?? ''));
+            $bounceRate = trim((string) ($row[4] ?? ''));
+            $pages = trim((string) ($row[5] ?? ''));
+            $timeOnPage = trim((string) ($row[6] ?? ''));
+            $referralTraf = trim((string) ($row[7] ?? ''));
+            $referralLinks = trim((string) ($row[8] ?? ''));
+            $socialTraf = trim((string) ($row[9] ?? ''));
+            $socialLinks = trim((string) ($row[10] ?? ''));
+            $organicTraf = trim((string) ($row[11] ?? ''));
+            $directTraf = trim((string) ($row[12] ?? ''));
+            $keywords = trim((string) ($row[13] ?? ''));
+            $comment = trim((string) ($row[14] ?? ''));
+            $status = trim((string) ($row[15] ?? '')) ?: 'Pending';
+
+            if (empty($domain)) {
+                continue;
+            }
+
+            $cleanDomainKey = strtolower(explode('/', preg_replace('/^https?:\/\//i', '', rtrim($domain, '/')))[0]);
+            $matched = $websiteLookup[$cleanDomainKey] ?? null;
+            $company = $matched ? $matched['project'] : $companies->first();
+            $websiteId = $matched ? $matched['website']->id : null;
+            $projectId = $company?->id;
+
+            $hasData = ! empty($plan) || ! empty($geo) || ! empty($keywords) || ! empty($comment);
+
+            $trafficLaunch = TrafficLaunch::updateOrCreate(
+                [
+                    'client_id' => $this->client->id,
+                    'target_month' => $month,
+                    'domain' => $domain,
+                ],
+                [
+                    'project_id' => $projectId,
+                    'website_id' => $websiteId,
+                    'date_range' => $dateRange,
+                    'plan' => $plan,
+                    'geo' => $geo,
+                    'bounce_rate' => $bounceRate,
+                    'pages' => $pages,
+                    'time_on_page' => $timeOnPage,
+                    'referral_traf' => $referralTraf,
+                    'referral_links' => $referralLinks,
+                    'social_traf' => $socialTraf,
+                    'social_links' => $socialLinks,
+                    'organic_traf' => $organicTraf,
+                    'direct_traf' => $directTraf,
+                    'keywords' => $keywords,
+                    'comment' => $comment,
+                    'status' => $status,
+                ]
+            );
+
+            if ($hasData && $company && ! $trafficLaunch->task_id) {
+                $taskTitle = "🚀 Traffic Launch: {$domain} ({$month})";
+                $descriptionHtml = $this->buildTrafficRowDescription([
+                    'domain' => $domain,
+                    'month' => $month,
+                    'date_range' => $dateRange,
+                    'plan' => $plan,
+                    'geo' => $geo,
+                    'bounce_rate' => $bounceRate,
+                    'pages' => $pages,
+                    'time_on_page' => $timeOnPage,
+                    'referral_traf' => $referralTraf,
+                    'referral_links' => $referralLinks,
+                    'social_traf' => $socialTraf,
+                    'social_links' => $socialLinks,
+                    'organic_traf' => $organicTraf,
+                    'direct_traf' => $directTraf,
+                    'keywords' => $keywords,
+                    'comment' => $comment,
+                ]);
+
+                $task = Task::create([
+                    'project_id' => $company->id,
+                    'creator_id' => null,
+                    'title' => $taskTitle,
+                    'description' => $descriptionHtml,
+                    'status' => 'todo',
+                    'priority' => 'high',
+                ]);
+
+                $trafficLaunch->update(['task_id' => $task->id]);
+                $createdTasksCount++;
+
+                ActivityLog::create([
+                    'user_id' => null,
+                    'client_id' => $this->client->id,
+                    'task_id' => $task->id,
+                    'project_id' => $company->id,
+                    'action' => 'client_portal_task_created',
+                    'description' => "Traffic campaign '{$taskTitle}' was launched via client portal by {$this->client->name}",
+                ]);
+
+                NotificationService::sendClientPortalTaskCreated($task, $this->client, $company);
+            }
+        }
+
+        $msg = "Traffic table for {$month} saved successfully!";
+        if ($createdTasksCount > 0) {
+            $msg .= " ({$createdTasksCount} new task".($createdTasksCount > 1 ? 's' : '').' created on Kanban).';
+        }
+
+        $this->dispatch('notify', message: $msg, type: 'success');
+    }
+
+    /**
+     * Build rich HTML description for a traffic campaign task.
+     */
+    protected function buildTrafficRowDescription(array $data): string
+    {
+        $domain = e($data['domain'] ?? '');
+        $month = e($data['month'] ?? '');
+        $dateRange = e($data['date_range'] ?? '');
+        $plan = e($data['plan'] ?? '');
+        $geo = nl2br(e($data['geo'] ?? ''));
+        $bounceRate = e($data['bounce_rate'] ?? '');
+        $pages = e($data['pages'] ?? '');
+        $timeOnPage = e($data['time_on_page'] ?? '');
+        $referralTraf = e($data['referral_traf'] ?? '');
+        $referralLinks = nl2br(e($data['referral_links'] ?? ''));
+        $socialTraf = e($data['social_traf'] ?? '');
+        $socialLinks = nl2br(e($data['social_links'] ?? ''));
+        $organicTraf = e($data['organic_traf'] ?? '');
+        $directTraf = e($data['direct_traf'] ?? '');
+        $keywords = nl2br(e($data['keywords'] ?? ''));
+        $comment = nl2br(e($data['comment'] ?? ''));
+
+        $geoHtml = ! empty($geo) ? "
+        <div style='background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; margin-bottom: 16px;'>
+            <div style='font-size: 11px; font-weight: 800; text-transform: uppercase; color: #475569; letter-spacing: 0.05em; margin-bottom: 8px;'>📍 Target GEO</div>
+            <div style='font-size: 13px; font-weight: 600; color: #0f172a; line-height: 1.5;'>{$geo}</div>
+        </div>" : '';
+
+        $keywordsHtml = ! empty($keywords) ? "
+        <div style='background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; margin-bottom: 16px;'>
+            <div style='font-size: 11px; font-weight: 800; text-transform: uppercase; color: #475569; letter-spacing: 0.05em; margin-bottom: 6px;'>🔑 Keywords</div>
+            <div style='font-size: 12px; font-family: monospace; color: #334155;'>{$keywords}</div>
+        </div>" : '';
+
+        $commentHtml = ! empty($comment) ? "
+        <div style='background: #fffbe6; border: 1px solid #ffe58f; border-radius: 12px; padding: 14px;'>
+            <div style='font-size: 11px; font-weight: 800; color: #d48806; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;'>💬 Client Comment</div>
+            <div style='font-size: 12px; color: #595959; line-height: 1.5;'>{$comment}</div>
+        </div>" : '';
+
+        return "<div style='font-family: system-ui, -apple-system, sans-serif; color: #1e293b; max-width: 100%;'>
+            <div style='background: linear-gradient(135deg, #0284c7 0%, #4f46e5 100%); color: #ffffff; padding: 16px 20px; border-radius: 12px; margin-bottom: 16px;'>
+                <div style='font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.9;'>🚀 TRAFFIC LAUNCH CAMPAIGN</div>
+                <div style='font-size: 18px; font-weight: 800; margin-top: 4px;'>{$domain} &bull; {$month}</div>
+                <div style='font-size: 12px; opacity: 0.95; margin-top: 6px;'>
+                    Period: <strong>{$dateRange}</strong> &bull; Plan: <strong>{$plan}</strong>
+                </div>
+            </div>
+
+            <div style='display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px;'>
+                <div style='background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; text-align: center;'>
+                    <div style='font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase;'>Bounce Rate</div>
+                    <div style='font-size: 16px; font-weight: 800; color: #0284c7; margin-top: 2px;'>{$bounceRate}</div>
+                </div>
+                <div style='background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; text-align: center;'>
+                    <div style='font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase;'>Pages</div>
+                    <div style='font-size: 16px; font-weight: 800; color: #0284c7; margin-top: 2px;'>{$pages}</div>
+                </div>
+                <div style='background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; text-align: center;'>
+                    <div style='font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase;'>Time on Page</div>
+                    <div style='font-size: 16px; font-weight: 800; color: #0284c7; margin-top: 2px;'>{$timeOnPage}</div>
+                </div>
+            </div>
+
+            {$geoHtml}
+
+            <div style='background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; margin-bottom: 16px;'>
+                <div style='font-size: 11px; font-weight: 800; text-transform: uppercase; color: #475569; letter-spacing: 0.05em; margin-bottom: 10px;'>🚦 Traffic Channels</div>
+                <div style='display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;'>
+                    <div style='padding: 10px 12px; background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0;'>
+                        <div style='font-weight: 700; color: #334155; font-size: 12px;'>🔗 Referral: <span style='color: #0284c7; font-weight: 800;'>{$referralTraf}</span></div>
+                        ".(! empty($referralLinks) ? "<div style='margin-top: 4px; font-size: 11px; font-family: monospace; color: #64748b;'>{$referralLinks}</div>" : '')."
+                    </div>
+                    <div style='padding: 10px 12px; background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0;'>
+                        <div style='font-weight: 700; color: #334155; font-size: 12px;'>📱 Social: <span style='color: #0284c7; font-weight: 800;'>{$socialTraf}</span></div>
+                        ".(! empty($socialLinks) ? "<div style='margin-top: 4px; font-size: 11px; font-family: monospace; color: #64748b;'>{$socialLinks}</div>" : '')."
+                    </div>
+                    <div style='padding: 10px 12px; background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0;'>
+                        <div style='font-weight: 700; color: #334155; font-size: 12px;'>🔍 Organic: <span style='color: #0284c7; font-weight: 800;'>{$organicTraf}</span></div>
+                    </div>
+                    <div style='padding: 10px 12px; background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0;'>
+                        <div style='font-weight: 700; color: #334155; font-size: 12px;'>🎯 Direct: <span style='color: #0284c7; font-weight: 800;'>{$directTraf}</span></div>
+                    </div>
+                </div>
+            </div>
+
+            {$keywordsHtml}
+
+            {$commentHtml}
+        </div>";
     }
 
     public function resetFormState(): void
