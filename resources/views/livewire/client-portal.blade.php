@@ -436,7 +436,8 @@
                 <div class="flex flex-wrap items-center gap-2.5">
                     <!-- Month Selector -->
                     <div class="flex items-center space-x-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-1.5">
-                        <i class="fa-regular fa-calendar text-slate-400 text-xs"></i>
+                        <i wire:loading.remove wire:target="trafficTargetMonth" class="fa-regular fa-calendar text-slate-400 text-xs"></i>
+                        <i wire:loading wire:target="trafficTargetMonth" class="fa-solid fa-circle-notch fa-spin text-indigo-500 text-xs" style="display: none;"></i>
                         <span class="text-xs font-semibold text-slate-600 dark:text-slate-300">Month:</span>
                         <select wire:model.live="trafficTargetMonth" class="bg-transparent border-0 text-xs font-bold text-indigo-600 dark:text-indigo-400 focus:ring-0 p-0 cursor-pointer">
                             @foreach($this->getMonthOptions() as $mKey => $mLabel)
@@ -486,19 +487,19 @@
 
         <!-- Spreadsheet Container Panel -->
         <div class="glass-panel rounded-2xl p-4 border border-slate-200/80 dark:border-white/10 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
-            <div class="mb-3 flex items-center justify-between text-xs text-slate-400 dark:text-slate-500 px-1">
+            <div class="mb-3 flex flex-col sm:flex-row sm:items-center justify-between text-xs text-slate-500 dark:text-slate-400 px-1 gap-2">
                 <div class="flex items-center space-x-2">
-                    <i class="fa-solid fa-circle-info text-sky-500"></i>
-                    <span>Pre-filled with all your active domains. Edit cells directly, copy/paste (Ctrl+C / Ctrl+V), or add new rows.</span>
+                    <i class="fa-solid fa-circle-info text-sky-500 flex-shrink-0"></i>
+                    <span>Pre-filled with active domains. For multiple countries (GEO) or multiline text, press <kbd class="px-1.5 py-0.5 text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 rounded shadow-xs">Shift + Enter</kbd> or <kbd class="px-1.5 py-0.5 text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 rounded shadow-xs">Alt + Enter</kbd>.</span>
                 </div>
-                <div class="hidden sm:flex items-center space-x-3 text-[11px]">
+                <div class="hidden sm:flex items-center space-x-3 text-[11px] flex-shrink-0">
                     <span class="font-mono bg-slate-100 dark:bg-white/5 px-2 py-0.5 rounded text-slate-600 dark:text-slate-400">16 Columns</span>
                     <span class="text-emerald-500 font-semibold"><i class="fa-solid fa-check-double mr-1"></i>Auto-tasks generator</span>
                 </div>
             </div>
 
             <!-- Loading Spinner State -->
-            <div x-show="isLoading" class="flex flex-col items-center justify-center py-20 text-slate-400 dark:text-slate-500">
+            <div x-show="isLoading" class="flex flex-col items-center justify-center py-20 text-slate-400 dark:text-slate-500" style="display: none;">
                 <i class="fa-solid fa-circle-notch fa-spin text-2xl text-indigo-500 mb-3"></i>
                 <span class="text-xs font-medium">Loading spreadsheet table...</span>
             </div>
@@ -514,8 +515,8 @@
                 </button>
             </div>
 
-            <!-- Jspreadsheet Mount Target -->
-            <div x-show="!isLoading" class="traffic-sheet-wrapper overflow-x-auto rounded-xl border border-slate-200 dark:border-white/10 shadow-inner min-h-[300px]">
+            <!-- Jspreadsheet Mount Target (wire:ignore protects table DOM from Livewire morphing) -->
+            <div wire:ignore class="traffic-sheet-wrapper overflow-x-auto rounded-xl border border-slate-200 dark:border-white/10 shadow-inner min-h-[300px]" x-show="!isLoading">
                 <div x-ref="spreadsheetContainer" class="w-full"></div>
             </div>
         </div>
@@ -951,6 +952,8 @@
         padding: 6px 10px;
         border-color: #e2e8f0;
         color: #1e293b;
+        line-height: 1.45;
+        vertical-align: top;
     }
     .dark .traffic-sheet-wrapper .jexcel tbody td {
         background: #020617;
@@ -959,6 +962,23 @@
     }
     .dark .traffic-sheet-wrapper .jexcel tbody tr:nth-child(even) td {
         background: #0b1120;
+    }
+    .traffic-sheet-wrapper .jexcel tbody td > textarea {
+        line-height: 1.45;
+        font-family: inherit;
+        font-size: 12px;
+        padding: 4px 6px;
+        box-sizing: border-box;
+        min-height: 46px;
+        color: #1e293b;
+        background: transparent;
+        border-radius: 4px;
+        outline: none;
+        resize: none;
+    }
+    .dark .traffic-sheet-wrapper .jexcel tbody td > textarea {
+        color: #f1f5f9;
+        background: #020617;
     }
     </style>
 
@@ -986,19 +1006,47 @@
 
                     // Listen for Livewire updates (e.g. month change or copy previous month)
                     window.addEventListener('traffic-data-loaded', (e) => {
-                        const rows = (e.detail && e.detail.data) || (Array.isArray(e.detail) ? e.detail[0]?.data : null);
-                        if (rows) {
-                            this.cachedData = rows;
-                            if (this.tableInstance) {
-                                this.tableInstance.setData(rows);
-                            } else if (this.tab === 'launch-traffic') {
-                                this.ensureMounted();
+                        let rows = null;
+                        if (e.detail) {
+                            if (e.detail.data) {
+                                rows = e.detail.data;
+                            } else if (Array.isArray(e.detail) && e.detail[0]) {
+                                rows = e.detail[0].data || e.detail[0];
+                            } else if (Array.isArray(e.detail.rows)) {
+                                rows = e.detail.rows;
                             }
+                        }
+
+                        if (rows) {
+                            this.applyData(rows);
                         }
                     });
                 },
 
-                ensureMounted() {
+                applyData(rows) {
+                    this.cachedData = rows;
+                    const container = this.$refs.spreadsheetContainer;
+                    if (!container) return;
+
+                    const lib = window.jspreadsheet || window.jexcel;
+                    if (!lib) {
+                        this.mountTable(rows);
+                        return;
+                    }
+
+                    if (this.tableInstance && container.children.length > 0 && typeof this.tableInstance.setData === 'function') {
+                        try {
+                            this.tableInstance.setData(rows);
+                            return;
+                        } catch (err) {
+                            console.warn('Error applying setData, re-mounting table:', err);
+                        }
+                    }
+
+                    this.buildTable(container, lib, rows);
+                },
+
+                ensureMounted(data = null) {
                     this.$nextTick(() => {
                         const container = this.$refs.spreadsheetContainer;
                         if (!container) return;
@@ -1006,32 +1054,41 @@
                         // If element is not displayed yet (e.g. still transitioning), retry shortly
                         if (container.offsetWidth === 0 && container.offsetHeight === 0) {
                             setTimeout(() => {
-                                this.ensureMounted();
+                                this.ensureMounted(data);
                             }, 50);
                             return;
                         }
 
                         if (!this.tableInstance || container.children.length === 0) {
-                            this.mountTable();
+                            this.mountTable(data);
+                        } else if (data) {
+                            this.applyData(data);
                         }
                     });
                 },
 
-                mountTable() {
+                mountTable(data = null) {
                     const container = this.$refs.spreadsheetContainer;
                     if (!container) return;
 
                     const getLib = () => window.jspreadsheet || window.jexcel;
 
-                    if (!getLib()) {
+                    if (!getLib() || !window.jSuites) {
                         this.isLoading = true;
                         this.loadError = null;
 
-                        // Dynamically inject fallback script if not loaded
-                        if (!document.getElementById('jspreadsheet-script-fallback')) {
+                        // Dynamically inject fallback scripts if not loaded
+                        if (!window.jSuites && !document.getElementById('jsuites-script-fallback')) {
+                            const script = document.createElement('script');
+                            script.id = 'jsuites-script-fallback';
+                            script.src = '{{ asset("vendor/jsuites/jsuites.js") }}';
+                            document.head.appendChild(script);
+                        }
+
+                        if (!getLib() && !document.getElementById('jspreadsheet-script-fallback')) {
                             const script = document.createElement('script');
                             script.id = 'jspreadsheet-script-fallback';
-                            script.src = 'https://bossanova.uk/jspreadsheet/v4/jexcel.js';
+                            script.src = '{{ asset("vendor/jspreadsheet/jspreadsheet.js") }}';
                             document.head.appendChild(script);
                         }
 
@@ -1039,45 +1096,50 @@
                         const checkInterval = setInterval(() => {
                             attempts++;
                             const lib = getLib();
-                            if (lib) {
+                            if (lib && window.jSuites) {
                                 clearInterval(checkInterval);
                                 this.isLoading = false;
-                                this.buildTable(container, lib);
+                                this.buildTable(container, lib, data);
                             } else if (attempts >= 40) {
                                 clearInterval(checkInterval);
                                 this.isLoading = false;
-                                this.loadError = 'Failed to load spreadsheet library. Please check your internet or disable ad-blockers and click Retry.';
+                                this.loadError = 'Failed to load spreadsheet library. Please check your connection and click Retry.';
                             }
                         }, 100);
                         return;
                     }
 
                     this.isLoading = false;
-                    this.buildTable(container, getLib());
+                    this.buildTable(container, getLib(), data);
                 },
 
-                buildTable(container, lib) {
+                buildTable(container, lib, customData = null) {
+                    if (this.tableInstance && typeof this.tableInstance.destroy === 'function') {
+                        try {
+                            this.tableInstance.destroy();
+                        } catch (e) {}
+                    }
                     container.innerHTML = '';
 
-                    const initialData = this.cachedData || @json($this->getPrefilledTrafficData());
+                    const initialData = customData || this.cachedData || @json($this->getPrefilledTrafficData());
                     this.cachedData = initialData;
 
                     const columns = [
-                        { type: 'text', title: 'Date', width: 140 },
+                        { type: 'text', title: 'Date', width: 130 },
                         { type: 'text', title: 'Domain', width: 170 },
                         { type: 'text', title: 'Plan', width: 90 },
-                        { type: 'text', title: 'GEO', width: 150 },
-                        { type: 'text', title: 'BR', width: 90 },
-                        { type: 'text', title: 'Pages', width: 80 },
-                        { type: 'text', title: 'Time', width: 80 },
-                        { type: 'text', title: 'Referal traf', width: 110 },
-                        { type: 'text', title: 'Referal traf links', width: 180 },
-                        { type: 'text', title: 'Social traf', width: 110 },
-                        { type: 'text', title: 'Social traf links', width: 180 },
-                        { type: 'text', title: 'Organic traf', width: 110 },
-                        { type: 'text', title: 'Direct traf', width: 110 },
-                        { type: 'text', title: 'Keys', width: 160 },
-                        { type: 'text', title: 'Comment', width: 220 },
+                        { type: 'text', title: 'GEO', width: 180, wordWrap: true },
+                        { type: 'text', title: 'BR', width: 80 },
+                        { type: 'text', title: 'Pages', width: 70 },
+                        { type: 'text', title: 'Time', width: 70 },
+                        { type: 'text', title: 'Referal traf', width: 100 },
+                        { type: 'text', title: 'Referal traf links', width: 190, wordWrap: true },
+                        { type: 'text', title: 'Social traf', width: 100 },
+                        { type: 'text', title: 'Social traf links', width: 190, wordWrap: true },
+                        { type: 'text', title: 'Organic traf', width: 100 },
+                        { type: 'text', title: 'Direct traf', width: 100 },
+                        { type: 'text', title: 'Keys', width: 180, wordWrap: true },
+                        { type: 'text', title: 'Comment', width: 220, wordWrap: true },
                         { type: 'dropdown', title: 'Status', width: 110, source: ['Pending', 'Active', 'Completed', 'Paused'] }
                     ];
 
@@ -1093,10 +1155,57 @@
                         allowDeleteRow: true,
                         columnSorting: true,
                         contextMenu: true,
+                        oneditionstart: (el, cell, x, y) => {
+                            setTimeout(() => {
+                                try {
+                                    const textarea = (cell && typeof cell.querySelector === 'function')
+                                        ? cell.querySelector('textarea')
+                                        : (container ? container.querySelector('.jexcel_editor textarea, textarea') : null);
+                                    if (textarea) {
+                                        textarea.style.height = 'auto';
+                                        textarea.style.height = Math.max(textarea.scrollHeight, 46) + 'px';
+                                        textarea.addEventListener('input', () => {
+                                            textarea.style.height = 'auto';
+                                            textarea.style.height = Math.max(textarea.scrollHeight, 46) + 'px';
+                                        });
+                                    }
+                                } catch (err) {
+                                    // ignore styling warning
+                                }
+                            }, 10);
+                        },
                     };
 
                     try {
                         this.tableInstance = lib(container, options);
+
+                        // Bind keyboard shortcut handler for multiline textarea cells (Shift+Enter and Alt+Enter)
+                        if (!container._multilineHandlerAttached) {
+                            container._multilineHandlerAttached = true;
+                            container.addEventListener('keydown', (e) => {
+                                if (e.key === 'Enter' || e.keyCode === 13) {
+                                    if (e.shiftKey || e.altKey) {
+                                        const activeEl = document.activeElement;
+                                        if (activeEl && (activeEl.tagName === 'TEXTAREA' || activeEl.classList.contains('jexcel_editor'))) {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            e.stopImmediatePropagation();
+
+                                            const start = activeEl.selectionStart ?? activeEl.value.length;
+                                            const end = activeEl.selectionEnd ?? activeEl.value.length;
+                                            const val = activeEl.value;
+                                            activeEl.value = val.substring(0, start) + "\n" + val.substring(end);
+                                            activeEl.selectionStart = activeEl.selectionEnd = start + 1;
+
+                                            activeEl.style.height = 'auto';
+                                            activeEl.style.height = Math.max(activeEl.scrollHeight, 46) + 'px';
+
+                                            activeEl.dispatchEvent(new Event('input', { bubbles: true }));
+                                        }
+                                    }
+                                }
+                            }, true);
+                        }
                     } catch (err) {
                         console.error('Error instantiating spreadsheet:', err);
                         this.loadError = 'Error initializing spreadsheet: ' + err.message;

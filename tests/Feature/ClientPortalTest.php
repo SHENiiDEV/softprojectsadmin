@@ -338,4 +338,133 @@ class ClientPortalTest extends TestCase
             ->call('saveTrafficLaunch', $rows)
             ->assertHasNoErrors();
     }
+
+    public function test_client_portal_traffic_launch_supports_multiline_geo_and_fields(): void
+    {
+        $client = Client::create([
+            'name' => 'Multiline Client',
+            'hash' => 'multilinehash123456789012345678',
+        ]);
+
+        $company = Project::factory()->create([
+            'name' => 'Multiline Corp',
+            'client_id' => $client->id,
+        ]);
+
+        Website::create([
+            'project_id' => $company->id,
+            'name' => 'Atlas Site',
+            'url' => 'https://atlas.com',
+            'status' => 'Live',
+        ]);
+
+        $multilineGeo = "USA 60%\nGBR 20%\nDEU 20%";
+        $multilineKeys = "casino online\nbest slots";
+        $multilineComment = "Line 1 note\nLine 2 note";
+
+        $rows = [
+            [
+                '01.10.2026-31.10.2026',
+                'atlas.com',
+                '1000 UV/day',
+                $multilineGeo,
+                '50-60%',
+                '2-3',
+                '15-30',
+                '10%',
+                "https://ref1.com\nhttps://ref2.com",
+                '5%',
+                "https://t.me/channel\nhttps://fb.com/page",
+                '50%',
+                '35%',
+                $multilineKeys,
+                $multilineComment,
+                'Active',
+            ],
+        ];
+
+        $component = Livewire::test(ClientPortal::class, ['hash' => $client->hash])
+            ->set('trafficTargetMonth', 'October 2026')
+            ->call('saveTrafficLaunch', $rows, 'October 2026')
+            ->assertDispatched('notify');
+
+        // Verify TrafficLaunch record in DB contains exact newlines
+        $this->assertDatabaseHas('traffic_launches', [
+            'client_id' => $client->id,
+            'domain' => 'atlas.com',
+            'target_month' => 'October 2026',
+            'geo' => $multilineGeo,
+            'keywords' => $multilineKeys,
+            'comment' => $multilineComment,
+        ]);
+
+        // Verify created Task has nl2br formatted lines in description
+        $task = Task::where('project_id', $company->id)
+            ->where('title', 'like', '%atlas.com%')
+            ->first();
+
+        $this->assertNotNull($task);
+        $this->assertStringContainsString('USA 60%<br />', $task->description);
+        $this->assertStringContainsString('GBR 20%<br />', $task->description);
+        $this->assertStringContainsString('DEU 20%', $task->description);
+        $this->assertStringContainsString('casino online<br />', $task->description);
+
+        // Verify getPrefilledTrafficData preserves multiline GEO
+        $prefilled = $component->instance()->getPrefilledTrafficData('October 2026');
+        $this->assertNotEmpty($prefilled);
+        $atlasRow = collect($prefilled)->first(fn ($r) => ($r[1] ?? '') === 'atlas.com');
+        $this->assertNotNull($atlasRow);
+        $this->assertEquals($multilineGeo, $atlasRow[3]);
+
+        // Verify copying from previous month preserves multiline GEO
+        $nextMonth = 'November 2026';
+        Livewire::test(ClientPortal::class, ['hash' => $client->hash])
+            ->set('trafficTargetMonth', $nextMonth)
+            ->call('copyPreviousMonthTraffic')
+            ->assertDispatched('traffic-data-loaded', function ($event, $params) use ($multilineGeo) {
+                $rows = $params['data'] ?? [];
+                $copiedAtlas = collect($rows)->first(fn ($r) => ($r[1] ?? '') === 'atlas.com');
+
+                return $copiedAtlas && $copiedAtlas[3] === $multilineGeo;
+            });
+    }
+
+    public function test_client_portal_switching_month_dispatches_traffic_data_loaded_with_target_month_data(): void
+    {
+        $client = Client::create([
+            'name' => 'Month Switch Client',
+            'hash' => 'switchmonth123456789012345678901',
+        ]);
+
+        $company = Project::factory()->create([
+            'name' => 'Switch Company',
+            'client_id' => $client->id,
+        ]);
+
+        Website::create([
+            'project_id' => $company->id,
+            'name' => 'Switch Site',
+            'url' => 'https://switchsite.com',
+            'status' => 'Live',
+        ]);
+
+        TrafficLaunch::create([
+            'client_id' => $client->id,
+            'project_id' => $company->id,
+            'target_month' => 'December 2026',
+            'domain' => 'switchsite.com',
+            'geo' => "FR 50%\nES 50%",
+            'plan' => '500 UV/day',
+            'status' => 'Active',
+        ]);
+
+        Livewire::test(ClientPortal::class, ['hash' => $client->hash])
+            ->set('trafficTargetMonth', 'December 2026')
+            ->assertDispatched('traffic-data-loaded', function ($event, $params) {
+                $rows = $params['data'] ?? [];
+                $siteRow = collect($rows)->first(fn ($r) => ($r[1] ?? '') === 'switchsite.com');
+
+                return $siteRow && $siteRow[3] === "FR 50%\nES 50%" && $siteRow[2] === '500 UV/day';
+            });
+    }
 }
