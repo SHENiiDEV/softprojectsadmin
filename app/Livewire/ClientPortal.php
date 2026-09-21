@@ -10,8 +10,10 @@ use App\Models\Task;
 use App\Models\TrafficLaunch;
 use App\Models\Website;
 use App\Services\NotificationService;
+use App\Services\TrafficExportService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
@@ -748,6 +750,40 @@ class ClientPortal extends Component
                     foreach ($siteList as $s) {
                         $s['record']->update(['task_id' => $task->id]);
                     }
+
+                    // Generate & attach Excel spreadsheet to the task
+                    try {
+                        $xlsxPath = TrafficExportService::generateXlsx($month, $rows, $this->client->name);
+                        $excelName = 'Traffic_Launch_'.Str::slug($month, '_').'.xlsx';
+
+                        // Remove older versions of the export for this task
+                        $task->getMedia('attachments')
+                            ->filter(fn ($m) => str_starts_with($m->name, 'Traffic_Launch_') || str_starts_with($m->file_name, 'Traffic_Launch_'))
+                            ->each(fn ($m) => $m->delete());
+
+                        $task->getMedia('documents')
+                            ->filter(fn ($m) => str_starts_with($m->name, 'Traffic_Launch_') || str_starts_with($m->file_name, 'Traffic_Launch_'))
+                            ->each(fn ($m) => $m->delete());
+
+                        // Attach to attachments collection (Kanban board)
+                        $task->addMedia($xlsxPath)
+                            ->usingFileName($excelName)
+                            ->usingName($excelName)
+                            ->preservingOriginal()
+                            ->toMediaCollection('attachments');
+
+                        // Attach to documents collection (Client portal)
+                        $task->addMedia($xlsxPath)
+                            ->usingFileName($excelName)
+                            ->usingName($excelName)
+                            ->toMediaCollection('documents');
+
+                        if (file_exists($xlsxPath)) {
+                            @unlink($xlsxPath);
+                        }
+                    } catch (\Throwable $mediaEx) {
+                        Log::warning('Failed to attach XLSX to traffic task: '.$mediaEx->getMessage());
+                    }
                 }
             }
 
@@ -767,84 +803,122 @@ class ClientPortal extends Component
     }
 
     /**
+     * Export the current or saved traffic launch table as an .xlsx file.
+     */
+    public function exportTrafficXlsx(?array $rows = null)
+    {
+        try {
+            if (empty($rows)) {
+                $rows = $this->getPrefilledTrafficData($this->trafficTargetMonth);
+            } elseif (isset($rows[0]) && is_array($rows[0]) && isset($rows[0][0]) && is_array($rows[0][0])) {
+                $rows = $rows[0];
+            }
+
+            $month = $this->trafficTargetMonth ?: now()->format('F Y');
+            $filePath = TrafficExportService::generateXlsx($month, $rows, $this->client->name);
+            $fileName = 'Traffic_Launch_'.Str::slug($month, '_').'.xlsx';
+
+            return response()->download($filePath, $fileName, [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            ])->deleteFileAfterSend(true);
+        } catch (\Throwable $e) {
+            Log::error('exportTrafficXlsx failed: '.$e->getMessage());
+            $this->dispatch('notify', message: 'Failed to generate Excel file: '.$e->getMessage(), type: 'error');
+
+            return null;
+        }
+    }
+
+    /**
      * Build rich, clean, Quill-compatible description for traffic campaign task.
      */
     protected function buildTrafficCampaignDescription(string $month, array $sitesData): string
     {
+        $totalSites = count($sitesData);
         $parts = [];
-        $parts[] = "<p>🚀 <strong>Traffic Launch Plan — {$month}</strong></p>";
-        $parts[] = '<p><strong>👤 Client:</strong> '.e($this->client->name).'<br><strong>📅 Month:</strong> '.e($month).'</p>';
+        $parts[] = "<h2>🚀 Traffic Launch Plan — {$month}</h2>";
+        $parts[] = '<p><strong>👤 Client:</strong> '.e($this->client->name).'<br><strong>📅 Month:</strong> '.e($month).'<br><strong>🌐 Websites Total:</strong> '.$totalSites.'</p>';
 
-        foreach ($sitesData as $site) {
-            $domain = e($site['domain'] ?? '');
+        foreach ($sitesData as $idx => $site) {
+            $siteNum = $idx + 1;
+            $domain = trim((string) ($site['domain'] ?? ''));
             $websiteUrl = ! preg_match('/^https?:\/\//i', $domain) ? 'https://'.$domain : $domain;
-            $plan = e($site['plan'] ?? '');
-            $dateRange = e($site['date_range'] ?? '');
-            $geo = nl2br(e(trim($site['geo'] ?? '')));
-            $bounceRate = e($site['bounce_rate'] ?? '50-60%');
-            $pages = e($site['pages'] ?? '2-3');
-            $timeOnPage = e($site['time_on_page'] ?? '15-30');
-            $referralTraf = e($site['referral_traf'] ?? '0%');
-            $referralLinks = nl2br(e(trim($site['referral_links'] ?? '')));
-            $socialTraf = e($site['social_traf'] ?? '0%');
-            $socialLinks = nl2br(e(trim($site['social_links'] ?? '')));
-            $organicTraf = e($site['organic_traf'] ?? '0%');
-            $directTraf = e($site['direct_traf'] ?? '0%');
-            $keywords = nl2br(e(trim($site['keywords'] ?? '')));
-            $comment = nl2br(e(trim($site['comment'] ?? '')));
+            $plan = trim((string) ($site['plan'] ?? ''));
+            $dateRange = trim((string) ($site['date_range'] ?? ''));
+            $geo = trim((string) ($site['geo'] ?? ''));
+            $bounceRate = trim((string) ($site['bounce_rate'] ?? '50-60%'));
+            $pages = trim((string) ($site['pages'] ?? '2-3'));
+            $timeOnPage = trim((string) ($site['time_on_page'] ?? '15-30'));
+            $referralTraf = trim((string) ($site['referral_traf'] ?? '0%'));
+            $referralLinks = trim((string) ($site['referral_links'] ?? ''));
+            $socialTraf = trim((string) ($site['social_traf'] ?? '0%'));
+            $socialLinks = trim((string) ($site['social_links'] ?? ''));
+            $organicTraf = trim((string) ($site['organic_traf'] ?? '0%'));
+            $directTraf = trim((string) ($site['direct_traf'] ?? '0%'));
+            $keywords = trim((string) ($site['keywords'] ?? ''));
+            $comment = trim((string) ($site['comment'] ?? ''));
 
             $section = [];
             $section[] = '<hr>';
-            $section[] = "<p>🌐 <strong>Website:</strong> <a href='{$websiteUrl}' target='_blank'>{$domain}</a></p>";
+            $section[] = "<h3>#{$siteNum}. 🌐 <a href='{$websiteUrl}' target='_blank'>".e($domain).'</a></h3>';
 
             $meta = [];
-            if ($plan) {
-                $meta[] = "<strong>📌 Plan:</strong> {$plan}";
+            if ($plan !== '') {
+                $meta[] = '<strong>🎯 Plan / Target:</strong> '.e($plan);
             }
-            if ($dateRange) {
-                $meta[] = "<strong>📅 Period:</strong> {$dateRange}";
+            if ($dateRange !== '') {
+                $meta[] = '<strong>📅 Schedule:</strong> '.e($dateRange);
             }
             if (! empty($meta)) {
-                $section[] = '<p>'.implode(' &bull; ', $meta).'</p>';
+                $section[] = '<p>'.implode(' &nbsp;|&nbsp; ', $meta).'</p>';
             }
 
-            if (! empty($geo)) {
-                $section[] = "<p><strong>📍 Target GEO:</strong><br>\n{$geo}</p>";
+            if ($geo !== '') {
+                $section[] = '<p><strong>📍 Target GEO &amp; Distribution:</strong><br>'."\n".nl2br(e($geo)).'</p>';
             }
 
-            $section[] = "<p><strong>📊 Parameters:</strong><br>
-• <strong>Bounce Rate:</strong> {$bounceRate}<br>
-• <strong>Pages:</strong> {$pages}<br>
-• <strong>Time on Page:</strong> {$timeOnPage} sec</p>";
+            $section[] = '<p><strong>📊 User Behavior Parameters:</strong></p>';
+            $section[] = '<ul>';
+            $section[] = '<li><strong>Bounce Rate:</strong> '.e($bounceRate).'</li>';
+            $section[] = '<li><strong>Pages per Visit:</strong> '.e($pages).'</li>';
+            $section[] = '<li><strong>Time on Page:</strong> '.e($timeOnPage).' sec</li>';
+            $section[] = '</ul>';
 
-            $channels = [];
-            $refText = "• <strong>Referral Traffic:</strong> {$referralTraf}";
-            if (! empty($referralLinks)) {
-                $refText .= "<br>&nbsp;&nbsp;<em>Referral Links:</em> {$referralLinks}";
+            $section[] = '<p><strong>🚦 Traffic Channels Breakdown:</strong></p>';
+            $section[] = '<ul>';
+
+            $refText = '<li><strong>Referral Traffic:</strong> '.e($referralTraf);
+            if ($referralLinks !== '') {
+                $refText .= '<br><em>Referral Sources / Links:</em><br>'.nl2br(e($referralLinks));
             }
-            $channels[] = $refText;
+            $refText .= '</li>';
+            $section[] = $refText;
 
-            $socText = "• <strong>Social Traffic:</strong> {$socialTraf}";
-            if (! empty($socialLinks)) {
-                $socText .= "<br>&nbsp;&nbsp;<em>Social Links:</em> {$socialLinks}";
+            $socText = '<li><strong>Social Traffic:</strong> '.e($socialTraf);
+            if ($socialLinks !== '') {
+                $socText .= '<br><em>Social Sources / Links:</em><br>'.nl2br(e($socialLinks));
             }
-            $channels[] = $socText;
+            $socText .= '</li>';
+            $section[] = $socText;
 
-            $channels[] = "• <strong>Organic Traffic:</strong> {$organicTraf}";
-            $channels[] = "• <strong>Direct Traffic:</strong> {$directTraf}";
+            $section[] = '<li><strong>Organic Traffic:</strong> '.e($organicTraf).'</li>';
+            $section[] = '<li><strong>Direct Traffic:</strong> '.e($directTraf).'</li>';
+            $section[] = '</ul>';
 
-            $section[] = '<p><strong>🚦 Traffic Channels Breakdown:</strong><br>'.implode('<br>', $channels).'</p>';
-
-            if (! empty($keywords)) {
-                $section[] = "<p><strong>🔑 Keywords:</strong><br>\n{$keywords}</p>";
+            if ($keywords !== '') {
+                $section[] = '<p><strong>🔑 Keywords / Queries:</strong><br>'."\n".nl2br(e($keywords)).'</p>';
             }
 
-            if (! empty($comment)) {
-                $section[] = "<p><strong>💬 Comment:</strong><br>\n{$comment}</p>";
+            if ($comment !== '') {
+                $section[] = '<p><strong>💬 Comments / Special Instructions:</strong><br>'."\n".nl2br(e($comment)).'</p>';
             }
 
             $parts[] = implode("\n", $section);
         }
+
+        $excelName = 'Traffic_Launch_'.Str::slug($month, '_').'.xlsx';
+        $parts[] = '<hr>';
+        $parts[] = "<p>📥 <strong>Attached Spreadsheet:</strong> Full monthly traffic matrix <em>{$excelName}</em> is generated and attached to this task. You can download and review it directly.</p>";
 
         return implode("\n", $parts);
     }

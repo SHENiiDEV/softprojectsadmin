@@ -564,4 +564,94 @@ class ClientPortalTest extends TestCase
         $this->assertStringContainsString('US: 80%<br />', $task->description);
         $this->assertStringContainsString('UK: 20%', $task->description);
     }
+
+    public function test_save_traffic_launch_attaches_xlsx_file_to_task(): void
+    {
+        Storage::fake('public');
+
+        $client = Client::create([
+            'name' => 'Excel Client',
+            'hash' => 'excelhash12345678901234567890123',
+        ]);
+
+        $company = Project::factory()->create([
+            'name' => 'Excel Company',
+            'client_id' => $client->id,
+        ]);
+
+        Website::create([
+            'project_id' => $company->id,
+            'name' => 'Excel Site',
+            'url' => 'https://excelsite.com',
+            'status' => 'Live',
+        ]);
+
+        $rows = [
+            [
+                '01.10.2026-31.10.2026',
+                'excelsite.com',
+                '1000 UV/day',
+                "US: 50%\nCA: 50%",
+                '40%',
+                '3',
+                '30',
+                '10%',
+                'https://ref.com',
+                '20%',
+                'https://fb.com',
+                '50%',
+                '20%',
+                'keyword1',
+                'Special instruction',
+                'Pending',
+            ],
+        ];
+
+        Livewire::test(ClientPortal::class, ['hash' => $client->hash])
+            ->set('trafficTargetMonth', 'October 2026')
+            ->call('saveTrafficLaunch', $rows, 'October 2026')
+            ->assertDispatched('notify');
+
+        $task = Task::where('project_id', $company->id)->first();
+        $this->assertNotNull($task);
+
+        // Check attachments collection
+        $attachments = $task->getMedia('attachments');
+        $this->assertGreaterThanOrEqual(1, $attachments->count());
+        $this->assertStringEndsWith('.xlsx', $attachments->first()->file_name);
+
+        // Check documents collection
+        $documents = $task->getMedia('documents');
+        $this->assertGreaterThanOrEqual(1, $documents->count());
+        $this->assertStringEndsWith('.xlsx', $documents->first()->file_name);
+
+        // Check description includes attachment notice
+        $this->assertStringContainsString('Attached Spreadsheet', $task->description);
+        $this->assertStringContainsString('Traffic_Launch_october_2026.xlsx', $task->description);
+    }
+
+    public function test_export_traffic_xlsx_downloads_spreadsheet(): void
+    {
+        $client = Client::create([
+            'name' => 'Download Client',
+            'hash' => 'downloadhash12345678901234567890',
+        ]);
+
+        $company = Project::factory()->create([
+            'name' => 'Download Company',
+            'client_id' => $client->id,
+        ]);
+
+        Website::create([
+            'project_id' => $company->id,
+            'name' => 'Download Site',
+            'url' => 'https://downloadsite.com',
+            'status' => 'Live',
+        ]);
+
+        Livewire::test(ClientPortal::class, ['hash' => $client->hash])
+            ->set('trafficTargetMonth', 'October 2026')
+            ->call('exportTrafficXlsx')
+            ->assertFileDownloaded('Traffic_Launch_october_2026.xlsx');
+    }
 }

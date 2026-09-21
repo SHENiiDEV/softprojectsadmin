@@ -455,6 +455,16 @@
                         <span>Copy Previous Month</span>
                     </button>
 
+                    <!-- Download Excel Button -->
+                    <button type="button" 
+                            @click="exportExcel()" 
+                            wire:loading.attr="disabled"
+                            title="Export and download this month's traffic matrix as an Excel (.xlsx) spreadsheet"
+                            class="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 border border-emerald-200/80 dark:border-emerald-800/40 text-emerald-700 dark:text-emerald-300 font-semibold rounded-xl text-xs transition-all duration-150 cursor-pointer">
+                        <i class="fa-solid fa-file-excel text-emerald-600 dark:text-emerald-400 text-[11px]"></i>
+                        <span>Download .xlsx</span>
+                    </button>
+
                     <!-- Add Row Button -->
                     <button type="button" 
                             @click="addRow()" 
@@ -1215,6 +1225,15 @@
                 addRow() {
                     if (this.tableInstance) {
                         this.tableInstance.insertRow();
+                    }
+                },
+
+                exportExcel() {
+                    if (this.tableInstance) {
+                        const data = this.tableInstance.getData();
+                        this.$wire.exportTrafficXlsx(data);
+                    } else {
+                        this.$wire.exportTrafficXlsx();
                     }
                 },
 
