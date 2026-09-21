@@ -10,6 +10,8 @@ use App\Models\Task;
 use App\Models\TrafficLaunch;
 use App\Models\Website;
 use App\Services\NotificationService;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
@@ -551,134 +553,163 @@ class ClientPortal extends Component
      */
     public function saveTrafficLaunch(array $rows, ?string $targetMonth = null): void
     {
-        $month = $targetMonth ?: $this->trafficTargetMonth;
-        if (empty($month)) {
-            $month = now()->format('F Y');
+        if (! Schema::hasTable('traffic_launches')) {
+            $this->dispatch('notify', message: 'Database table "traffic_launches" is missing. Please run "php artisan migrate" on the server.', type: 'error');
+
+            return;
         }
 
-        $companies = $this->client->companies()->with('websites')->get();
-        $websiteLookup = [];
-        foreach ($companies as $company) {
-            foreach ($company->websites as $website) {
-                $cleanDomain = strtolower(explode('/', preg_replace('/^https?:\/\//i', '', rtrim($website->url ?: $website->name, '/')))[0]);
-                $websiteLookup[$cleanDomain] = [
-                    'website' => $website,
-                    'project' => $company,
-                ];
-            }
-        }
-
-        $createdTasksCount = 0;
-
-        foreach ($rows as $row) {
-            $dateRange = trim((string) ($row[0] ?? ''));
-            $domain = trim((string) ($row[1] ?? ''));
-            $plan = trim((string) ($row[2] ?? ''));
-            $geo = trim((string) ($row[3] ?? ''));
-            $bounceRate = trim((string) ($row[4] ?? ''));
-            $pages = trim((string) ($row[5] ?? ''));
-            $timeOnPage = trim((string) ($row[6] ?? ''));
-            $referralTraf = trim((string) ($row[7] ?? ''));
-            $referralLinks = trim((string) ($row[8] ?? ''));
-            $socialTraf = trim((string) ($row[9] ?? ''));
-            $socialLinks = trim((string) ($row[10] ?? ''));
-            $organicTraf = trim((string) ($row[11] ?? ''));
-            $directTraf = trim((string) ($row[12] ?? ''));
-            $keywords = trim((string) ($row[13] ?? ''));
-            $comment = trim((string) ($row[14] ?? ''));
-            $status = trim((string) ($row[15] ?? '')) ?: 'Pending';
-
-            if (empty($domain)) {
-                continue;
+        try {
+            // Handle wrapped rows if needed
+            if (isset($rows[0]) && is_array($rows[0]) && isset($rows[0][0]) && is_array($rows[0][0])) {
+                $rows = $rows[0];
             }
 
-            $cleanDomainKey = strtolower(explode('/', preg_replace('/^https?:\/\//i', '', rtrim($domain, '/')))[0]);
-            $matched = $websiteLookup[$cleanDomainKey] ?? null;
-            $company = $matched ? $matched['project'] : $companies->first();
-            $websiteId = $matched ? $matched['website']->id : null;
-            $projectId = $company?->id;
-
-            $hasData = ! empty($plan) || ! empty($geo) || ! empty($keywords) || ! empty($comment);
-
-            $trafficLaunch = TrafficLaunch::updateOrCreate(
-                [
-                    'client_id' => $this->client->id,
-                    'target_month' => $month,
-                    'domain' => $domain,
-                ],
-                [
-                    'project_id' => $projectId,
-                    'website_id' => $websiteId,
-                    'date_range' => $dateRange,
-                    'plan' => $plan,
-                    'geo' => $geo,
-                    'bounce_rate' => $bounceRate,
-                    'pages' => $pages,
-                    'time_on_page' => $timeOnPage,
-                    'referral_traf' => $referralTraf,
-                    'referral_links' => $referralLinks,
-                    'social_traf' => $socialTraf,
-                    'social_links' => $socialLinks,
-                    'organic_traf' => $organicTraf,
-                    'direct_traf' => $directTraf,
-                    'keywords' => $keywords,
-                    'comment' => $comment,
-                    'status' => $status,
-                ]
-            );
-
-            if ($hasData && $company && ! $trafficLaunch->task_id) {
-                $taskTitle = "🚀 Traffic Launch: {$domain} ({$month})";
-                $descriptionHtml = $this->buildTrafficRowDescription([
-                    'domain' => $domain,
-                    'month' => $month,
-                    'date_range' => $dateRange,
-                    'plan' => $plan,
-                    'geo' => $geo,
-                    'bounce_rate' => $bounceRate,
-                    'pages' => $pages,
-                    'time_on_page' => $timeOnPage,
-                    'referral_traf' => $referralTraf,
-                    'referral_links' => $referralLinks,
-                    'social_traf' => $socialTraf,
-                    'social_links' => $socialLinks,
-                    'organic_traf' => $organicTraf,
-                    'direct_traf' => $directTraf,
-                    'keywords' => $keywords,
-                    'comment' => $comment,
-                ]);
-
-                $task = Task::create([
-                    'project_id' => $company->id,
-                    'creator_id' => null,
-                    'title' => $taskTitle,
-                    'description' => $descriptionHtml,
-                    'status' => 'todo',
-                    'priority' => 'high',
-                ]);
-
-                $trafficLaunch->update(['task_id' => $task->id]);
-                $createdTasksCount++;
-
-                ActivityLog::create([
-                    'user_id' => null,
-                    'client_id' => $this->client->id,
-                    'task_id' => $task->id,
-                    'project_id' => $company->id,
-                    'action' => 'client_portal_task_created',
-                    'description' => "Traffic campaign '{$taskTitle}' was launched via client portal by {$this->client->name}",
-                ]);
-
-                NotificationService::sendClientPortalTaskCreated($task, $this->client, $company);
+            $month = $targetMonth ?: $this->trafficTargetMonth;
+            if (empty($month)) {
+                $month = now()->format('F Y');
             }
-        }
 
-        $msg = "Traffic table for {$month} saved successfully!";
-        if ($createdTasksCount > 0) {
-            $msg .= " ({$createdTasksCount} new task".($createdTasksCount > 1 ? 's' : '').' created on Kanban).';
-        }
+            $companies = $this->client->companies()->with('websites')->get();
+            $websiteLookup = [];
+            foreach ($companies as $company) {
+                foreach ($company->websites as $website) {
+                    $cleanDomain = strtolower(explode('/', preg_replace('/^https?:\/\//i', '', rtrim($website->url ?: $website->name, '/')))[0]);
+                    $cleanDomain = preg_replace('/^www\./i', '', $cleanDomain);
+                    $websiteLookup[$cleanDomain] = [
+                        'website' => $website,
+                        'project' => $company,
+                    ];
+                }
+            }
 
-        $this->dispatch('notify', message: $msg, type: 'success');
+            $createdTasksCount = 0;
+
+            foreach ($rows as $row) {
+                $dateRange = trim((string) ($row[0] ?? ''));
+                $domain = trim((string) ($row[1] ?? ''));
+                $plan = trim((string) ($row[2] ?? ''));
+                $geo = trim((string) ($row[3] ?? ''));
+                $bounceRate = trim((string) ($row[4] ?? ''));
+                $pages = trim((string) ($row[5] ?? ''));
+                $timeOnPage = trim((string) ($row[6] ?? ''));
+                $referralTraf = trim((string) ($row[7] ?? ''));
+                $referralLinks = trim((string) ($row[8] ?? ''));
+                $socialTraf = trim((string) ($row[9] ?? ''));
+                $socialLinks = trim((string) ($row[10] ?? ''));
+                $organicTraf = trim((string) ($row[11] ?? ''));
+                $directTraf = trim((string) ($row[12] ?? ''));
+                $keywords = trim((string) ($row[13] ?? ''));
+                $comment = trim((string) ($row[14] ?? ''));
+                $status = trim((string) ($row[15] ?? '')) ?: 'Pending';
+
+                if (empty($domain)) {
+                    continue;
+                }
+
+                $cleanDomainKey = strtolower(explode('/', preg_replace('/^https?:\/\//i', '', rtrim($domain, '/')))[0]);
+                $cleanDomainKey = preg_replace('/^www\./i', '', $cleanDomainKey);
+                $matched = $websiteLookup[$cleanDomainKey] ?? null;
+                $company = $matched ? $matched['project'] : $companies->first();
+                $websiteId = $matched ? $matched['website']->id : null;
+                $projectId = $company?->id;
+
+                $hasData = ! empty($plan) || ! empty($geo) || ! empty($keywords) || ! empty($comment);
+
+                $trafficLaunch = TrafficLaunch::updateOrCreate(
+                    [
+                        'client_id' => $this->client->id,
+                        'target_month' => $month,
+                        'domain' => $domain,
+                    ],
+                    [
+                        'project_id' => $projectId,
+                        'website_id' => $websiteId,
+                        'date_range' => $dateRange,
+                        'plan' => $plan,
+                        'geo' => $geo,
+                        'bounce_rate' => $bounceRate,
+                        'pages' => $pages,
+                        'time_on_page' => $timeOnPage,
+                        'referral_traf' => $referralTraf,
+                        'referral_links' => $referralLinks,
+                        'social_traf' => $socialTraf,
+                        'social_links' => $socialLinks,
+                        'organic_traf' => $organicTraf,
+                        'direct_traf' => $directTraf,
+                        'keywords' => $keywords,
+                        'comment' => $comment,
+                        'status' => $status,
+                    ]
+                );
+
+                if ($hasData && $company && ! $trafficLaunch->task_id) {
+                    $taskTitle = "🚀 Traffic Launch: {$domain} ({$month})";
+                    $descriptionHtml = $this->buildTrafficRowDescription([
+                        'domain' => $domain,
+                        'month' => $month,
+                        'date_range' => $dateRange,
+                        'plan' => $plan,
+                        'geo' => $geo,
+                        'bounce_rate' => $bounceRate,
+                        'pages' => $pages,
+                        'time_on_page' => $timeOnPage,
+                        'referral_traf' => $referralTraf,
+                        'referral_links' => $referralLinks,
+                        'social_traf' => $socialTraf,
+                        'social_links' => $socialLinks,
+                        'organic_traf' => $organicTraf,
+                        'direct_traf' => $directTraf,
+                        'keywords' => $keywords,
+                        'comment' => $comment,
+                    ]);
+
+                    $task = Task::create([
+                        'project_id' => $company->id,
+                        'creator_id' => null,
+                        'title' => $taskTitle,
+                        'description' => $descriptionHtml,
+                        'status' => 'todo',
+                        'priority' => 'high',
+                    ]);
+
+                    $trafficLaunch->update(['task_id' => $task->id]);
+                    $createdTasksCount++;
+
+                    try {
+                        ActivityLog::create([
+                            'user_id' => null,
+                            'client_id' => $this->client->id,
+                            'task_id' => $task->id,
+                            'project_id' => $company->id,
+                            'action' => 'client_portal_task_created',
+                            'description' => "Traffic campaign '{$taskTitle}' was launched via client portal by {$this->client->name}",
+                        ]);
+                    } catch (\Throwable $logEx) {
+                        Log::warning('Failed to log activity for traffic launch task: '.$logEx->getMessage());
+                    }
+
+                    try {
+                        NotificationService::sendClientPortalTaskCreated($task, $this->client, $company);
+                    } catch (\Throwable $notifEx) {
+                        Log::warning('Failed to send notification for traffic launch task: '.$notifEx->getMessage());
+                    }
+                }
+            }
+
+            $msg = "Traffic table for {$month} saved successfully!";
+            if ($createdTasksCount > 0) {
+                $msg .= " ({$createdTasksCount} new task".($createdTasksCount > 1 ? 's' : '').' created on Kanban).';
+            }
+
+            $this->dispatch('notify', message: $msg, type: 'success');
+        } catch (\Throwable $e) {
+            Log::error('saveTrafficLaunch failed: '.$e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'rows_count' => count($rows),
+            ]);
+            $this->dispatch('notify', message: 'Failed to save traffic data: '.$e->getMessage(), type: 'error');
+        }
     }
 
     /**

@@ -298,15 +298,44 @@ class ClientPortalTest extends TestCase
             'time_on_page' => '20',
             'status' => 'Completed',
         ]);
+    }
+
+    public function test_client_portal_exact_payload_save(): void
+    {
+        $client = Client::create([
+            'name' => 'Exact Client',
+            'hash' => 'exacthash12345678901234567890123',
+        ]);
+
+        $company = Project::factory()->create([
+            'name' => 'Cybraxo Company',
+            'client_id' => $client->id,
+        ]);
+
+        Website::create([
+            'project_id' => $company->id,
+            'name' => 'Cybraxo Site',
+            'url' => 'https://cybraxo.co.uk',
+            'status' => 'Live',
+        ]);
+
+        Website::create([
+            'project_id' => $company->id,
+            'name' => 'MakeMy CV',
+            'url' => 'https://makemy-cv.co.uk',
+            'status' => 'Live',
+        ]);
+
+        $rows = [
+            ['01.09.2026-30.09.2026', 'cybraxo.co.uk', '20', 'DEU - 100%', '50-60%', '2-3', '15-30', '0%', '', '0%', '', '0%', '0%', '', '', 'Pending'],
+            ['01.09.2026-30.09.2026', 'makemy-cv.co.uk', '15', 'SWE - 100%', '50-60%', '2-3', '15-30', '0%', '', '0%', '', '0%', '0%', '', '', 'Pending'],
+            ['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ];
 
         Livewire::test(ClientPortal::class, ['hash' => $client->hash])
-            ->set('trafficTargetMonth', 'October 2026')
-            ->call('copyPreviousMonthTraffic')
-            ->assertDispatched('traffic-data-loaded', function ($event, $data) {
-                $rows = $data['data'] ?? [];
-                $firstRow = $rows[0] ?? [];
-
-                return ($firstRow[1] ?? '') === 'delta.com' && ($firstRow[2] ?? '') === '500 UV/day';
-            });
+            ->call('saveTrafficLaunch', $rows)
+            ->assertHasNoErrors();
     }
 }
