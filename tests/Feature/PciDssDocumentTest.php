@@ -67,6 +67,15 @@ class PciDssDocumentTest extends TestCase
             ->assertSee('1 document');
     }
 
+    public function test_empty_client_folders_are_not_displayed(): void
+    {
+        Client::create(['name' => 'Zero Docs Client Corp', 'hash' => 'zero_hash_999']);
+
+        Livewire::actingAs($this->user)
+            ->test(Index::class)
+            ->assertDontSee('Zero Docs Client Corp');
+    }
+
     public function test_user_can_open_and_close_client_folder(): void
     {
         PciDssDocument::create([

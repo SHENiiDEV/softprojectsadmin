@@ -404,10 +404,51 @@
                                 </span>
                             </div>
                             @if($selectedClient->companies && $selectedClient->companies->isNotEmpty())
-                                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-1.5">
-                                    <i class="fa-regular fa-building text-[10px]"></i>
-                                    Companies: {{ $selectedClient->companies->pluck('name')->join(', ') }}
-                                </p>
+                                <div x-data="{ openCompanies: false }" class="relative mt-1.5 flex flex-wrap items-center gap-1.5 text-xs">
+                                    <span class="text-slate-400 dark:text-slate-500 flex items-center gap-1 font-medium">
+                                        <i class="fa-regular fa-building text-[10px]"></i>
+                                        <span>Companies:</span>
+                                    </span>
+                                    @foreach($selectedClient->companies->take(3) as $comp)
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-white/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700 shadow-2xs">
+                                            {{ $comp->name }}
+                                        </span>
+                                    @endforeach
+
+                                    @if($selectedClient->companies->count() > 3)
+                                        <div class="relative inline-block">
+                                            <button type="button"
+                                                    @click="openCompanies = !openCompanies"
+                                                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-sky-100 hover:bg-sky-200 dark:bg-sky-950/80 dark:hover:bg-sky-900 text-sky-700 dark:text-sky-300 transition-colors cursor-pointer">
+                                                <span>+{{ $selectedClient->companies->count() - 3 }} more</span>
+                                                <i class="fa-solid fa-chevron-down text-[8px] transition-transform duration-200" :class="{ 'rotate-180': openCompanies }"></i>
+                                            </button>
+
+                                            <div x-show="openCompanies"
+                                                 @click.outside="openCompanies = false"
+                                                 x-transition:enter="transition ease-out duration-150"
+                                                 x-transition:enter-start="opacity-0 scale-95 -translate-y-1"
+                                                 x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                                                 x-transition:leave="transition ease-in duration-100"
+                                                 x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+                                                 x-transition:leave-end="opacity-0 scale-95 -translate-y-1"
+                                                 class="absolute left-0 top-full mt-1.5 z-40 w-72 max-h-60 overflow-y-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl p-2.5 space-y-1"
+                                                 style="display: none;">
+                                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 py-1 border-b border-slate-100 dark:border-slate-800">
+                                                    All Associated Companies ({{ $selectedClient->companies->count() }})
+                                                </p>
+                                                <div class="space-y-1 pt-1">
+                                                    @foreach($selectedClient->companies as $comp)
+                                                        <div class="px-2 py-1 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2">
+                                                            <i class="fa-regular fa-building text-[10px] text-slate-400"></i>
+                                                            <span class="truncate">{{ $comp->name }}</span>
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endif
+                                </div>
                             @endif
                         </div>
                     </div>
@@ -533,11 +574,13 @@
                                                 </button>
                                             @endif
                                             @if($doc->project)
-                                                <span class="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
-                                                    <i class="fa-regular fa-building text-[9px]"></i> {{ $doc->project->name }}
+                                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 w-fit mt-0.5">
+                                                    <i class="fa-regular fa-building text-[9px] text-slate-400"></i> {{ $doc->project->name }}
                                                 </span>
                                             @elseif($selectedClient)
-                                                <span class="text-slate-400 text-[11px]">Entire Account</span>
+                                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-950/60 border border-slate-200/60 dark:border-slate-800/60 w-fit mt-0.5">
+                                                    <i class="fa-solid fa-users text-[8px] opacity-70"></i> Entire Account
+                                                </span>
                                             @endif
                                         </div>
                                     </td>
@@ -769,7 +812,7 @@
                                     </label>
                                     <select wire:model.live="uploadClientId" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500/20">
                                         <option value="">Choose a client...</option>
-                                        @foreach($clients as $c)
+                                        @foreach($allClients as $c)
                                             <option value="{{ $c->id }}">{{ $c->name }}</option>
                                         @endforeach
                                     </select>
@@ -952,7 +995,7 @@
                                         Client <span class="text-rose-500">*</span>
                                     </label>
                                     <select wire:model.live="editClientId" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
-                                        @foreach($clients as $c)
+                                        @foreach($allClients as $c)
                                             <option value="{{ $c->id }}">{{ $c->name }}</option>
                                         @endforeach
                                     </select>

@@ -349,7 +349,8 @@ class Index extends Component
 
     public function render(): View
     {
-        $clients = Client::orderBy('name')->get(['id', 'name']);
+        $clients = Client::has('pciDocuments')->orderBy('name')->get(['id', 'name']);
+        $allClients = Client::orderBy('name')->get(['id', 'name']);
 
         $uploadProjects = $this->uploadClientId
             ? Project::where('client_id', $this->uploadClientId)->orderBy('name')->get(['id', 'name'])
@@ -395,12 +396,13 @@ class Index extends Component
             }
         }
 
-        // Folders list when viewing all clients
+        // Folders list when viewing all clients - ONLY clients with documents
         $clientFolders = collect();
         $recentDocuments = collect();
 
         if (! $this->selectedClientId && $this->rootView === 'folders') {
             $clientFolders = Client::query()
+                ->has('pciDocuments')
                 ->withCount('pciDocuments')
                 ->with(['pciDocuments' => function ($q) {
                     $q->select('id', 'client_id', 'document_type', 'custom_type', 'valid_until', 'created_at');
@@ -502,6 +504,7 @@ class Index extends Component
         return view('livewire.pci-dss.index', [
             'documents' => $documents,
             'clients' => $clients,
+            'allClients' => $allClients,
             'selectedClient' => $selectedClient,
             'clientCategoryCounts' => $clientCategoryCounts,
             'clientFolders' => $clientFolders,
