@@ -82,7 +82,7 @@ class KanbanBoard extends Component
 
     public $replyCommentContent = [];
 
-    public string $commentSortOrder = 'asc'; // 'asc' = Oldest first (chronological), 'desc' = Newest first
+    public string $commentSortOrder = 'desc'; // 'desc' = Newest first, 'asc' = Oldest first (chronological)
 
     public bool $hideSystemComments = false; // Hide System / Automated messages
 
@@ -100,7 +100,9 @@ class KanbanBoard extends Component
             $query->whereNotNull('user_id');
         }
 
-        return $query->orderBy('created_at', $this->commentSortOrder)->get();
+        return $query->orderBy('created_at', $this->commentSortOrder)
+            ->orderBy('id', $this->commentSortOrder)
+            ->get();
     }
 
     // Client Email Reply fields
@@ -434,6 +436,7 @@ class KanbanBoard extends Component
         $this->resetValidation();
         $this->attachments = [];
         $this->emailReplyBody = '';
+        $this->commentSortOrder = 'desc';
 
         if ($taskId) {
             $task = Task::with(['media', 'assignees'])->findOrFail($taskId);

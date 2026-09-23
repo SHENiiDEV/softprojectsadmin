@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Livewire\Tasks\KanbanBoard;
+use App\Models\Comment;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
@@ -432,5 +433,41 @@ class KanbanTaskTest extends TestCase
             ->assertSee('Task Created By Reporter For Other') // Shown in Created Tasks view
             ->assertDontSee('Task Created By Reporter For Self')
             ->assertDontSee('Task Created By Other');
+    }
+
+    public function test_task_modal_defaults_comment_sort_order_to_newest_first(): void
+    {
+        $task = Task::create([
+            'title' => 'Task for Comments Ordering',
+            'creator_id' => $this->adminUser->id,
+            'assigned_to' => $this->workerUser->id,
+            'status' => 'todo',
+            'priority' => 'high',
+        ]);
+
+        $comment1 = Comment::forceCreate([
+            'task_id' => $task->id,
+            'user_id' => $this->adminUser->id,
+            'content' => 'First older comment',
+            'created_at' => now()->subHours(2),
+        ]);
+
+        $comment2 = Comment::forceCreate([
+            'task_id' => $task->id,
+            'user_id' => $this->adminUser->id,
+            'content' => 'Second newer comment',
+            'created_at' => now()->subHour(),
+        ]);
+
+        $component = Livewire::actingAs($this->adminUser)
+            ->test(KanbanBoard::class)
+            ->assertSet('commentSortOrder', 'desc')
+            ->set('commentSortOrder', 'asc')
+            ->call('openTaskModal', $task->id)
+            ->assertSet('commentSortOrder', 'desc');
+
+        $modalComments = $component->get('modalComments');
+        $this->assertEquals($comment2->id, $modalComments->first()->id);
+        $this->assertEquals($comment1->id, $modalComments->last()->id);
     }
 }
