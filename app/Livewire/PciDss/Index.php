@@ -8,6 +8,7 @@ use App\Models\Project;
 use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -19,7 +20,7 @@ class Index extends Component
     use WithFileUploads;
     use WithPagination;
 
-    // Filters & Search
+    // Navigation & Filters
     public ?int $selectedClientId = null;
 
     public string $filterType = '';
@@ -31,6 +32,8 @@ class Index extends Component
     public string $sortBy = 'newest'; // newest | oldest | title_asc | client_asc | expiry
 
     public string $viewMode = 'table'; // table | grid
+
+    public string $rootView = 'folders'; // folders | flat
 
     // Upload Modal State & Fields
     public bool $showUploadModal = false;
@@ -85,6 +88,7 @@ class Index extends Component
         'filterStatus' => ['except' => 'all', 'as' => 'status'],
         'sortBy' => ['except' => 'newest'],
         'viewMode' => ['except' => 'table'],
+        'rootView' => ['except' => 'folders'],
     ];
 
     public function mount(?int $client = null): void
@@ -92,6 +96,20 @@ class Index extends Component
         if ($client && Client::where('id', $client)->exists()) {
             $this->selectedClientId = $client;
         }
+    }
+
+    public function openFolder(int $clientId): void
+    {
+        $this->selectedClientId = $clientId;
+        $this->filterType = '';
+        $this->resetPage();
+    }
+
+    public function closeFolder(): void
+    {
+        $this->selectedClientId = null;
+        $this->filterType = '';
+        $this->resetPage();
     }
 
     public function updatingSearch(): void
@@ -124,9 +142,13 @@ class Index extends Component
         $this->resetValidation();
         $this->uploadFile = null;
         $this->uploadTitle = '';
-        $this->uploadType = ! empty($this->filterType) && in_array($this->filterType, PciDssDocument::DOCUMENT_TYPES, true)
-            ? $this->filterType
-            : 'PCI DSS';
+
+        if (! empty($this->filterType) && in_array($this->filterType, PciDssDocument::DOCUMENT_TYPES, true)) {
+            $this->uploadType = $this->filterType;
+        } else {
+            $this->uploadType = 'PCI DSS';
+        }
+
         $this->uploadCustomType = '';
         $this->uploadValidUntil = null;
         $this->uploadNotes = '';
@@ -211,7 +233,7 @@ class Index extends Component
         $this->editingDocId = $doc->id;
         $this->editClientId = $doc->client_id;
         $this->editProjectId = $doc->project_id;
-        $this->editType = $doc->document_type;
+        $this->editType = $doc->document_type === 'Scan' ? 'ASV' : $doc->document_type;
         $this->editCustomType = $doc->custom_type ?? '';
         $this->editTitle = $doc->title;
         $this->editValidUntil = $doc->valid_until ? $doc->valid_until->format('Y-m-d') : null;
@@ -353,6 +375,72 @@ class Index extends Component
                 ->count(),
         ];
 
+        // Active client if selected
+        $selectedClient = $this->selectedClientId
+            ? Client::with('companies')->find($this->selectedClientId)
+            : null;
+
+        // Category breakdown for the active client
+        $clientCategoryCounts = [];
+        if ($this->selectedClientId) {
+            $rawCounts = PciDssDocument::where('client_id', $this->selectedClientId)
+                ->select('document_type', DB::raw('count(*) as count'))
+                ->groupBy('document_type')
+                ->pluck('count', 'document_type')
+                ->toArray();
+
+            foreach ($rawCounts as $type => $count) {
+                $normalizedType = $type === 'Scan' ? 'ASV' : $type;
+                $clientCategoryCounts[$normalizedType] = ($clientCategoryCounts[$normalizedType] ?? 0) + $count;
+            }
+        }
+
+        // Folders list when viewing all clients
+        $clientFolders = collect();
+        $recentDocuments = collect();
+
+        if (! $this->selectedClientId && $this->rootView === 'folders') {
+            $clientFolders = Client::query()
+                ->withCount('pciDocuments')
+                ->with(['pciDocuments' => function ($q) {
+                    $q->select('id', 'client_id', 'document_type', 'custom_type', 'valid_until', 'created_at');
+                }])
+                ->when(! empty(trim($this->search)), function ($q) {
+                    $term = '%'.trim($this->search).'%';
+                    $q->where(function ($sub) use ($term) {
+                        $sub->where('name', 'like', $term)
+                            ->orWhereHas('pciDocuments', function ($dq) use ($term) {
+                                $dq->where('title', 'like', $term)
+                                    ->orWhere('file_name', 'like', $term)
+                                    ->orWhere('custom_type', 'like', $term);
+                            });
+                    });
+                })
+                ->orderBy('name')
+                ->get()
+                ->map(function ($client) use ($today, $expiringThreshold) {
+                    $docs = $client->pciDocuments;
+                    $types = $docs->map(fn ($d) => $d->display_type)->unique()->values()->all();
+                    $hasExpired = $docs->contains(fn ($d) => $d->valid_until && $d->valid_until->isPast() && ! $d->valid_until->isToday());
+                    $hasExpiring = $docs->contains(fn ($d) => $d->valid_until && $d->valid_until->greaterThanOrEqualTo($today) && $d->valid_until->lessThanOrEqualTo($expiringThreshold));
+
+                    return [
+                        'id' => $client->id,
+                        'name' => $client->name,
+                        'count' => $client->pci_documents_count,
+                        'types' => $types,
+                        'has_expired' => $hasExpired,
+                        'has_expiring_soon' => $hasExpiring,
+                        'latest_upload' => $docs->max('created_at'),
+                    ];
+                });
+
+            $recentDocuments = PciDssDocument::with(['client', 'project', 'uploader'])
+                ->latest()
+                ->take(6)
+                ->get();
+        }
+
         // Filtered documents query
         $query = PciDssDocument::query()
             ->with(['client', 'project', 'uploader']);
@@ -362,7 +450,11 @@ class Index extends Component
         }
 
         if (! empty($this->filterType)) {
-            $query->where('document_type', $this->filterType);
+            if ($this->filterType === 'ASV') {
+                $query->whereIn('document_type', ['ASV', 'Scan']);
+            } else {
+                $query->where('document_type', $this->filterType);
+            }
         }
 
         if ($this->filterStatus === 'valid') {
@@ -410,6 +502,10 @@ class Index extends Component
         return view('livewire.pci-dss.index', [
             'documents' => $documents,
             'clients' => $clients,
+            'selectedClient' => $selectedClient,
+            'clientCategoryCounts' => $clientCategoryCounts,
+            'clientFolders' => $clientFolders,
+            'recentDocuments' => $recentDocuments,
             'uploadProjects' => $uploadProjects,
             'editProjects' => $editProjects,
             'stats' => $stats,

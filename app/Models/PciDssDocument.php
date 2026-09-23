@@ -14,7 +14,7 @@ class PciDssDocument extends Model
     public const DOCUMENT_TYPES = [
         'PCI DSS',
         'AOC',
-        'Scan',
+        'ASV',
         'SAQ',
         'Agreement gateway',
         'Other',
@@ -77,6 +77,10 @@ class PciDssDocument extends Model
     {
         if ($this->document_type === 'Other' && ! empty($this->custom_type)) {
             return $this->custom_type;
+        }
+
+        if ($this->document_type === 'Scan') {
+            return 'ASV';
         }
 
         return $this->document_type;

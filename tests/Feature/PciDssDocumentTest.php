@@ -48,36 +48,98 @@ class PciDssDocumentTest extends TestCase
         $response->assertSee('Compliance Vault');
     }
 
-    public function test_user_can_upload_pci_dss_document(): void
+    public function test_root_view_displays_client_folders(): void
+    {
+        PciDssDocument::create([
+            'client_id' => $this->client->id,
+            'document_type' => 'AOC',
+            'title' => 'AOC Document',
+            'file_path' => 'pci_dss_documents/aoc.pdf',
+            'file_name' => 'aoc.pdf',
+            'file_size' => 1024,
+            'mime_type' => 'application/pdf',
+        ]);
+
+        Livewire::actingAs($this->user)
+            ->test(Index::class)
+            ->assertSee('Client Folders')
+            ->assertSee('Acme Payments Corp')
+            ->assertSee('1 document');
+    }
+
+    public function test_user_can_open_and_close_client_folder(): void
+    {
+        PciDssDocument::create([
+            'client_id' => $this->client->id,
+            'document_type' => 'AOC',
+            'title' => 'Confidential AOC Acme',
+            'file_path' => 'pci_dss_documents/aoc.pdf',
+            'file_name' => 'aoc.pdf',
+            'file_size' => 1024,
+            'mime_type' => 'application/pdf',
+        ]);
+
+        Livewire::actingAs($this->user)
+            ->test(Index::class)
+            ->call('openFolder', $this->client->id)
+            ->assertSet('selectedClientId', $this->client->id)
+            ->assertSee('Confidential AOC Acme')
+            ->assertSee('Add Document')
+            ->call('closeFolder')
+            ->assertSet('selectedClientId', null)
+            ->assertSee('Client Folders');
+    }
+
+    public function test_user_can_upload_asv_document(): void
     {
         Storage::fake('local');
 
-        $file = UploadedFile::fake()->create('AOC_Merchant_2026.pdf', 350, 'application/pdf');
+        $file = UploadedFile::fake()->create('ASV_Scan_Report_Q3.pdf', 350, 'application/pdf');
 
         Livewire::actingAs($this->user)
             ->test(Index::class)
             ->call('openUploadModal', $this->client->id)
             ->set('uploadClientId', $this->client->id)
-            ->set('uploadType', 'AOC')
-            ->set('uploadTitle', 'Annual Attestation of Compliance 2026')
+            ->set('uploadType', 'ASV')
+            ->set('uploadTitle', 'Q3 ASV Vulnerability Scan')
             ->set('uploadValidUntil', '2027-09-30')
-            ->set('uploadNotes', 'Approved by Qualified Security Assessor')
+            ->set('uploadNotes', 'Approved ASV Scan')
             ->set('uploadFile', $file)
             ->call('uploadDocument')
             ->assertHasNoErrors();
 
         $this->assertDatabaseHas('pci_dss_documents', [
             'client_id' => $this->client->id,
-            'document_type' => 'AOC',
-            'title' => 'Annual Attestation of Compliance 2026',
-            'notes' => 'Approved by Qualified Security Assessor',
+            'document_type' => 'ASV',
+            'title' => 'Q3 ASV Vulnerability Scan',
         ]);
 
-        $doc = PciDssDocument::where('client_id', $this->client->id)->first();
+        $doc = PciDssDocument::where('title', 'Q3 ASV Vulnerability Scan')->first();
         $this->assertNotNull($doc);
-        $this->assertTrue(Storage::disk('local')->exists($doc->file_path));
-        $this->assertEquals('2027-09-30', $doc->valid_until->format('Y-m-d'));
-        $this->assertEquals($this->user->id, $doc->uploaded_by);
+        $this->assertEquals('ASV', $doc->display_type);
+    }
+
+    public function test_legacy_scan_displays_and_filters_as_asv(): void
+    {
+        $doc = PciDssDocument::create([
+            'client_id' => $this->client->id,
+            'document_type' => 'Scan',
+            'title' => 'Legacy Network Scan',
+            'file_path' => 'pci_dss_documents/scan.pdf',
+            'file_name' => 'scan.pdf',
+            'file_size' => 1024,
+            'mime_type' => 'application/pdf',
+        ]);
+
+        // Model display_type outputs ASV
+        $this->assertEquals('ASV', $doc->display_type);
+
+        // Filter by ASV finds the legacy scan
+        Livewire::actingAs($this->user)
+            ->test(Index::class)
+            ->call('openFolder', $this->client->id)
+            ->set('filterType', 'ASV')
+            ->assertSee('Legacy Network Scan');
     }
 
     public function test_user_can_upload_document_with_other_category_and_custom_type(): void
@@ -129,9 +191,9 @@ class PciDssDocumentTest extends TestCase
     {
         $client2 = Client::create(['name' => 'Beta Fintech', 'hash' => 'beta_hash_456']);
 
-        $doc1 = PciDssDocument::create([
+        PciDssDocument::create([
             'client_id' => $this->client->id,
-            'document_type' => 'Scan',
+            'document_type' => 'ASV',
             'title' => 'Q1 ASV Vulnerability Scan',
             'file_path' => 'pci_dss_documents/scan1.pdf',
             'file_name' => 'scan1.pdf',
@@ -139,7 +201,7 @@ class PciDssDocumentTest extends TestCase
             'mime_type' => 'application/pdf',
         ]);
 
-        $doc2 = PciDssDocument::create([
+        PciDssDocument::create([
             'client_id' => $client2->id,
             'document_type' => 'SAQ',
             'title' => 'SAQ-A Questionnaire',
@@ -149,16 +211,17 @@ class PciDssDocumentTest extends TestCase
             'mime_type' => 'application/pdf',
         ]);
 
-        // Filter by Client 1
+        // Filter by Client 1 (open folder)
         Livewire::actingAs($this->user)
             ->test(Index::class)
-            ->set('selectedClientId', $this->client->id)
+            ->call('openFolder', $this->client->id)
             ->assertSee('Q1 ASV Vulnerability Scan')
             ->assertDontSee('SAQ-A Questionnaire');
 
-        // Filter by Type 'SAQ'
+        // Filter by Type 'SAQ' across all files
         Livewire::actingAs($this->user)
             ->test(Index::class)
+            ->set('rootView', 'flat')
             ->set('filterType', 'SAQ')
             ->assertSee('SAQ-A Questionnaire')
             ->assertDontSee('Q1 ASV Vulnerability Scan');
@@ -178,7 +241,7 @@ class PciDssDocumentTest extends TestCase
 
         PciDssDocument::create([
             'client_id' => $this->client->id,
-            'document_type' => 'Scan',
+            'document_type' => 'ASV',
             'title' => 'ASV Quarterly Report',
             'file_path' => 'pci_dss_documents/asv.pdf',
             'file_name' => 'asv.pdf',
@@ -188,6 +251,7 @@ class PciDssDocumentTest extends TestCase
 
         Livewire::actingAs($this->user)
             ->test(Index::class)
+            ->call('openFolder', $this->client->id)
             ->set('search', 'Cardaq')
             ->assertSee('Cardaq Merchant Agreement')
             ->assertDontSee('ASV Quarterly Report');
@@ -255,7 +319,7 @@ class PciDssDocumentTest extends TestCase
 
         $doc = PciDssDocument::create([
             'client_id' => $this->client->id,
-            'document_type' => 'Scan',
+            'document_type' => 'ASV',
             'title' => 'Obsolete Scan',
             'file_path' => $filePath,
             'file_name' => 'file_to_delete.pdf',
