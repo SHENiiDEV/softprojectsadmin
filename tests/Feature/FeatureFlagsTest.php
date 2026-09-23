@@ -284,4 +284,20 @@ class FeatureFlagsTest extends TestCase
         putenv('ENABLE_CLIENT_PORTAL_COMMENTS');
         putenv('ENABLE_TASK_ATTACHMENTS');
     }
+
+    public function test_pci_dss_route_is_accessible_when_feature_enabled(): void
+    {
+        config(['features.pci_dss' => true]);
+
+        $response = $this->actingAs($this->user)->get('/pci-dss');
+        $response->assertStatus(200);
+    }
+
+    public function test_pci_dss_route_aborts_404_when_feature_disabled(): void
+    {
+        config(['features.pci_dss' => false]);
+
+        $response = $this->actingAs($this->user)->get('/pci-dss');
+        $response->assertStatus(404);
+    }
 }

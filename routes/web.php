@@ -12,6 +12,7 @@ use App\Livewire\CompanyHealthScore;
 use App\Livewire\CredentialVault;
 use App\Livewire\DeadlineCenter;
 use App\Livewire\MyWork;
+use App\Livewire\PciDss\Index as PciDssIndex;
 use App\Livewire\Projects\Create as ProjectsCreate;
 use App\Livewire\Projects\Edit as ProjectsEdit;
 use App\Livewire\Projects\Index as ProjectsIndex;
@@ -34,6 +35,7 @@ Route::view('dashboard', 'dashboard')
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/clients', Index::class)->middleware(['feature:clients'])->name('clients.index');
+    Route::get('/pci-dss', PciDssIndex::class)->middleware(['feature:pci_dss'])->name('pci-dss.index');
 
     Route::get('/projects', ProjectsIndex::class)->middleware('permission:view_projects')->name('projects.index');
     Route::get('/projects/create', ProjectsCreate::class)->middleware('permission:manage_projects')->name('projects.create');

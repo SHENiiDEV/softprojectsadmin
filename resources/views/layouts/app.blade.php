@@ -82,6 +82,16 @@
                     </a>
                     @endif
 
+                    <!-- PCI DSS Link -->
+                    @if(config('features.pci_dss', true))
+                    <a href="{{ route('pci-dss.index') }}"
+                       class="flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 group {{ request()->routeIs('pci-dss.*') ? 'bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-400' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-800 dark:hover:text-white' }}"
+                       wire:navigate>
+                        <i class="fa-solid fa-shield-halved mr-3 text-base text-sky-500 transition-transform duration-200 group-hover:scale-110"></i>
+                        PCI DSS
+                    </a>
+                    @endif
+
                     <!-- Companies Link -->
                     @can('view_projects')
                     <a href="{{ route('projects.index') }}"
@@ -317,6 +327,13 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                             </svg>
                             Clients
+                        </a>
+                        @endif
+
+                        @if(config('features.pci_dss', true))
+                        <a href="{{ route('pci-dss.index') }}" class="flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 group {{ request()->routeIs('pci-dss.*') ? 'bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-400' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-800 dark:hover:text-white' }}" wire:navigate>
+                            <i class="fa-solid fa-shield-halved mr-3 text-base text-sky-500 transition-transform duration-200 group-hover:scale-110"></i>
+                            PCI DSS
                         </a>
                         @endif
 

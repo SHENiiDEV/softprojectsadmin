@@ -39,4 +39,12 @@ class Client extends Model
     {
         return $this->hasMany(TrafficLaunch::class);
     }
+
+    /**
+     * Get the PCI DSS compliance documents for the client.
+     */
+    public function pciDocuments(): HasMany
+    {
+        return $this->hasMany(PciDssDocument::class);
+    }
 }

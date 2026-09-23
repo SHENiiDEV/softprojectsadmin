@@ -17,6 +17,7 @@ return [
 
     // New Feature Toggles
     'clients' => env('ENABLE_CLIENTS', true),
+    'pci_dss' => env('ENABLE_PCI_DSS', true),
     'users' => env('ENABLE_USERS', true),
     'my_work' => env('ENABLE_MY_WORK', false),
     'websites_tab' => env('ENABLE_WEBSITES_TAB', true),
