@@ -37,7 +37,7 @@ class NotificationService
 
             $text = "{$header}\n*Title:* {$escapedTitle}";
 
-            SendTelegramMessageJob::dispatchAfterResponse($assignee->telegram_id, $text, self::getTelegramButtons($task));
+            SendTelegramMessageJob::dispatch($assignee->telegram_id, $text, self::getTelegramButtons($task));
         }
 
         // 3. Email notification
@@ -60,14 +60,20 @@ class NotificationService
         $message = "Task '{$task->title}' was created by {$actorName}.";
         $url = route('tasks.kanban', ['task_id' => $task->id]);
 
-        if ($task->assigned_to && ($actor === null || $task->assigned_to !== $actor->id)) {
-            $task->assignee?->notify(new AppNotification($title, $message, $url, 'task_created'));
+        $assignees = $task->assignees->isNotEmpty()
+            ? $task->assignees
+            : ($task->assigned_to ? collect([$task->assignee ?? User::find($task->assigned_to)])->filter() : collect());
 
-            if ($task->assignee && $task->assignee->telegram_id && $task->assignee->getNotificationSetting('tg_notify_task_assigned', true)) {
-                $escapedTitle = TelegramService::escapeMarkdownV2($task->title);
-                $text = "📝 *New task created:*\n*Title:* {$escapedTitle}";
+        foreach ($assignees as $assignee) {
+            if ($actor === null || $assignee->id !== $actor->id) {
+                $assignee->notify(new AppNotification($title, $message, $url, 'task_created'));
 
-                SendTelegramMessageJob::dispatchAfterResponse($task->assignee->telegram_id, $text, self::getTelegramButtons($task));
+                if ($assignee->telegram_id && $assignee->getNotificationSetting('tg_notify_task_assigned', true)) {
+                    $escapedTitle = TelegramService::escapeMarkdownV2($task->title);
+                    $text = "📝 *New task created:*\n*Title:* {$escapedTitle}";
+
+                    SendTelegramMessageJob::dispatch($assignee->telegram_id, $text, self::getTelegramButtons($task));
+                }
             }
         }
     }
@@ -89,13 +95,21 @@ class NotificationService
         }
 
         // 2. Telegram
-        if ($task->assignee && $task->assignee->telegram_id && $task->assignee->getNotificationSetting('tg_notify_task_status', true)) {
-            $escapedTitle = TelegramService::escapeMarkdownV2($task->title);
-            $escapedStatus = TelegramService::escapeMarkdownV2($readableStatus);
+        $assignee = $task->assignee ? $task->assignee->fresh() : ($task->assigned_to ? User::find($task->assigned_to) : null);
 
-            $text = "🔄 *Task status updated:*\n*Task:* {$escapedTitle}\n*New Status:* {$escapedStatus}";
+        if ($assignee && $assignee->telegram_id) {
+            $notifyStatusSetting = isset($assignee->notification_settings['tg_notify_task_status_updated'])
+                ? $assignee->getNotificationSetting('tg_notify_task_status_updated', true)
+                : $assignee->getNotificationSetting('tg_notify_task_status', true);
 
-            SendTelegramMessageJob::dispatchAfterResponse($task->assignee->telegram_id, $text, self::getTelegramButtons($task));
+            if ($notifyStatusSetting) {
+                $escapedTitle = TelegramService::escapeMarkdownV2($task->title);
+                $escapedStatus = TelegramService::escapeMarkdownV2($readableStatus);
+
+                $text = "🔄 *Task status updated:*\n*Task:* {$escapedTitle}\n*New Status:* {$escapedStatus}";
+
+                SendTelegramMessageJob::dispatch($assignee->telegram_id, $text, self::getTelegramButtons($task));
+            }
         }
     }
 
@@ -126,7 +140,7 @@ class NotificationService
 
                 $text = "📥 *New Client Portal Request:*\n*Company:* {$escapedCompany}\n*Task:* {$escapedTitle}";
 
-                SendTelegramMessageJob::dispatchAfterResponse($user->telegram_id, $text, self::getTelegramButtons($task));
+                SendTelegramMessageJob::dispatch($user->telegram_id, $text, self::getTelegramButtons($task));
             }
         }
     }
@@ -180,7 +194,7 @@ class NotificationService
         });
 
         if ($recipients->isEmpty()) {
-            Log::info("sendNewCommentNotification: All recipients filtered out (comment author is assignee/creator)");
+            Log::info('sendNewCommentNotification: All recipients filtered out (comment author is assignee/creator)');
         }
 
         foreach ($recipients as $recipient) {
@@ -202,9 +216,9 @@ class NotificationService
 
                 Log::info("sendNewCommentNotification: Dispatching Telegram notification to User #{$recipient->id} ({$recipient->name}) [TG ID: {$recipient->telegram_id}] for task #{$task->id}");
 
-                SendTelegramMessageJob::dispatchAfterResponse($recipient->telegram_id, $text, self::getTelegramButtons($task));
+                SendTelegramMessageJob::dispatch($recipient->telegram_id, $text, self::getTelegramButtons($task));
             } else {
-                Log::info("sendNewCommentNotification: Skipped Telegram for User #{$recipient->id} ({$recipient->name}) - telegram_id: ".($recipient->telegram_id ?: 'NULL').", setting: ".($recipient->getNotificationSetting('tg_notify_comments', true) ? 'TRUE' : 'FALSE'));
+                Log::info("sendNewCommentNotification: Skipped Telegram for User #{$recipient->id} ({$recipient->name}) - telegram_id: ".($recipient->telegram_id ?: 'NULL').', setting: '.($recipient->getNotificationSetting('tg_notify_comments', true) ? 'TRUE' : 'FALSE'));
             }
         }
     }
@@ -245,7 +259,7 @@ class NotificationService
                 ? "⏱️ *Timer started by {$escapedActor}:*\n*Task:* {$escapedTitle}"
                 : "⏱️ *Timer stopped by {$escapedActor} after working for {$durationFormatted}:*\n*Task:* {$escapedTitle}";
 
-            SendTelegramMessageJob::dispatchAfterResponse($creator->telegram_id, $text, self::getTelegramButtons($task));
+            SendTelegramMessageJob::dispatch($creator->telegram_id, $text, self::getTelegramButtons($task));
         }
     }
 
@@ -281,7 +295,7 @@ class NotificationService
                 ],
             ];
 
-            SendTelegramMessageJob::dispatchAfterResponse($manager->telegram_id, $text, $buttons);
+            SendTelegramMessageJob::dispatch($manager->telegram_id, $text, $buttons);
         }
     }
 
@@ -314,7 +328,7 @@ class NotificationService
                 ],
             ];
 
-            SendTelegramMessageJob::dispatchAfterResponse($newManager->telegram_id, $text, $buttons);
+            SendTelegramMessageJob::dispatch($newManager->telegram_id, $text, $buttons);
         }
     }
 

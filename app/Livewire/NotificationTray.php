@@ -42,7 +42,7 @@ class NotificationTray extends Component
     public function render()
     {
         $user = Auth::user();
-        $notifications = $user ? $user->unreadNotifications()->take(5)->get() : collect();
+        $notifications = $user ? $user->unreadNotifications()->take(10)->get() : collect();
         $unreadCount = $user ? $user->unreadNotifications()->count() : 0;
 
         return view('livewire.notification-tray', [

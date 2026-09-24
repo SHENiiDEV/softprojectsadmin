@@ -1,10 +1,31 @@
 <div class="relative inline-block text-left" 
      x-data="{ 
          open: false,
-         notifiedIds: JSON.parse(sessionStorage.getItem('notified_notification_ids') || '[]'),
+         notifiedIds: JSON.parse(localStorage.getItem('notified_notification_ids') || '[]'),
+         permissionStatus: ('Notification' in window ? Notification.permission : 'unsupported'),
          requestPermission() {
-             if ('Notification' in window && Notification.permission === 'default') {
-                 Notification.requestPermission();
+             if (!('Notification' in window)) return;
+             Notification.requestPermission().then(permission => {
+                 this.permissionStatus = permission;
+                 if (permission === 'granted') {
+                     this.showPushNotification('🔔 Уведомления включены', {
+                         body: 'Вы будете получать Push-уведомления о новых задачах и комментариях.',
+                         icon: '/pwa-192x192.png',
+                         badge: '/pwa-192x192.png',
+                         data: { url: '/tasks' }
+                     });
+                 }
+             });
+         },
+         showPushNotification(title, options) {
+             if ('serviceWorker' in navigator) {
+                 navigator.serviceWorker.ready.then(reg => {
+                     reg.showNotification(title, options);
+                 }).catch(() => {
+                     try { new Notification(title, options); } catch(e) {}
+                 });
+             } else {
+                 try { new Notification(title, options); } catch(e) {}
              }
          },
          triggerPush(notifications) {
@@ -12,37 +33,45 @@
              let changed = false;
              notifications.forEach(n => {
                  if (!this.notifiedIds.includes(n.id)) {
-                     new Notification(n.data.title || 'New Notification', {
-                         body: n.data.message || '',
+                     const title = n.data?.title || 'Новое уведомление';
+                     const body = n.data?.message || '';
+                     const url = n.data?.url || '/dashboard';
+                     
+                     this.showPushNotification(title, {
+                         body: body,
+                         icon: '/pwa-192x192.png',
+                         badge: '/pwa-192x192.png',
+                         data: { url: url },
+                         tag: 'notif-' + n.id,
+                         vibrate: [200, 100, 200]
                      });
                      this.notifiedIds.push(n.id);
                      changed = true;
                  }
              });
              if (changed) {
-                 sessionStorage.setItem('notified_notification_ids', JSON.stringify(this.notifiedIds));
+                 localStorage.setItem('notified_notification_ids', JSON.stringify(this.notifiedIds.slice(-100)));
              }
          }
      }" 
      x-init="
-         requestPermission();
          // Populate initial unread notifications to avoid spamming on page load
          const initial = JSON.parse($refs.notificationsData.textContent || '[]');
-         initial.forEach(n => {
-             if (!notifiedIds.includes(n.id)) {
+         if (notifiedIds.length === 0) {
+             initial.forEach(n => {
                  notifiedIds.push(n.id);
-             }
-         });
-         sessionStorage.setItem('notified_notification_ids', JSON.stringify(notifiedIds));
+             });
+             localStorage.setItem('notified_notification_ids', JSON.stringify(notifiedIds));
+         }
 
          // Watch for future updates
          $watch('$refs.notificationsData.textContent', (val) => {
              triggerPush(JSON.parse(val || '[]'));
          });
      "
-     wire:poll.15s>
+     wire:poll.10s>
     <!-- Bell Button -->
-    <button @click="open = !open" type="button" class="relative p-2.5 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all focus:outline-none" title="Notifications">
+    <button @click="open = !open; if(permissionStatus === 'default') requestPermission();" type="button" class="relative p-2.5 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all focus:outline-none" title="Notifications">
         <i class="fa-regular fa-bell text-lg"></i>
         @if($unreadCount > 0)
             <span class="absolute top-1.5 right-1.5 flex h-4 w-4">
@@ -75,6 +104,19 @@
                 </button>
             @endif
         </div>
+
+        <!-- Push Notification Opt-In Banner (Mobile / PWA) -->
+        <template x-if="permissionStatus === 'default'">
+            <div class="px-4 py-2.5 bg-sky-50 dark:bg-sky-950/40 border-b border-sky-100 dark:border-sky-900/50 flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2 min-w-0">
+                    <i class="fa-solid fa-bell text-sky-500 text-xs"></i>
+                    <span class="text-[11px] text-sky-800 dark:text-sky-300 font-medium truncate">Push на телефон</span>
+                </div>
+                <button @click="requestPermission()" type="button" class="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-sky-500 hover:bg-sky-600 text-white transition-colors flex-shrink-0 shadow-sm shadow-sky-500/20">
+                    Включить
+                </button>
+            </div>
+        </template>
 
         <!-- Body -->
         <div class="max-h-96 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60">
