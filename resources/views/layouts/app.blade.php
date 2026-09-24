@@ -2,15 +2,35 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full">
     <head>
         <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
         <title>{{ config('app.name', 'Project Manager Hub') }}</title>
 
-        <!-- Favicon -->
+        <!-- PWA & Mobile Web App Meta -->
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+        <meta name="apple-mobile-web-app-title" content="SoftProject">
+        <meta name="theme-color" content="#0284c7" media="(prefers-color-scheme: light)">
+        <meta name="theme-color" content="#0b0f19" media="(prefers-color-scheme: dark)">
+
+        <!-- Manifest & Favicons -->
+        <link rel="manifest" href="{{ asset('manifest.json') }}">
         <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}">
         <link rel="shortcut icon" href="{{ asset('favicon.ico') }}">
-        <link rel="apple-touch-icon" href="{{ asset('favicon.png') }}">
+        <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('apple-touch-icon.png') }}">
+
+        <!-- PWA Service Worker Registration -->
+        <script>
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                    navigator.serviceWorker.register('/sw.js').catch(function(err) {
+                        console.log('PWA ServiceWorker registration failed: ', err);
+                    });
+                });
+            }
+        </script>
 
         <!-- Fonts (Outfit + Inter) -->
         <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -276,7 +296,7 @@
             </aside>
 
             <!-- Sidebar (Mobile Drawer) -->
-            <div x-show="sidebarOpen" class="fixed inset-0 z-40 md:hidden" style="display: none;">
+            <div x-show="sidebarOpen" class="fixed inset-0 z-50 md:hidden" style="display: none;">
                 <div x-show="sidebarOpen" x-transition:enter="transition-opacity ease-linear duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition-opacity ease-linear duration-300" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm" @click="sidebarOpen = false"></div>
 
                 <div x-show="sidebarOpen" x-transition:enter="transition ease-in-out duration-300 transform" x-transition:enter-start="-translate-x-full" x-transition:enter-end="translate-x-0" x-transition:leave="transition ease-in-out duration-300 transform" x-transition:leave-start="translate-x-0" x-transition:leave-end="-translate-x-full" class="relative flex flex-col w-full max-w-xs h-full bg-white dark:bg-slate-900 border-r border-slate-200/60 dark:border-slate-800">
@@ -526,7 +546,7 @@
                 </header>
 
                 <!-- Page Main Content -->
-                <main class="flex-1 relative overflow-y-auto focus:outline-none bg-slate-50 dark:bg-slate-950 {{ request()->routeIs('tasks.kanban') ? 'p-4 md:p-6' : 'p-6 md:p-8' }}">
+                <main class="flex-1 relative overflow-y-auto focus:outline-none bg-slate-50 dark:bg-slate-950 {{ request()->routeIs('tasks.kanban') ? 'p-4 md:p-6 pb-24 md:pb-6' : 'p-6 md:p-8 pb-28 md:pb-8' }}">
                     <div class="{{ request()->routeIs('tasks.kanban') ? 'w-full' : 'max-w-7xl mx-auto' }} space-y-6">
                         @if(auth()->check() && !auth()->user()->telegram_id)
                             <div class="p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded-2xl flex items-center justify-between shadow-sm">
@@ -554,6 +574,81 @@
                 </main>
             </div>
         </div>
+
+        <!-- Mobile Bottom Navigation Bar (PWA) -->
+        <nav aria-label="Mobile Navigation" class="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-t border-slate-200/80 dark:border-slate-800/80 shadow-[0_-4px_25px_rgba(0,0,0,0.06)] dark:shadow-[0_-4px_25px_rgba(0,0,0,0.4)]" style="padding-bottom: env(safe-area-inset-bottom, 0px);">
+            <div class="grid grid-cols-5 items-center h-16 max-w-lg mx-auto px-1 relative">
+                <!-- 1. Dashboard -->
+                <a href="{{ route('dashboard') }}"
+                   class="flex flex-col items-center justify-center py-1 group transition-colors duration-200 {{ request()->routeIs('dashboard') ? 'text-sky-600 dark:text-sky-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200' }}"
+                   wire:navigate>
+                    <div class="relative flex items-center justify-center">
+                        <svg class="w-5 h-5 transition-transform duration-200 group-hover:scale-110 {{ request()->routeIs('dashboard') ? 'stroke-[2.2]' : 'stroke-2' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4z" />
+                        </svg>
+                        @if(request()->routeIs('dashboard'))
+                            <span class="absolute -bottom-1 w-1 h-1 bg-sky-500 rounded-full"></span>
+                        @endif
+                    </div>
+                    <span class="text-[10px] tracking-tight mt-0.5 {{ request()->routeIs('dashboard') ? 'font-semibold' : 'font-medium' }}">Dashboard</span>
+                </a>
+
+                <!-- 2. Companies -->
+                <a href="{{ route('projects.index') }}"
+                   class="flex flex-col items-center justify-center py-1 group transition-colors duration-200 {{ request()->routeIs('projects.*') ? 'text-sky-600 dark:text-sky-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200' }}"
+                   wire:navigate>
+                    <div class="relative flex items-center justify-center">
+                        <svg class="w-5 h-5 transition-transform duration-200 group-hover:scale-110 {{ request()->routeIs('projects.*') ? 'stroke-[2.2]' : 'stroke-2' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                        @if(request()->routeIs('projects.*'))
+                            <span class="absolute -bottom-1 w-1 h-1 bg-sky-500 rounded-full"></span>
+                        @endif
+                    </div>
+                    <span class="text-[10px] tracking-tight mt-0.5 {{ request()->routeIs('projects.*') ? 'font-semibold' : 'font-medium' }}">Companies</span>
+                </a>
+
+                <!-- 3. My Work (Center - Primary Action) -->
+                <a href="{{ route('my.work') }}"
+                   class="flex flex-col items-center justify-center -mt-5 group"
+                   wire:navigate>
+                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-500 to-indigo-600 text-white flex items-center justify-center shadow-lg shadow-sky-500/30 transition-all duration-200 group-hover:scale-105 group-active:scale-95 border-2 border-white dark:border-slate-900 {{ request()->routeIs('my.work') ? 'ring-2 ring-sky-500 ring-offset-2 dark:ring-offset-slate-900 scale-105' : '' }}">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                        </svg>
+                    </div>
+                    <span class="text-[10px] tracking-tight mt-1 {{ request()->routeIs('my.work') ? 'text-sky-600 dark:text-sky-400 font-bold' : 'text-slate-600 dark:text-slate-400 font-semibold' }}">My Work</span>
+                </a>
+
+                <!-- 4. PCI DSS -->
+                <a href="{{ route('pci-dss.index') }}"
+                   class="flex flex-col items-center justify-center py-1 group transition-colors duration-200 {{ request()->routeIs('pci-dss.*') ? 'text-sky-600 dark:text-sky-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200' }}"
+                   wire:navigate>
+                    <div class="relative flex items-center justify-center">
+                        <i class="fa-solid fa-shield-halved text-[17px] transition-transform duration-200 group-hover:scale-110"></i>
+                        @if(request()->routeIs('pci-dss.*'))
+                            <span class="absolute -bottom-1 w-1 h-1 bg-sky-500 rounded-full"></span>
+                        @endif
+                    </div>
+                    <span class="text-[10px] tracking-tight mt-0.5 {{ request()->routeIs('pci-dss.*') ? 'font-semibold' : 'font-medium' }}">PCI DSS</span>
+                </a>
+
+                <!-- 5. Credentials -->
+                <a href="{{ route('credentials') }}"
+                   class="flex flex-col items-center justify-center py-1 group transition-colors duration-200 {{ request()->routeIs('credentials') ? 'text-sky-600 dark:text-sky-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200' }}"
+                   wire:navigate>
+                    <div class="relative flex items-center justify-center">
+                        <svg class="w-5 h-5 transition-transform duration-200 group-hover:scale-110 {{ request()->routeIs('credentials') ? 'stroke-[2.2]' : 'stroke-2' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+                        </svg>
+                        @if(request()->routeIs('credentials'))
+                            <span class="absolute -bottom-1 w-1 h-1 bg-sky-500 rounded-full"></span>
+                        @endif
+                    </div>
+                    <span class="text-[10px] tracking-tight mt-0.5 {{ request()->routeIs('credentials') ? 'font-semibold' : 'font-medium' }}">Credentials</span>
+                </a>
+            </div>
+        </nav>
 
         @livewireScripts
     </body>

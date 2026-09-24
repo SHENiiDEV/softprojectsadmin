@@ -2,15 +2,24 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full">
     <head>
         <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
         <title>{{ config('app.name', 'SoftProject Hub') }}</title>
 
-        <!-- Favicon -->
+        <!-- PWA & Mobile Web App Meta -->
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+        <meta name="apple-mobile-web-app-title" content="SoftProject">
+        <meta name="theme-color" content="#0284c7" media="(prefers-color-scheme: light)">
+        <meta name="theme-color" content="#0b0f19" media="(prefers-color-scheme: dark)">
+
+        <!-- Manifest & Favicons -->
+        <link rel="manifest" href="{{ asset('manifest.json') }}">
         <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}">
         <link rel="shortcut icon" href="{{ asset('favicon.ico') }}">
-        <link rel="apple-touch-icon" href="{{ asset('favicon.png') }}">
+        <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('apple-touch-icon.png') }}">
 
         <!-- Fonts (Outfit + Inter) -->
         <link rel="preconnect" href="https://fonts.googleapis.com">
