@@ -26,10 +26,18 @@ class SendDailyDigest extends Command
         $users = User::whereNotNull('telegram_id')
             ->get();
 
+        $buttons = [
+            'inline_keyboard' => [
+                [
+                    ['text' => '📋 Открыть My Work / Задачи', 'url' => route('tasks.kanban')],
+                ],
+            ],
+        ];
+
         foreach ($users as $user) {
             $text = $telegramService->buildSummaryText($user, "Daily Summary for {$user->name}");
 
-            SendTelegramMessageJob::dispatch($user->telegram_id, $text);
+            SendTelegramMessageJob::dispatch($user->telegram_id, $text, $buttons);
             $this->info("Digest sent to {$user->name}");
         }
 

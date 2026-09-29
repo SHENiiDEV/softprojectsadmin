@@ -135,6 +135,14 @@ class TelegramService
     }
 
     /**
+     * Helper to escape URLs for MarkdownV2 inline links [text](url).
+     */
+    public static function escapeMarkdownV2Url(string $url): string
+    {
+        return str_replace(['\\', ')'], ['\\\\', '\\)'], $url);
+    }
+
+    /**
      * Build the MarkdownV2 text for user daily / task summary.
      */
     public function buildSummaryText(User $user, ?string $titleHeader = null): string
@@ -152,9 +160,10 @@ class TelegramService
 
         if ($activeTimer && $activeTimer->task) {
             $timerTitle = self::escapeMarkdownV2($activeTimer->task->title);
+            $timerUrl = self::escapeMarkdownV2Url(route('tasks.kanban', ['task_id' => $activeTimer->task->id]));
             $elapsed = gmdate('H:i:s', $activeTimer->started_at->diffInSeconds(now(), true));
             $elapsed = self::escapeMarkdownV2($elapsed);
-            $text .= "⏱ *Active Timer:* {$timerTitle} \({$elapsed}\)\n\n";
+            $text .= "⏱ *Active Timer:* [{$timerTitle}]({$timerUrl}) \({$elapsed}\)\n\n";
         }
 
         $activeTasksQuery = Task::assignedToUser($user->id)
@@ -212,9 +221,19 @@ class TelegramService
                 };
 
                 $taskTitle = self::escapeMarkdownV2($task->title);
+                $taskUrl = self::escapeMarkdownV2Url(route('tasks.kanban', ['task_id' => $task->id]));
                 $statusLabel = self::escapeMarkdownV2(str_replace('_', ' ', $task->status));
 
-                $text .= "{$statusEmoji} {$priorityEmoji} {$taskTitle} \_{$statusLabel}\_\n";
+                $deadlineBadge = '';
+                if ($task->due_date) {
+                    if ($task->due_date->lt(now()->startOfDay())) {
+                        $deadlineBadge = ' ⚠️';
+                    } elseif ($task->due_date->isToday()) {
+                        $deadlineBadge = ' 📅';
+                    }
+                }
+
+                $text .= "{$statusEmoji} {$priorityEmoji} [{$taskTitle}]({$taskUrl}) _{$statusLabel}_{$deadlineBadge}\n";
             }
 
             if ($totalActive > 8) {
@@ -243,6 +262,7 @@ class TelegramService
             foreach ($recentComments as $comment) {
                 $authorName = $comment->user?->name ?? ($comment->client?->name ?? 'System');
                 $taskTitle = $comment->task?->title ?? 'Task';
+                $taskUrl = self::escapeMarkdownV2Url(route('tasks.kanban', ['task_id' => $comment->task_id]));
                 $shortContent = mb_strimwidth(trim(preg_replace('/\s+/', ' ', strip_tags($comment->content))), 0, 45, '…');
                 $timeAgo = $comment->created_at->diffForHumans(short: true);
 
@@ -251,7 +271,7 @@ class TelegramService
                 $escapedContent = self::escapeMarkdownV2($shortContent);
                 $escapedTime = self::escapeMarkdownV2($timeAgo);
 
-                $text .= "• *{$escapedTask}* \— {$escapedAuthor}: _{$escapedContent}_ \({$escapedTime}\)\n";
+                $text .= "• [{$escapedTask}]({$taskUrl}) \— {$escapedAuthor}: _{$escapedContent}_ \({$escapedTime}\)\n";
             }
         }
 
@@ -262,6 +282,14 @@ class TelegramService
     {
         $text = $this->buildSummaryText($user, $titleHeader);
 
-        return $this->sendMessage($chatId, $text);
+        $buttons = [
+            'inline_keyboard' => [
+                [
+                    ['text' => '📋 Открыть My Work / Задачи', 'url' => route('tasks.kanban')],
+                ],
+            ],
+        ];
+
+        return $this->sendMessage($chatId, $text, $buttons);
     }
 }

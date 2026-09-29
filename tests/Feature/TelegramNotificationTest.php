@@ -334,8 +334,10 @@ class TelegramNotificationTest extends TestCase
                 && str_contains($job->text, '• ⚠️ Overdue: *1*')
                 && str_contains($job->text, '• 📅 Due today: *1*');
             // Check task listing with emoji & italics
-            $hasTasks = str_contains($job->text, '🔵 🟢 COMPANY\_1 LTD \_in progress\_')
-                && str_contains($job->text, '🟡 🟢 COMPANY\_5 LTD \_review\_')
+            $hasTasks = str_contains($job->text, '🔵 🟢 [COMPANY\_1 LTD](')
+                && str_contains($job->text, ') _in progress_ ⚠️')
+                && str_contains($job->text, '🟡 🟢 [COMPANY\_5 LTD](')
+                && str_contains($job->text, ') _review_')
                 && str_contains($job->text, 'and 2 more');
             // Check recent comments
             $hasComments = str_contains($job->text, '💬 *Recent Comments:*')
@@ -394,7 +396,8 @@ class TelegramNotificationTest extends TestCase
 
             return str_contains($text, '📋 *Daily Summary for Alex*')
                 && str_contains($text, '• Active tasks: *1*')
-                && str_contains($text, '🔵 🟢 PRONTOWARE OÜ \_in progress\_');
+                && str_contains($text, '🔵 🟢 [PRONTOWARE OÜ](')
+                && str_contains($text, ') _in progress_');
         });
     }
 }
