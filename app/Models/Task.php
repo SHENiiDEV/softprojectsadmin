@@ -98,7 +98,7 @@ class Task extends Model implements HasMedia
                         if ($oldAssignee && $oldAssignee->telegram_id) {
                             $escapedTitle = TelegramService::escapeMarkdownV2($task->title);
                             $text = "➖ *Task has been unassigned from you:*\n*Title:* {$escapedTitle}";
-                            SendTelegramMessageJob::dispatchAfterResponse($oldAssignee->telegram_id, $text);
+                            SendTelegramMessageJob::dispatch($oldAssignee->telegram_id, $text);
                         }
                     }
                 }
@@ -155,6 +155,7 @@ class Task extends Model implements HasMedia
         return [
             'due_date' => 'date',
             'archived_at' => 'datetime',
+            'deadline_reminder_sent' => 'boolean',
         ];
     }
 
@@ -278,7 +279,7 @@ class Task extends Model implements HasMedia
             if ($oldUser && $oldUser->telegram_id) {
                 $escapedTitle = TelegramService::escapeMarkdownV2($this->title);
                 $text = "➖ *Task has been unassigned from you:*\n*Title:* {$escapedTitle}";
-                SendTelegramMessageJob::dispatchAfterResponse($oldUser->telegram_id, $text);
+                SendTelegramMessageJob::dispatch($oldUser->telegram_id, $text);
             }
         }
     }

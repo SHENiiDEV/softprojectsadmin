@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Jobs\SendTelegramMessageJob;
+use App\Models\Comment;
 use App\Models\Project;
 use App\Models\Report;
 use App\Models\Task;
@@ -253,6 +254,147 @@ class TelegramNotificationTest extends TestCase
         // Verify Admin gets notified
         Queue::assertPushed(SendTelegramMessageJob::class, function ($job) use ($admin) {
             return $job->chatId === $admin->telegram_id;
+        });
+    }
+
+    /**
+     * Test daily digest skips on weekends (Saturday / Sunday).
+     */
+    public function test_daily_digest_skips_on_weekends(): void
+    {
+        Queue::fake();
+
+        $worker = User::factory()->create([
+            'telegram_id' => 998877,
+        ]);
+
+        // Simulate Saturday
+        Carbon::setTestNow(Carbon::parse('2026-10-03 09:00:00')); // Saturday
+
+        Artisan::call('digest:daily');
+
+        Queue::assertNothingPushed();
+
+        // Simulate Sunday
+        Carbon::setTestNow(Carbon::parse('2026-10-04 09:00:00')); // Sunday
+
+        Artisan::call('digest:daily');
+
+        Queue::assertNothingPushed();
+
+        Carbon::setTestNow();
+    }
+
+    /**
+     * Test daily digest sends formatted MarkdownV2 summary on weekdays.
+     */
+    public function test_daily_digest_sends_formatted_summary_on_weekdays(): void
+    {
+        Queue::fake();
+
+        // Simulate Wednesday (weekday)
+        Carbon::setTestNow(Carbon::parse('2026-09-30 09:00:00'));
+
+        $worker = User::factory()->create([
+            'name' => 'Gleb',
+            'telegram_id' => 1234567,
+        ]);
+
+        // Create 10 tasks with different statuses and priorities
+        for ($i = 1; $i <= 10; $i++) {
+            Task::create([
+                'title' => "COMPANY_{$i} LTD",
+                'creator_id' => $this->user->id,
+                'assigned_to' => $worker->id,
+                'status' => $i <= 4 ? 'in_progress' : ($i <= 8 ? 'review' : 'todo'),
+                'priority' => 'medium',
+                'due_date' => $i === 1 ? Carbon::yesterday() : ($i === 2 ? Carbon::today() : Carbon::tomorrow()),
+            ]);
+        }
+
+        // Add a recent comment by another user
+        $firstTask = Task::where('assigned_to', $worker->id)->first();
+        Comment::create([
+            'task_id' => $firstTask->id,
+            'user_id' => $this->user->id,
+            'content' => 'Review completed for this client',
+        ]);
+
+        Artisan::call('digest:daily');
+
+        Queue::assertPushed(SendTelegramMessageJob::class, function ($job) use ($worker) {
+            if ($job->chatId !== $worker->telegram_id) {
+                return false;
+            }
+
+            // Check header
+            $hasHeader = str_contains($job->text, '📋 *Daily Summary for Gleb*');
+            // Check stats
+            $hasStats = str_contains($job->text, '• Active tasks: *10*')
+                && str_contains($job->text, '• ⚠️ Overdue: *1*')
+                && str_contains($job->text, '• 📅 Due today: *1*');
+            // Check task listing with emoji & italics
+            $hasTasks = str_contains($job->text, '🔵 🟢 COMPANY\_1 LTD \_in progress\_')
+                && str_contains($job->text, '🟡 🟢 COMPANY\_5 LTD \_review\_')
+                && str_contains($job->text, 'and 2 more');
+            // Check recent comments
+            $hasComments = str_contains($job->text, '💬 *Recent Comments:*')
+                && str_contains($job->text, 'Review completed for this client');
+
+            return $hasHeader && $hasStats && $hasTasks && $hasComments;
+        });
+
+        Carbon::setTestNow();
+    }
+
+    /**
+     * Test /summary Telegram command returns formatted MarkdownV2 summary.
+     */
+    public function test_telegram_summary_command_returns_rich_markdown_v2_summary(): void
+    {
+        $worker = User::factory()->create([
+            'name' => 'Alex',
+            'telegram_id' => 777888,
+        ]);
+
+        Task::create([
+            'title' => 'PRONTOWARE OÜ',
+            'creator_id' => $this->user->id,
+            'assigned_to' => $worker->id,
+            'status' => 'in_progress',
+            'priority' => 'medium',
+        ]);
+
+        Http::fake([
+            'https://api.telegram.org/bot*/sendMessage*' => Http::response(['ok' => true]),
+        ]);
+
+        $payload = [
+            'update_id' => 12345,
+            'message' => [
+                'message_id' => 100,
+                'from' => [
+                    'id' => 777888,
+                    'username' => 'alex_tg',
+                    'first_name' => 'Alex',
+                ],
+                'chat' => [
+                    'id' => 777888,
+                    'type' => 'private',
+                ],
+                'text' => '/summary',
+            ],
+        ];
+
+        $response = $this->postJson('/telegram/webhook', $payload);
+        $response->assertStatus(200);
+
+        Http::assertSent(function ($request) {
+            $text = $request['text'] ?? '';
+
+            return str_contains($text, '📋 *Daily Summary for Alex*')
+                && str_contains($text, '• Active tasks: *1*')
+                && str_contains($text, '🔵 🟢 PRONTOWARE OÜ \_in progress\_');
         });
     }
 }

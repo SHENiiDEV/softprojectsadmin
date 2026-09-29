@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\Comment;
+use App\Models\Setting;
 use App\Models\Task;
 use App\Models\TaskTimeLog;
 use App\Models\User;
@@ -13,7 +15,7 @@ class TelegramService
     protected function getBotToken(): ?string
     {
         return config('services.telegram.bot_token')
-            ?: (class_exists(\App\Models\Setting::class) ? \App\Models\Setting::get('telegram_bot_token') : null);
+            ?: (class_exists(Setting::class) ? Setting::get('telegram_bot_token') : null);
     }
 
     /**
@@ -99,7 +101,7 @@ class TelegramService
                 $errorText = "❌ *Account linking error\\!*\n\nToken not found or invalid\\. Please go to your profile settings and click the link again\\.";
                 $this->sendMessage($chatId, $errorText);
             }
-        } elseif (strtolower($text) === '/summary') {
+        } elseif (preg_match('/^\/summary(@\w+)?$/i', $text)) {
             $user = User::where('telegram_id', (string) $fromId)->orWhere('telegram_id', (string) $chatId)->first();
             if (! $user) {
                 $this->sendMessage($chatId, "❌ Account not linked\. Please link your account via Profile settings\.");
@@ -122,44 +124,32 @@ class TelegramService
 
     /**
      * Helper to escape MarkdownV2 special characters.
-     * Note: We escape these: _ * [ ] ( ) ~ ` > # + - = | { } . !
+     * Special characters: _ * [ ] ( ) ~ ` > # + - = | { } . !
      */
     public static function escapeMarkdownV2(string $text): string
     {
-        $chars = ['_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!'];
+        $chars = ['\\', '_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!'];
         $replace = array_map(fn ($c) => '\\'.$c, $chars);
 
         return str_replace($chars, $replace, $text);
     }
 
-    private function sendSummary(int|string $chatId, User $user): void
+    /**
+     * Build the MarkdownV2 text for user daily / task summary.
+     */
+    public function buildSummaryText(User $user, ?string $titleHeader = null): string
     {
-        $tasks = Task::where('assigned_to', $user->id)
-            ->whereNotIn('status', ['done'])
-            ->orderByRaw("CASE status WHEN 'in_progress' THEN 1 WHEN 'review' THEN 2 WHEN 'todo' THEN 3 ELSE 4 END")
-            ->limit(10)
-            ->get();
+        $name = self::escapeMarkdownV2($user->name);
+        $header = $titleHeader ? self::escapeMarkdownV2($titleHeader) : "Daily Summary for {$name}";
 
-        $overdueTasks = Task::where('assigned_to', $user->id)
-            ->whereNotNull('due_date')
-            ->where('due_date', '<', now()->startOfDay())
-            ->whereNotIn('status', ['done'])
-            ->count();
+        $text = "📋 *{$header}*\n\n";
 
-        $todayDeadlines = Task::where('assigned_to', $user->id)
-            ->whereDate('due_date', today())
-            ->whereNotIn('status', ['done'])
-            ->count();
-
+        // Active timer if any
         $activeTimer = TaskTimeLog::where('user_id', $user->id)
             ->whereNull('stopped_at')
             ->with('task')
             ->first();
 
-        $name = self::escapeMarkdownV2($user->name);
-        $text = "📋 *Daily Summary for {$name}*\n\n";
-
-        // Active timer
         if ($activeTimer && $activeTimer->task) {
             $timerTitle = self::escapeMarkdownV2($activeTimer->task->title);
             $elapsed = gmdate('H:i:s', $activeTimer->started_at->diffInSeconds(now(), true));
@@ -167,46 +157,111 @@ class TelegramService
             $text .= "⏱ *Active Timer:* {$timerTitle} \({$elapsed}\)\n\n";
         }
 
-        // Stats
-        $totalActive = $tasks->count();
+        $activeTasksQuery = Task::assignedToUser($user->id)
+            ->whereNotIn('status', ['done']);
+
+        $totalActive = (clone $activeTasksQuery)->count();
+
+        $overdueCount = (clone $activeTasksQuery)
+            ->whereNotNull('due_date')
+            ->where('due_date', '<', now()->startOfDay())
+            ->count();
+
+        $dueTodayCount = (clone $activeTasksQuery)
+            ->whereDate('due_date', today())
+            ->count();
+
+        // Stats section
         $text .= "📊 *Stats:*\n";
-        $text .= "• Active tasks: {$totalActive}\n";
-        if ($overdueTasks > 0) {
-            $text .= "• ⚠️ Overdue: {$overdueTasks}\n";
+        $text .= "• Active tasks: *{$totalActive}*\n";
+        if ($overdueCount > 0) {
+            $text .= "• ⚠️ Overdue: *{$overdueCount}*\n";
         }
-        if ($todayDeadlines > 0) {
-            $text .= "• 📅 Due today: {$todayDeadlines}\n";
+        if ($dueTodayCount > 0) {
+            $text .= "• 📅 Due today: *{$dueTodayCount}*\n";
         }
         $text .= "\n";
 
-        // Task list
-        if ($tasks->isEmpty()) {
-            $text .= "✅ No active tasks\. Great work\!";
+        // Tasks list section
+        if ($totalActive === 0) {
+            $text .= "✅ No active tasks\. Great work\!\n";
         } else {
             $text .= "📝 *Your Tasks:*\n";
-            foreach ($tasks->take(8) as $task) {
+            $tasks = (clone $activeTasksQuery)
+                ->with('project')
+                ->orderByRaw("CASE status WHEN 'in_progress' THEN 1 WHEN 'review' THEN 2 WHEN 'todo' THEN 3 ELSE 4 END")
+                ->orderByRaw('CASE WHEN due_date IS NOT NULL AND due_date < ? THEN 0 WHEN due_date IS NOT NULL AND DATE(due_date) = ? THEN 1 ELSE 2 END', [now()->startOfDay()->toDateTimeString(), today()->toDateString()])
+                ->orderByRaw("CASE priority WHEN 'critical' THEN 1 WHEN 'high' THEN 2 WHEN 'medium' THEN 3 WHEN 'low' THEN 4 ELSE 5 END")
+                ->limit(8)
+                ->get();
+
+            foreach ($tasks as $task) {
                 $statusEmoji = match ($task->status) {
                     'in_progress' => '🔵',
                     'review' => '🟡',
                     'todo' => '⚪',
-                    default => '⚫',
+                    'done' => '🟢',
+                    default => '⚪',
                 };
                 $priorityEmoji = match ($task->priority) {
                     'critical' => '🔴',
                     'high' => '🟠',
                     'medium' => '🟢',
-                    default => '⚪',
+                    'low' => '⚪',
+                    default => '🟢',
                 };
-                $title = self::escapeMarkdownV2($task->title);
-                $status = self::escapeMarkdownV2(str_replace('_', ' ', $task->status));
-                $text .= "{$statusEmoji} {$priorityEmoji} {$title} \_{$status}\_\n";
+
+                $taskTitle = self::escapeMarkdownV2($task->title);
+                $statusLabel = self::escapeMarkdownV2(str_replace('_', ' ', $task->status));
+
+                $text .= "{$statusEmoji} {$priorityEmoji} {$taskTitle} \_{$statusLabel}\_\n";
             }
-            if ($tasks->count() > 8) {
-                $remaining = $tasks->count() - 8;
+
+            if ($totalActive > 8) {
+                $remaining = $totalActive - 8;
                 $text .= "_\.\.\. and {$remaining} more_\n";
             }
         }
 
-        $this->sendMessage($chatId, $text);
+        // Recent comments (last 24 hours on user's assigned tasks by others or clients)
+        $recentComments = Comment::whereHas('task', function ($q) use ($user) {
+            $q->assignedToUser($user->id);
+        })
+            ->where(function ($q) use ($user) {
+                $q->whereNull('user_id')
+                    ->orWhere('user_id', '!=', $user->id)
+                    ->orWhereNotNull('client_id');
+            })
+            ->where('created_at', '>=', now()->subHours(24))
+            ->with(['user', 'client', 'task'])
+            ->latest()
+            ->limit(3)
+            ->get();
+
+        if ($recentComments->isNotEmpty()) {
+            $text .= "\n💬 *Recent Comments:*\n";
+            foreach ($recentComments as $comment) {
+                $authorName = $comment->user?->name ?? ($comment->client?->name ?? 'System');
+                $taskTitle = $comment->task?->title ?? 'Task';
+                $shortContent = mb_strimwidth(trim(preg_replace('/\s+/', ' ', strip_tags($comment->content))), 0, 45, '…');
+                $timeAgo = $comment->created_at->diffForHumans(short: true);
+
+                $escapedAuthor = self::escapeMarkdownV2($authorName);
+                $escapedTask = self::escapeMarkdownV2($taskTitle);
+                $escapedContent = self::escapeMarkdownV2($shortContent);
+                $escapedTime = self::escapeMarkdownV2($timeAgo);
+
+                $text .= "• *{$escapedTask}* \— {$escapedAuthor}: _{$escapedContent}_ \({$escapedTime}\)\n";
+            }
+        }
+
+        return trim($text);
+    }
+
+    public function sendSummary(int|string $chatId, User $user, ?string $titleHeader = null): bool
+    {
+        $text = $this->buildSummaryText($user, $titleHeader);
+
+        return $this->sendMessage($chatId, $text);
     }
 }
