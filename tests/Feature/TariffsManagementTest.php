@@ -38,7 +38,7 @@ class TariffsManagementTest extends TestCase
     {
         $response = $this->get('/tariffs');
         $response->assertStatus(200);
-        $response->assertSee('Acquiring Matrix');
+        $response->assertSee('Acquiring & Banking Tariffs', false);
         $response->assertSee('GuruPay');
         $response->assertSee('Payally');
     }
@@ -50,19 +50,19 @@ class TariffsManagementTest extends TestCase
     {
         Livewire::test(TariffsIndex::class)
             ->assertSet('activeTab', 'cards')
-            ->assertSee('Сравнительная матрица карточного эквайринга')
+            ->assertSee('Card Acquiring Comparison Matrix')
             ->call('setTab', 'banking')
             ->assertSet('activeTab', 'banking')
-            ->assertSee('Банковские переводы')
+            ->assertSee('Banking Transfers')
             ->call('setTab', 'fees')
             ->assertSet('activeTab', 'fees')
-            ->assertSee('Фиксированные и сервисные комиссии')
+            ->assertSee('Setup, Maintenance')
             ->call('setTab', 'simulator')
             ->assertSet('activeTab', 'simulator')
-            ->assertSee('Параметры транзакции')
+            ->assertSee('Transaction Parameters')
             ->call('setTab', 'providers')
             ->assertSet('activeTab', 'providers')
-            ->assertSee('Управление провайдерами');
+            ->assertSee('Add Provider');
     }
 
     /**
@@ -110,8 +110,8 @@ class TariffsManagementTest extends TestCase
             ->set('simAmount', 1000.00)
             ->set('simMethod', 'card')
             ->set('simRegion', 'eu')
-            ->assertSee('Самый выгодный маршрут')
-            ->assertSee('К выплате (Net)');
+            ->assertSee('Best Route / Optimal Cost')
+            ->assertSee('Net Settlement Amount');
     }
 
     /**
@@ -126,6 +126,7 @@ class TariffsManagementTest extends TestCase
             amount: 10000.00,
             paymentMethod: 'sepa',
             flowType: 'payin',
+            audience: 'b2b',
             monthlyVolume: 500000.00
         );
         $this->assertEquals(20.00, $simTier1['fee']); // 10000 * 0.0020 = 20.00
@@ -135,6 +136,7 @@ class TariffsManagementTest extends TestCase
             amount: 10000.00,
             paymentMethod: 'sepa',
             flowType: 'payin',
+            audience: 'b2b',
             monthlyVolume: 6000000.00
         );
         $this->assertEquals(10.00, $simTier3['fee']); // 10000 * 0.0010 = 10.00

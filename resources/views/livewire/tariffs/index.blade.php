@@ -1,5 +1,5 @@
 <div class="space-y-6 pb-12">
-    {{-- Top Notification Toast --}}
+    {{-- Toast Notification --}}
     @if($successMessage)
         <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 4000)"
              class="fixed bottom-6 right-6 z-50 flex items-center p-4 mb-4 text-emerald-800 rounded-2xl bg-emerald-50 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 shadow-xl transition-all duration-300">
@@ -23,10 +23,10 @@
                 </div>
                 <div>
                     <h1 class="text-2xl font-bold text-slate-800 dark:text-white tracking-tight">
-                        Tariffs & Acquiring Matrix
+                        Acquiring & Banking Tariffs
                     </h1>
                     <p class="text-sm text-slate-500 dark:text-slate-400">
-                        Единый реестр, версионирование, сравнительная матрица тарифов и калькулятор маршрутизации (Smart Routing)
+                        Provider fee conditions, matrix comparison & transaction cost simulator (Smart Routing)
                     </p>
                 </div>
             </div>
@@ -36,7 +36,7 @@
             <button wire:click="setTab('simulator')"
                     class="inline-flex items-center px-4 py-2 text-sm font-semibold rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:hover:bg-indigo-900/60 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 transition-all shadow-sm">
                 <i class="fa-solid fa-calculator mr-2 text-indigo-500"></i>
-                Калькулятор затрат
+                Cost Simulator
             </button>
 
             <button wire:click="openCreateProviderModal"
@@ -44,20 +44,20 @@
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
-                Добавить провайдера
+                Add Provider
             </button>
         </div>
     </div>
 
-    {{-- Quick KPI Metrics --}}
+    {{-- KPI Cards --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center justify-between">
             <div>
-                <p class="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Всего провайдеров</p>
+                <p class="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Total Providers</p>
                 <div class="mt-1 flex items-baseline gap-2">
                     <span class="text-2xl font-black text-slate-800 dark:text-white">{{ $totalProviders }}</span>
                     <span class="text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-md">
-                        {{ $activeProviders }} активных
+                        {{ $activeProviders }} active
                     </span>
                 </div>
             </div>
@@ -68,7 +68,7 @@
 
         <div class="p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center justify-between">
             <div>
-                <p class="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Эквайринг & EMI</p>
+                <p class="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Acquiring & EMIs</p>
                 <div class="mt-1 flex items-baseline gap-2">
                     <span class="text-2xl font-black text-slate-800 dark:text-white">{{ $acquiringCount }}</span>
                     <span class="text-xs text-slate-500">/ {{ $emiCount }} EMI</span>
@@ -81,7 +81,7 @@
 
         <div class="p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center justify-between">
             <div>
-                <p class="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Лучший Card EU Тариф</p>
+                <p class="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Best EU Card Rate</p>
                 <div class="mt-1">
                     @if($lowestCardRate)
                         <span class="text-2xl font-black text-emerald-600 dark:text-emerald-400">
@@ -89,7 +89,7 @@
                         </span>
                         <p class="text-[11px] text-slate-400 truncate max-w-[130px]">{{ $lowestCardRate->provider?->name }}</p>
                     @else
-                        <span class="text-sm text-slate-400">Нет данных</span>
+                        <span class="text-sm text-slate-400">N/A</span>
                     @endif
                 </div>
             </div>
@@ -100,7 +100,7 @@
 
         <div class="p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center justify-between">
             <div>
-                <p class="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Лучший SEPA Тариф</p>
+                <p class="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Best SEPA Rate</p>
                 <div class="mt-1">
                     @if($lowestSepaRate)
                         <span class="text-2xl font-black text-teal-600 dark:text-teal-400">
@@ -108,7 +108,7 @@
                         </span>
                         <p class="text-[11px] text-slate-400 truncate max-w-[130px]">{{ $lowestSepaRate->provider?->name }}</p>
                     @else
-                        <span class="text-sm text-slate-400">Нет данных</span>
+                        <span class="text-sm text-slate-400">N/A</span>
                     @endif
                 </div>
             </div>
@@ -118,42 +118,42 @@
         </div>
     </div>
 
-    {{-- Main Tabs Navigation --}}
-    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm p-2">
-        <div class="flex flex-wrap items-center gap-1.5">
+    {{-- Clean Modern Segmented Tab Navigation --}}
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm p-1.5">
+        <nav class="flex flex-wrap items-center gap-1">
             <button wire:click="setTab('cards')"
-                    class="flex items-center px-4 py-2.5 text-sm font-semibold rounded-xl transition-all {{ $activeTab === 'cards' ? 'bg-sky-500 text-white shadow-md shadow-sky-500/20' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60' }}">
-                <i class="fa-solid fa-credit-card mr-2.5"></i>
-                1. Карточный эквайринг (Card Acquiring)
+                    class="flex items-center px-4 py-2.5 text-xs font-semibold rounded-xl transition-all {{ $activeTab === 'cards' ? 'bg-sky-500 text-white shadow-md shadow-sky-500/20 font-bold' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60' }}">
+                <i class="fa-solid fa-credit-card mr-2 text-sm"></i>
+                Card Acquiring
             </button>
 
             <button wire:click="setTab('banking')"
-                    class="flex items-center px-4 py-2.5 text-sm font-semibold rounded-xl transition-all {{ $activeTab === 'banking' ? 'bg-sky-500 text-white shadow-md shadow-sky-500/20' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60' }}">
-                <i class="fa-solid fa-building-columns mr-2.5"></i>
-                2. Банковские переводы & Счета (SEPA / SWIFT)
+                    class="flex items-center px-4 py-2.5 text-xs font-semibold rounded-xl transition-all {{ $activeTab === 'banking' ? 'bg-sky-500 text-white shadow-md shadow-sky-500/20 font-bold' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60' }}">
+                <i class="fa-solid fa-building-columns mr-2 text-sm"></i>
+                Banking (SEPA & SWIFT)
             </button>
 
             <button wire:click="setTab('fees')"
-                    class="flex items-center px-4 py-2.5 text-sm font-semibold rounded-xl transition-all {{ $activeTab === 'fees' ? 'bg-sky-500 text-white shadow-md shadow-sky-500/20' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60' }}">
-                <i class="fa-solid fa-receipt mr-2.5"></i>
-                3. Фикс. и сервисные расходы (Maintenance & Setup)
+                    class="flex items-center px-4 py-2.5 text-xs font-semibold rounded-xl transition-all {{ $activeTab === 'fees' ? 'bg-sky-500 text-white shadow-md shadow-sky-500/20 font-bold' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60' }}">
+                <i class="fa-solid fa-receipt mr-2 text-sm"></i>
+                Setup & Maintenance Fees
             </button>
 
             <button wire:click="setTab('simulator')"
-                    class="flex items-center px-4 py-2.5 text-sm font-semibold rounded-xl transition-all {{ $activeTab === 'simulator' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50' }}">
-                <i class="fa-solid fa-calculator mr-2.5"></i>
-                4. Калькулятор затрат (Cost Simulator)
+                    class="flex items-center px-4 py-2.5 text-xs font-semibold rounded-xl transition-all {{ $activeTab === 'simulator' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20 font-bold' : 'text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50' }}">
+                <i class="fa-solid fa-calculator mr-2 text-sm"></i>
+                Cost Simulator
             </button>
 
             <button wire:click="setTab('providers')"
-                    class="flex items-center px-4 py-2.5 text-sm font-semibold rounded-xl transition-all {{ $activeTab === 'providers' ? 'bg-slate-800 text-white dark:bg-slate-700' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60' }}">
-                <i class="fa-solid fa-sliders mr-2.5"></i>
-                5. Управление провайдерами (CRUD)
+                    class="flex items-center px-4 py-2.5 text-xs font-semibold rounded-xl transition-all {{ $activeTab === 'providers' ? 'bg-slate-800 text-white dark:bg-slate-700 font-bold' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60' }}">
+                <i class="fa-solid fa-sliders mr-2 text-sm"></i>
+                Providers Directory
             </button>
-        </div>
+        </nav>
     </div>
 
-    {{-- Global Filters Bar (Shown on comparison tabs) --}}
+    {{-- Global Filters Bar --}}
     @if(in_array($activeTab, ['cards', 'banking', 'fees', 'providers']))
     <div class="flex flex-col md:flex-row items-center justify-between gap-4 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
         <div class="relative w-full md:w-80">
@@ -162,27 +162,27 @@
             </svg>
             <input type="text"
                    wire:model.live.debounce.300ms="search"
-                   placeholder="Поиск по названию, коду или заметкам..."
-                   class="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 dark:text-white placeholder-slate-400" />
+                   placeholder="Search provider, code, fee or notes..."
+                   class="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-sky-500 dark:text-white placeholder-slate-400" />
         </div>
 
         <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
             <div class="flex items-center gap-2">
-                <span class="text-xs font-semibold text-slate-500">Тип:</span>
+                <span class="text-xs font-semibold text-slate-500">Type:</span>
                 <select wire:model.live="filterType"
                         class="px-3 py-1.5 text-xs font-medium rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-sky-500">
-                    <option value="all">Все типы</option>
+                    <option value="all">All Types</option>
                     <option value="acquiring">Acquiring</option>
-                    <option value="emi">EMI</option>
+                    <option value="emi">EMI / Banking</option>
                     <option value="hybrid">Hybrid (Acq + EMI)</option>
                 </select>
             </div>
 
             <div class="flex items-center gap-2">
-                <span class="text-xs font-semibold text-slate-500">Валюта:</span>
+                <span class="text-xs font-semibold text-slate-500">Currency:</span>
                 <select wire:model.live="filterCurrency"
                         class="px-3 py-1.5 text-xs font-medium rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-sky-500">
-                    <option value="all">Все валюты</option>
+                    <option value="all">All Currencies</option>
                     <option value="EUR">EUR (€)</option>
                     <option value="USD">USD ($)</option>
                     <option value="GBP">GBP (£)</option>
@@ -191,7 +191,7 @@
 
             <label class="flex items-center space-x-2 text-xs font-medium text-slate-600 dark:text-slate-400 cursor-pointer ml-2">
                 <input type="checkbox" wire:model.live="onlyActive" class="rounded border-slate-300 text-sky-600 focus:ring-sky-500 dark:bg-slate-800" />
-                <span>Только активные</span>
+                <span>Active only</span>
             </label>
         </div>
     </div>
@@ -204,26 +204,26 @@
     <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
         <div class="p-5 border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between">
             <div>
-                <h2 class="text-lg font-bold text-slate-800 dark:text-white">Сравнительная матрица карточного эквайринга</h2>
-                <p class="text-xs text-slate-500 dark:text-slate-400">Сравнение комиссий за обработку карт (EU, Non-EU, Corporate), FX наценок и Rolling Reserve</p>
+                <h2 class="text-base font-bold text-slate-800 dark:text-white">Card Acquiring Comparison Matrix</h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Processing rates across EU, Non-EU, Corporate cards, FX markup & Rolling Reserve</p>
             </div>
             <button wire:click="openCreateRateModal()" class="text-xs font-semibold text-sky-600 hover:text-sky-700 dark:text-sky-400 flex items-center">
-                <i class="fa-solid fa-plus mr-1.5"></i> Добавить тариф
+                <i class="fa-solid fa-plus mr-1.5"></i> Add Rate
             </button>
         </div>
 
         <div class="overflow-x-auto">
             <table class="w-full text-left text-sm">
-                <thead class="bg-slate-50/75 dark:bg-slate-950/50 text-slate-500 dark:text-slate-400 text-xs uppercase font-bold border-b border-slate-200/80 dark:border-slate-800">
+                <thead class="bg-slate-50/75 dark:bg-slate-950/50 text-slate-500 dark:text-slate-400 text-[11px] uppercase font-bold border-b border-slate-200/80 dark:border-slate-800">
                     <tr>
-                        <th class="py-3.5 px-5">Провайдер</th>
-                        <th class="py-3.5 px-4">EU Cards (% + Fixed + Min)</th>
+                        <th class="py-3.5 px-5">Provider</th>
+                        <th class="py-3.5 px-4">EU Cards (Visa / MC)</th>
                         <th class="py-3.5 px-4">Non-EU / International</th>
                         <th class="py-3.5 px-4">Corporate / Premium</th>
                         <th class="py-3.5 px-4">FX Margin</th>
                         <th class="py-3.5 px-4">Chargeback Fee</th>
                         <th class="py-3.5 px-4">Rolling Reserve</th>
-                        <th class="py-3.5 px-4 text-right">Действия</th>
+                        <th class="py-3.5 px-4 text-right">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-200/60 dark:divide-slate-800">
@@ -232,7 +232,7 @@
                             $euRate = $provider->processingRates->where('payment_method', 'card')->where('card_region', 'eu')->where('is_active', true)->first();
                             $nonEuRate = $provider->processingRates->where('payment_method', 'card')->whereIn('card_region', ['non_eu', 'international'])->where('is_active', true)->first();
                             $corpRate = $provider->processingRates->where('payment_method', 'card')->where('card_region', 'corporate')->where('is_active', true)->first();
-                            $fxFee = $provider->serviceFees->where('fee_code', 'fx_margin')->first();
+                            $fxFee = $provider->serviceFees->whereIn('fee_code', ['fx_margin', 'fx_main'])->first();
                             $cbFee = $provider->serviceFees->where('fee_code', 'chargeback')->first();
                             $reserve = $provider->reserve;
                         @endphp
@@ -247,10 +247,10 @@
                                         <div class="font-bold text-slate-800 dark:text-white flex items-center gap-2">
                                             {{ $provider->name }}
                                             @if(! $provider->is_active)
-                                                <span class="px-2 py-0.5 text-[10px] font-medium bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-400 rounded-full">Неактивен</span>
+                                                <span class="px-2 py-0.5 text-[10px] font-medium bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-400 rounded-full">Inactive</span>
                                             @endif
                                         </div>
-                                        <div class="text-xs text-slate-400 flex items-center gap-1.5">
+                                        <div class="text-[11px] text-slate-400 flex items-center gap-1.5">
                                             <span class="uppercase tracking-wider text-[10px] font-semibold text-sky-600 dark:text-sky-400">{{ $provider->type }}</span>
                                             <span>•</span>
                                             <span>{{ $provider->base_currency }}</span>
@@ -263,11 +263,11 @@
                             <td class="py-4 px-4">
                                 @if($euRate)
                                     <div class="inline-flex flex-col">
-                                        <span class="font-bold text-slate-800 dark:text-white text-sm bg-sky-50 dark:bg-sky-950/50 text-sky-700 dark:text-sky-300 px-2.5 py-1 rounded-lg border border-sky-100 dark:border-sky-900/50">
+                                        <span class="font-bold text-slate-800 dark:text-white text-xs bg-sky-50 dark:bg-sky-950/50 text-sky-700 dark:text-sky-300 px-2.5 py-1 rounded-lg border border-sky-100 dark:border-sky-900/50">
                                             {{ $euRate->formatted_rate }}
                                         </span>
                                         @if($euRate->notes)
-                                            <span class="text-[11px] text-slate-400 mt-0.5">{{ $euRate->notes }}</span>
+                                            <span class="text-[10px] text-slate-400 mt-0.5">{{ $euRate->notes }}</span>
                                         @endif
                                     </div>
                                 @else
@@ -279,11 +279,11 @@
                             <td class="py-4 px-4">
                                 @if($nonEuRate)
                                     <div class="inline-flex flex-col">
-                                        <span class="font-bold text-slate-800 dark:text-white text-sm bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 px-2.5 py-1 rounded-lg border border-amber-100 dark:border-amber-900/50">
+                                        <span class="font-bold text-slate-800 dark:text-white text-xs bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 px-2.5 py-1 rounded-lg border border-amber-100 dark:border-amber-900/50">
                                             {{ $nonEuRate->formatted_rate }}
                                         </span>
                                         @if($nonEuRate->notes)
-                                            <span class="text-[11px] text-slate-400 mt-0.5">{{ $nonEuRate->notes }}</span>
+                                            <span class="text-[10px] text-slate-400 mt-0.5">{{ $nonEuRate->notes }}</span>
                                         @endif
                                     </div>
                                 @else
@@ -295,7 +295,7 @@
                             <td class="py-4 px-4">
                                 @if($corpRate)
                                     <div class="inline-flex flex-col">
-                                        <span class="font-bold text-slate-800 dark:text-white text-sm bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 px-2.5 py-1 rounded-lg border border-purple-100 dark:border-purple-900/50">
+                                        <span class="font-bold text-slate-800 dark:text-white text-xs bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 px-2.5 py-1 rounded-lg border border-purple-100 dark:border-purple-900/50">
                                             {{ $corpRate->formatted_rate }}
                                         </span>
                                     </div>
@@ -307,7 +307,7 @@
                             {{-- FX Margin --}}
                             <td class="py-4 px-4">
                                 @if($fxFee)
-                                    <span class="font-semibold text-slate-700 dark:text-slate-200">
+                                    <span class="font-semibold text-slate-700 dark:text-slate-200 text-xs">
                                         {{ $fxFee->formatted_fee }}
                                     </span>
                                 @else
@@ -318,7 +318,7 @@
                             {{-- Chargeback Fee --}}
                             <td class="py-4 px-4">
                                 @if($cbFee)
-                                    <span class="font-semibold text-rose-600 dark:text-rose-400">
+                                    <span class="font-semibold text-rose-600 dark:text-rose-400 text-xs">
                                         {{ $cbFee->formatted_fee }}
                                     </span>
                                 @else
@@ -347,13 +347,13 @@
                             {{-- Actions --}}
                             <td class="py-4 px-4 text-right">
                                 <div class="flex items-center justify-end space-x-2">
-                                    <button wire:click="openEditReserveModal({{ $provider->id }})" title="Настройка Rolling Reserve" class="p-1.5 text-slate-400 hover:text-emerald-600 transition-colors">
+                                    <button wire:click="openEditReserveModal({{ $provider->id }})" title="Configure Rolling Reserve" class="p-1.5 text-slate-400 hover:text-emerald-600 transition-colors">
                                         <i class="fa-solid fa-shield-halved text-xs"></i>
                                     </button>
-                                    <button wire:click="openCreateRateModal({{ $provider->id }})" title="Добавить тариф" class="p-1.5 text-slate-400 hover:text-sky-600 transition-colors">
+                                    <button wire:click="openCreateRateModal({{ $provider->id }})" title="Add rate" class="p-1.5 text-slate-400 hover:text-sky-600 transition-colors">
                                         <i class="fa-solid fa-plus text-xs"></i>
                                     </button>
-                                    <button wire:click="openEditProviderModal({{ $provider->id }})" title="Редактировать провайдера" class="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors">
+                                    <button wire:click="openEditProviderModal({{ $provider->id }})" title="Edit provider" class="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors">
                                         <i class="fa-solid fa-pen-to-square text-xs"></i>
                                     </button>
                                 </div>
@@ -362,7 +362,7 @@
                     @empty
                         <tr>
                             <td colspan="8" class="text-center py-8 text-slate-400">
-                                Нет доступных провайдеров по выбранным фильтрам.
+                                No providers matching selected filter.
                             </td>
                         </tr>
                     @endforelse
@@ -373,31 +373,31 @@
     @endif
 
     {{-- ========================================================================= --}}
-    {{-- TAB 2: BANK TRANSFERS & ACCOUNTS (SEPA / SWIFT) --}}
+    {{-- TAB 2: BANKING (SEPA / SWIFT / A2A) --}}
     {{-- ========================================================================= --}}
     @if($activeTab === 'banking')
     <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
         <div class="p-5 border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between">
             <div>
-                <h2 class="text-lg font-bold text-slate-800 dark:text-white">Банковские переводы & Счета (SEPA / SWIFT / A2A)</h2>
-                <p class="text-xs text-slate-500 dark:text-slate-400">Сравнение тарифов на входящие/исходящие платежи по сеткам объемов (Tiers), B2B, B2C и SWIFT</p>
+                <h2 class="text-base font-bold text-slate-800 dark:text-white">Banking Transfers & Accounts (SEPA / SWIFT / Internal)</h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Compare incoming and outgoing SEPA tiers, B2B, B2C, internal book transfers and SWIFT wires</p>
             </div>
             <button wire:click="openCreateRateModal()" class="text-xs font-semibold text-sky-600 hover:text-sky-700 dark:text-sky-400 flex items-center">
-                <i class="fa-solid fa-plus mr-1.5"></i> Добавить банковский тариф
+                <i class="fa-solid fa-plus mr-1.5"></i> Add Banking Rate
             </button>
         </div>
 
         <div class="overflow-x-auto">
             <table class="w-full text-left text-sm">
-                <thead class="bg-slate-50/75 dark:bg-slate-950/50 text-slate-500 dark:text-slate-400 text-xs uppercase font-bold border-b border-slate-200/80 dark:border-slate-800">
+                <thead class="bg-slate-50/75 dark:bg-slate-950/50 text-slate-500 dark:text-slate-400 text-[11px] uppercase font-bold border-b border-slate-200/80 dark:border-slate-800">
                     <tr>
-                        <th class="py-3.5 px-5">Провайдер</th>
-                        <th class="py-3.5 px-4">Входящий SEPA (Объёмные сетки / Tiers)</th>
-                        <th class="py-3.5 px-4">Исходящий SEPA B2C</th>
-                        <th class="py-3.5 px-4">Исходящий SEPA B2B</th>
-                        <th class="py-3.5 px-4">Внутренние переводы (Book)</th>
+                        <th class="py-3.5 px-5">Provider</th>
+                        <th class="py-3.5 px-4">Incoming SEPA (Volume Tiers)</th>
+                        <th class="py-3.5 px-4">Outgoing SEPA B2C</th>
+                        <th class="py-3.5 px-4">Outgoing SEPA B2B</th>
+                        <th class="py-3.5 px-4">Internal Transfers (Book)</th>
                         <th class="py-3.5 px-4">SWIFT In / Out</th>
-                        <th class="py-3.5 px-4 text-right">Действия</th>
+                        <th class="py-3.5 px-4 text-right">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-200/60 dark:divide-slate-800">
@@ -419,7 +419,7 @@
                                     </div>
                                     <div>
                                         <div class="font-bold text-slate-800 dark:text-white">{{ $provider->name }}</div>
-                                        <div class="text-xs text-slate-400">{{ $provider->base_currency }} • {{ $provider->type }}</div>
+                                        <div class="text-[11px] text-slate-400">{{ $provider->base_currency }} • {{ $provider->type }}</div>
                                     </div>
                                 </div>
                             </td>
@@ -430,7 +430,7 @@
                                     <div class="space-y-1">
                                         @foreach($sepaPayins as $tier)
                                             <div class="flex items-center space-x-2 text-xs">
-                                                <span class="font-semibold text-slate-500 dark:text-slate-400 w-24">{{ $tier->tier_label }}:</span>
+                                                <span class="font-semibold text-slate-500 dark:text-slate-400 text-[11px] w-28">{{ $tier->target_audience !== 'all' ? strtoupper($tier->target_audience).': ' : '' }}{{ $tier->tier_label }}:</span>
                                                 <span class="font-bold text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/50 px-2 py-0.5 rounded border border-teal-100 dark:border-teal-900/50">
                                                     {{ $tier->formatted_rate }}
                                                 </span>
@@ -492,7 +492,7 @@
 
                             {{-- Actions --}}
                             <td class="py-4 px-4 text-right">
-                                <button wire:click="openCreateRateModal({{ $provider->id }})" title="Добавить тариф" class="p-1.5 text-slate-400 hover:text-sky-600 transition-colors">
+                                <button wire:click="openCreateRateModal({{ $provider->id }})" title="Add rate" class="p-1.5 text-slate-400 hover:text-sky-600 transition-colors">
                                     <i class="fa-solid fa-plus text-xs"></i>
                                 </button>
                             </td>
@@ -500,7 +500,7 @@
                     @empty
                         <tr>
                             <td colspan="7" class="text-center py-8 text-slate-400">
-                                Нет данных по банковским тарифам.
+                                No banking rates available.
                             </td>
                         </tr>
                     @endforelse
@@ -511,31 +511,31 @@
     @endif
 
     {{-- ========================================================================= --}}
-    {{-- TAB 3: MAINTENANCE & SETUP FEES --}}
+    {{-- TAB 3: SETUP & MAINTENANCE FEES --}}
     {{-- ========================================================================= --}}
     @if($activeTab === 'fees')
     <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
         <div class="p-5 border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between">
             <div>
-                <h2 class="text-lg font-bold text-slate-800 dark:text-white">Фиксированные и сервисные комиссии (Setup & Maintenance)</h2>
-                <p class="text-xs text-slate-500 dark:text-slate-400">Абонентские платы, стоимость онбординга, интеграции API и дополнительные сервисные услуги</p>
+                <h2 class="text-base font-bold text-slate-800 dark:text-white">Setup, Maintenance & Ancillary Service Fees</h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Onboarding, API integration, monthly account/IBAN maintenance, and administrative bank services</p>
             </div>
             <button wire:click="openCreateFeeModal()" class="text-xs font-semibold text-sky-600 hover:text-sky-700 dark:text-sky-400 flex items-center">
-                <i class="fa-solid fa-plus mr-1.5"></i> Добавить сервисный сбор
+                <i class="fa-solid fa-plus mr-1.5"></i> Add Service Fee
             </button>
         </div>
 
         <div class="overflow-x-auto">
             <table class="w-full text-left text-sm">
-                <thead class="bg-slate-50/75 dark:bg-slate-950/50 text-slate-500 dark:text-slate-400 text-xs uppercase font-bold border-b border-slate-200/80 dark:border-slate-800">
+                <thead class="bg-slate-50/75 dark:bg-slate-950/50 text-slate-500 dark:text-slate-400 text-[11px] uppercase font-bold border-b border-slate-200/80 dark:border-slate-800">
                     <tr>
-                        <th class="py-3.5 px-5">Провайдер</th>
-                        <th class="py-3.5 px-4">Setup / Onboarding Fee</th>
-                        <th class="py-3.5 px-4">API Integration Fee</th>
-                        <th class="py-3.5 px-4">Monthly Fee (Абонплата)</th>
+                        <th class="py-3.5 px-5">Provider</th>
+                        <th class="py-3.5 px-4">Account Opening / Onboarding</th>
+                        <th class="py-3.5 px-4">API Integration & Support</th>
+                        <th class="py-3.5 px-4">Monthly Maintenance</th>
                         <th class="py-3.5 px-4">Monthly IBAN Fee</th>
-                        <th class="py-3.5 px-4">Дополнительные услуги (Additional)</th>
-                        <th class="py-3.5 px-4 text-right">Действия</th>
+                        <th class="py-3.5 px-4">Additional / Ancillary Services</th>
+                        <th class="py-3.5 px-4 text-right">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-200/60 dark:divide-slate-800">
@@ -545,7 +545,7 @@
                             $apiFee = $provider->serviceFees->where('fee_code', 'api_integration')->first();
                             $monthlyFee = $provider->serviceFees->where('fee_code', 'monthly_maintenance')->first();
                             $ibanFee = $provider->serviceFees->where('fee_code', 'monthly_iban')->first();
-                            $otherFees = $provider->serviceFees->whereNotIn('fee_code', ['onboarding', 'api_integration', 'monthly_maintenance', 'monthly_iban', 'chargeback', 'fx_margin']);
+                            $otherFees = $provider->serviceFees->whereNotIn('fee_code', ['onboarding', 'api_integration', 'monthly_maintenance', 'monthly_iban', 'chargeback', 'fx_margin', 'fx_main']);
                         @endphp
                         <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
                             <td class="py-4 px-5">
@@ -555,7 +555,7 @@
                                     </div>
                                     <div>
                                         <div class="font-bold text-slate-800 dark:text-white">{{ $provider->name }}</div>
-                                        <div class="text-xs text-slate-400">{{ $provider->type }}</div>
+                                        <div class="text-[11px] text-slate-400">{{ $provider->type }}</div>
                                     </div>
                                 </div>
                             </td>
@@ -567,7 +567,7 @@
                                         {{ $onboardingFee->formatted_fee }}
                                     </span>
                                 @else
-                                    <span class="text-xs text-slate-400 italic">Бесплатно / Нет</span>
+                                    <span class="text-xs text-slate-400 italic">Free / None</span>
                                 @endif
                             </td>
 
@@ -586,10 +586,10 @@
                             <td class="py-4 px-4">
                                 @if($monthlyFee)
                                     <span class="font-bold text-indigo-600 dark:text-indigo-400 text-xs">
-                                        {{ $monthlyFee->formatted_fee }} / мес
+                                        {{ $monthlyFee->formatted_fee }} / mo
                                     </span>
                                 @else
-                                    <span class="text-xs text-slate-400 italic">€0 / мес</span>
+                                    <span class="text-xs text-slate-400 italic">€0 / mo</span>
                                 @endif
                             </td>
 
@@ -597,7 +597,7 @@
                             <td class="py-4 px-4">
                                 @if($ibanFee)
                                     <span class="font-medium text-slate-700 dark:text-slate-300 text-xs">
-                                        {{ $ibanFee->formatted_fee }} / мес
+                                        {{ $ibanFee->formatted_fee }} / mo
                                     </span>
                                 @else
                                     <span class="text-xs text-slate-400 italic">—</span>
@@ -608,12 +608,15 @@
                             <td class="py-4 px-4">
                                 @if($otherFees->isNotEmpty())
                                     <div class="space-y-1">
-                                        @foreach($otherFees as $of)
+                                        @foreach($otherFees->take(3) as $of)
                                             <div class="text-[11px]">
                                                 <span class="text-slate-500 dark:text-slate-400">{{ $of->title }}:</span>
                                                 <span class="font-semibold text-slate-700 dark:text-slate-200">{{ $of->formatted_fee }}</span>
                                             </div>
                                         @endforeach
+                                        @if($otherFees->count() > 3)
+                                            <div class="text-[10px] text-slate-400 italic">+ {{ $otherFees->count() - 3 }} more services</div>
+                                        @endif
                                     </div>
                                 @else
                                     <span class="text-xs text-slate-400 italic">—</span>
@@ -622,7 +625,7 @@
 
                             {{-- Actions --}}
                             <td class="py-4 px-4 text-right">
-                                <button wire:click="openCreateFeeModal({{ $provider->id }})" title="Добавить сервисный сбор" class="p-1.5 text-slate-400 hover:text-sky-600 transition-colors">
+                                <button wire:click="openCreateFeeModal({{ $provider->id }})" title="Add fee" class="p-1.5 text-slate-400 hover:text-sky-600 transition-colors">
                                     <i class="fa-solid fa-plus text-xs"></i>
                                 </button>
                             </td>
@@ -630,7 +633,7 @@
                     @empty
                         <tr>
                             <td colspan="7" class="text-center py-8 text-slate-400">
-                                Нет данных о сервисных комиссиях.
+                                No service fees found.
                             </td>
                         </tr>
                     @endforelse
@@ -650,15 +653,15 @@
             <div class="border-b border-slate-200/80 dark:border-slate-800 pb-4">
                 <div class="flex items-center space-x-2 text-indigo-600 dark:text-indigo-400 mb-1">
                     <i class="fa-solid fa-calculator text-lg"></i>
-                    <h2 class="text-lg font-bold text-slate-800 dark:text-white">Параметры транзакции</h2>
+                    <h2 class="text-base font-bold text-slate-800 dark:text-white">Transaction Parameters</h2>
                 </div>
-                <p class="text-xs text-slate-500 dark:text-slate-400">Настройте сумму и характеристики для расчёта себестоимости и маржи</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Configure transaction amount, method, and region to simulate provider costs & margin</p>
             </div>
 
             {{-- Amount Input --}}
             <div>
                 <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
-                    Сумма транзакции (€ / $ / £)
+                    Transaction Amount (€ / $ / £)
                 </label>
                 <div class="relative">
                     <span class="absolute left-3.5 top-2.5 text-slate-400 font-bold">€</span>
@@ -667,7 +670,7 @@
                            class="w-full pl-8 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-lg text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500" />
                 </div>
                 <div class="flex items-center gap-1.5 mt-2">
-                    @foreach([50, 100, 500, 1000, 5000] as $preset)
+                    @foreach([50, 100, 500, 1000, 5000, 10000] as $preset)
                         <button type="button" wire:click="$set('simAmount', {{ $preset }})"
                                 class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 text-slate-600 dark:text-slate-300 hover:text-indigo-600 transition-colors">
                             €{{ $preset }}
@@ -679,10 +682,10 @@
             {{-- Payment Method --}}
             <div>
                 <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
-                    Способ оплаты (Method)
+                    Payment Method
                 </label>
                 <div class="grid grid-cols-2 gap-2">
-                    @foreach(['card' => '💳 Карты (Card)', 'sepa' => '🏦 SEPA Transfer', 'swift' => '🌐 SWIFT Wire', 'internal' => '🔄 Внутренний'] as $k => $label)
+                    @foreach(['card' => '💳 Cards (Card)', 'sepa' => '🏦 SEPA Transfer', 'swift' => '🌐 SWIFT Wire', 'internal' => '🔄 Internal Book'] as $k => $label)
                         <button type="button" wire:click="$set('simMethod', '{{ $k }}')"
                                 class="px-3 py-2 text-xs font-semibold rounded-xl border text-left transition-all {{ $simMethod === $k ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 shadow-sm' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800' }}">
                             {{ $label }}
@@ -695,14 +698,14 @@
             @if($simMethod === 'card')
             <div>
                 <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
-                    Регион карты (Geo Region)
+                    Card Geo Region
                 </label>
                 <select wire:model.live="simRegion"
                         class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500">
                     <option value="eu">🇪🇺 EU / EEA Cards (Interchange++)</option>
                     <option value="non_eu">🌍 Non-EU / International Cards</option>
                     <option value="corporate">🏢 Corporate / Commercial Cards</option>
-                    <option value="international">🌐 Global All Regions</option>
+                    <option value="international">🌐 Global Worldwide Cards</option>
                 </select>
             </div>
             @endif
@@ -711,24 +714,25 @@
             <div class="grid grid-cols-2 gap-3">
                 <div>
                     <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
-                        Тип потока
+                        Flow Type
                     </label>
                     <select wire:model.live="simFlow"
                             class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500">
-                        <option value="payin">📥 Pay-in (Входящий)</option>
-                        <option value="payout">📤 Pay-out (Выплата)</option>
+                        <option value="payin">📥 Pay-in (Incoming)</option>
+                        <option value="payout">📤 Pay-out (Payout)</option>
                     </select>
                 </div>
 
                 <div>
                     <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
-                        Аудитория
+                        Audience
                     </label>
                     <select wire:model.live="simAudience"
                             class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500">
-                        <option value="all">Все (All)</option>
-                        <option value="b2b">B2B (Бизнес)</option>
-                        <option value="b2c">B2C (Клиенты)</option>
+                        <option value="all">All</option>
+                        <option value="b2b">B2B</option>
+                        <option value="b2c">B2C</option>
+                        <option value="c2b">C2B</option>
                     </select>
                 </div>
             </div>
@@ -736,7 +740,7 @@
             {{-- Monthly Volume (Tiers) --}}
             <div>
                 <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
-                    Месячный оборот (Monthly Volume Tier)
+                    Monthly Accumulated Volume (Tier)
                 </label>
                 <div class="relative">
                     <input type="number" step="50000" min="0"
@@ -752,10 +756,10 @@
                 </div>
             </div>
 
-            {{-- Formula description box --}}
+            {{-- Calculation Formula Info --}}
             <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 text-[11px] text-slate-500 dark:text-slate-400">
                 <div class="font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center">
-                    <i class="fa-solid fa-square-root-variable mr-1.5 text-indigo-500"></i> Формула расчёта комиссии:
+                    <i class="fa-solid fa-square-root-variable mr-1.5 text-indigo-500"></i> Fee Formula:
                 </div>
                 <code>Fee = max(Amount × % + Fixed, Min_Fee)</code>
             </div>
@@ -776,22 +780,22 @@
                 <div class="p-6 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-2xl text-white shadow-lg shadow-emerald-500/15 flex flex-col md:flex-row items-center justify-between gap-4">
                     <div class="space-y-1">
                         <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-xs font-bold uppercase tracking-wider">
-                            <i class="fa-solid fa-crown text-amber-300"></i> Самый выгодный маршрут (Best Route)
+                            <i class="fa-solid fa-crown text-amber-300"></i> Best Route / Optimal Cost
                         </div>
                         <h3 class="text-2xl font-black tracking-tight">{{ $best['provider']->name }}</h3>
                         <p class="text-xs text-emerald-100">
-                            Комиссия провайдера: <strong class="text-white text-sm">€{{ number_format($best['fee'], 2) }}</strong> (эффективная ставка <strong>{{ $best['effective_percent'] }}%</strong>)
+                            Provider fee: <strong class="text-white text-sm">€{{ number_format($best['fee'], 2) }}</strong> (effective rate <strong>{{ $best['effective_percent'] }}%</strong>)
                             @if($diffSavings > 0)
-                                • Экономия <strong>€{{ number_format($diffSavings, 2) }}</strong> с каждой операции
+                                • Save <strong>€{{ number_format($diffSavings, 2) }}</strong> per transaction vs 2nd route
                             @endif
                         </p>
                     </div>
 
                     <div class="text-right bg-white/10 backdrop-blur-sm p-4 rounded-xl border border-white/20 min-w-[200px]">
-                        <div class="text-[11px] uppercase tracking-wider text-emerald-100 font-semibold">Чистая сумма к выплате</div>
+                        <div class="text-[11px] uppercase tracking-wider text-emerald-100 font-semibold">Net Settlement Amount</div>
                         <div class="text-2xl font-black text-white">€{{ number_format($best['settlement_amount'], 2) }}</div>
                         @if($best['reserve_amount'] > 0)
-                            <div class="text-[10px] text-emerald-200">В резерв ({{ $best['reserve_percent'] }}%): €{{ number_format($best['reserve_amount'], 2) }}</div>
+                            <div class="text-[10px] text-emerald-200">Rolling Reserve ({{ $best['reserve_percent'] }}%): €{{ number_format($best['reserve_amount'], 2) }}</div>
                         @endif
                     </div>
                 </div>
@@ -800,22 +804,22 @@
                 <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
                     <div class="p-5 border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between">
                         <h3 class="font-bold text-slate-800 dark:text-white text-base">
-                            Рейтинг провайдеров для транзакции €{{ number_format($simAmount, 2) }}
+                            Ranked Provider Comparison for €{{ number_format($simAmount, 2) }}
                         </h3>
-                        <span class="text-xs font-medium text-slate-400">Сортировка: от наименьшей комиссии</span>
+                        <span class="text-xs font-medium text-slate-400">Sorted by lowest cost</span>
                     </div>
 
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-sm">
-                            <thead class="bg-slate-50/75 dark:bg-slate-950/50 text-slate-500 dark:text-slate-400 text-xs uppercase font-bold border-b border-slate-200/80 dark:border-slate-800">
+                            <thead class="bg-slate-50/75 dark:bg-slate-950/50 text-slate-500 dark:text-slate-400 text-[11px] uppercase font-bold border-b border-slate-200/80 dark:border-slate-800">
                                 <tr>
-                                    <th class="py-3.5 px-4 w-12 text-center">Ранг</th>
-                                    <th class="py-3.5 px-4">Провайдер</th>
-                                    <th class="py-3.5 px-4">Применимый тариф</th>
-                                    <th class="py-3.5 px-4 text-right">Комиссия (€)</th>
-                                    <th class="py-3.5 px-4 text-right">Эфф. %</th>
+                                    <th class="py-3.5 px-4 w-12 text-center">Rank</th>
+                                    <th class="py-3.5 px-4">Provider</th>
+                                    <th class="py-3.5 px-4">Applied Rate Rule</th>
+                                    <th class="py-3.5 px-4 text-right">Fee (€)</th>
+                                    <th class="py-3.5 px-4 text-right">Eff. %</th>
                                     <th class="py-3.5 px-4 text-right">Rolling Reserve</th>
-                                    <th class="py-3.5 px-4 text-right">К выплате (Net)</th>
+                                    <th class="py-3.5 px-4 text-right">Net Settlement</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-200/60 dark:divide-slate-800">
@@ -892,8 +896,8 @@
             @else
                 <div class="bg-white dark:bg-slate-900 p-12 rounded-2xl border border-slate-200/80 dark:border-slate-800 text-center text-slate-400">
                     <i class="fa-solid fa-circle-exclamation text-3xl mb-3 text-slate-300"></i>
-                    <p class="font-semibold">Нет тарифов, соответствующих выбранным критериям симулятора.</p>
-                    <p class="text-xs mt-1">Попробуйте изменить метод оплаты или регион карты.</p>
+                    <p class="font-semibold">No rates match the selected simulation parameters.</p>
+                    <p class="text-xs mt-1">Try selecting another payment method or card region.</p>
                 </div>
             @endif
         </div>
@@ -939,14 +943,14 @@
                             @if($p->contact_person || $p->contact_email)
                                 <div class="flex items-center gap-1.5">
                                     <i class="fa-solid fa-user text-slate-400 w-3.5"></i>
-                                    <span>{{ $p->contact_person ?? 'Контакт' }} ({{ $p->contact_email ?? '—' }})</span>
+                                    <span>{{ $p->contact_person ?? 'Contact' }} ({{ $p->contact_email ?? '—' }})</span>
                                 </div>
                             @endif
 
                             @if($p->account_manager)
                                 <div class="flex items-center gap-1.5">
                                     <i class="fa-solid fa-briefcase text-slate-400 w-3.5"></i>
-                                    <span>Менеджер: <strong>{{ $p->account_manager }}</strong></span>
+                                    <span>Manager: <strong>{{ $p->account_manager }}</strong></span>
                                 </div>
                             @endif
 
@@ -968,15 +972,15 @@
                         <div class="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-center">
                             <div class="bg-slate-50 dark:bg-slate-800/60 p-2 rounded-xl">
                                 <span class="block text-xs font-bold text-slate-800 dark:text-white">{{ $p->processingRates->count() }}</span>
-                                <span class="text-[10px] text-slate-400">Тарифов</span>
+                                <span class="text-[10px] text-slate-400">Rates</span>
                             </div>
                             <div class="bg-slate-50 dark:bg-slate-800/60 p-2 rounded-xl">
                                 <span class="block text-xs font-bold text-slate-800 dark:text-white">{{ $p->serviceFees->count() }}</span>
-                                <span class="text-[10px] text-slate-400">Сборов</span>
+                                <span class="text-[10px] text-slate-400">Fees</span>
                             </div>
                             <div class="bg-slate-50 dark:bg-slate-800/60 p-2 rounded-xl">
                                 <span class="block text-xs font-bold text-slate-800 dark:text-white">{{ $p->reserve ? $p->reserve->rate_percent.'%' : '0%' }}</span>
-                                <span class="text-[10px] text-slate-400">Резерв</span>
+                                <span class="text-[10px] text-slate-400">Reserve</span>
                             </div>
                         </div>
                     </div>
@@ -984,11 +988,11 @@
                     {{-- Card Footer Actions --}}
                     <div class="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800">
                         <div class="flex items-center space-x-1">
-                            <button wire:click="openCreateRateModal({{ $p->id }})" title="Добавить тариф" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-sky-50 dark:bg-sky-950/50 text-sky-600 dark:text-sky-400 hover:bg-sky-100">
-                                + Тариф
+                            <button wire:click="openCreateRateModal({{ $p->id }})" title="Add rate" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-sky-50 dark:bg-sky-950/50 text-sky-600 dark:text-sky-400 hover:bg-sky-100">
+                                + Rate
                             </button>
-                            <button wire:click="openCreateFeeModal({{ $p->id }})" title="Добавить сбор" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 hover:bg-amber-100">
-                                + Сбор
+                            <button wire:click="openCreateFeeModal({{ $p->id }})" title="Add fee" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 hover:bg-amber-100">
+                                + Fee
                             </button>
                         </div>
 
@@ -996,7 +1000,7 @@
                             <button wire:click="openEditProviderModal({{ $p->id }})" class="p-1.5 text-slate-400 hover:text-slate-800 dark:hover:text-white">
                                 <i class="fa-solid fa-pen-to-square"></i>
                             </button>
-                            <button wire:confirm="Удалить провайдера {{ $p->name }} и все связанные тарифы?"
+                            <button wire:confirm="Are you sure you want to delete provider {{ $p->name }} and all associated rates?"
                                     wire:click="deleteProvider({{ $p->id }})" class="p-1.5 text-slate-400 hover:text-rose-600">
                                 <i class="fa-solid fa-trash"></i>
                             </button>
@@ -1005,7 +1009,7 @@
                 </div>
             @empty
                 <div class="col-span-full py-12 text-center text-slate-400 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
-                    Провайдеры не найдены. Нажмите «Добавить провайдера», чтобы создать первую запись.
+                    No providers found. Click "Add Provider" to create your first partner.
                 </div>
             @endforelse
         </div>
@@ -1021,8 +1025,8 @@
     <div class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
             <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
-                <h3 class="text-lg font-bold text-slate-800 dark:text-white">
-                    {{ $editingProviderId ? 'Редактировать провайдера' : 'Добавить нового провайдера' }}
+                <h3 class="text-base font-bold text-slate-800 dark:text-white">
+                    {{ $editingProviderId ? 'Edit Provider' : 'Add New Provider' }}
                 </h3>
                 <button wire:click="$set('showProviderModal', false)" class="text-slate-400 hover:text-slate-600 dark:hover:text-white">
                     <i class="fa-solid fa-xmark text-lg"></i>
@@ -1031,34 +1035,34 @@
 
             <form wire:submit.prevent="saveProvider" class="space-y-4">
                 <div>
-                    <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Название *</label>
-                    <input type="text" wire:model="providerForm.name" placeholder="Например: GuruPay, Payally"
+                    <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Provider Name *</label>
+                    <input type="text" wire:model="providerForm.name" placeholder="e.g. GuruPay, Payally"
                            class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-sky-500 dark:text-white" />
                     @error('providerForm.name') <span class="text-xs text-rose-500">{{ $message }}</span> @enderror
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Код (Slug) *</label>
+                        <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Unique Code (Slug) *</label>
                         <input type="text" wire:model="providerForm.code" placeholder="gurupay"
                                class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-sky-500 dark:text-white" />
                         @error('providerForm.code') <span class="text-xs text-rose-500">{{ $message }}</span> @enderror
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Тип *</label>
+                        <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Type *</label>
                         <select wire:model="providerForm.type"
                                 class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-sky-500 dark:text-white">
-                            <option value="hybrid">Hybrid (Acq + EMI)</option>
-                            <option value="acquiring">Acquiring</option>
-                            <option value="emi">EMI / Banking</option>
+                            <option value="hybrid">Hybrid (Acquiring + EMI)</option>
+                            <option value="acquiring">Acquiring Only</option>
+                            <option value="emi">EMI / Banking Only</option>
                         </select>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Базовая валюта</label>
+                        <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Base Currency</label>
                         <select wire:model="providerForm.base_currency"
                                 class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-sky-500 dark:text-white">
                             <option value="EUR">EUR (€)</option>
@@ -1068,7 +1072,7 @@
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Веб-сайт</label>
+                        <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Website URL</label>
                         <input type="text" wire:model="providerForm.website" placeholder="https://..."
                                class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-sky-500 dark:text-white" />
                     </div>
@@ -1076,37 +1080,37 @@
 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Контактное лицо</label>
-                        <input type="text" wire:model="providerForm.contact_person" placeholder="Имя Фамилия"
+                        <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Contact Person</label>
+                        <input type="text" wire:model="providerForm.contact_person" placeholder="First Last name"
                                class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-sky-500 dark:text-white" />
                     </div>
                     <div>
-                        <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Email контакта</label>
+                        <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Contact Email</label>
                         <input type="email" wire:model="providerForm.contact_email" placeholder="support@..."
                                class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-sky-500 dark:text-white" />
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Аккаунт-менеджер (внутри нашей компании)</label>
-                    <input type="text" wire:model="providerForm.account_manager" placeholder="Например: Kevin, Elena"
+                    <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Internal Account Manager</label>
+                    <input type="text" wire:model="providerForm.account_manager" placeholder="e.g. Kevin, Elena"
                            class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-sky-500 dark:text-white" />
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Заметки / Особенности</label>
-                    <textarea wire:model="providerForm.notes" rows="2" placeholder="Особенности комплаенса, географии..."
+                    <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Notes / Compliance specifics</label>
+                    <textarea wire:model="providerForm.notes" rows="2" placeholder="Due diligence rules, supported geographics..."
                               class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-sky-500 dark:text-white"></textarea>
                 </div>
 
                 <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-200 dark:border-slate-800">
                     <button type="button" wire:click="$set('showProviderModal', false)"
                             class="px-4 py-2 text-sm font-semibold rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
-                        Отмена
+                        Cancel
                     </button>
                     <button type="submit"
                             class="px-5 py-2 text-sm font-semibold rounded-xl bg-sky-600 hover:bg-sky-500 text-white shadow-md shadow-sky-600/20">
-                        Сохранить
+                        Save Provider
                     </button>
                 </div>
             </form>
@@ -1119,8 +1123,8 @@
     <div class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
             <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
-                <h3 class="text-lg font-bold text-slate-800 dark:text-white">
-                    {{ $editingRateId ? 'Редактировать процессинговый тариф' : 'Добавить процессинговый тариф' }}
+                <h3 class="text-base font-bold text-slate-800 dark:text-white">
+                    {{ $editingRateId ? 'Edit Processing Rate' : 'Add Processing Rate' }}
                 </h3>
                 <button wire:click="$set('showRateModal', false)" class="text-slate-400 hover:text-slate-600 dark:hover:text-white">
                     <i class="fa-solid fa-xmark text-lg"></i>
@@ -1129,7 +1133,7 @@
 
             <form wire:submit.prevent="saveRate" class="space-y-4">
                 <div>
-                    <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Провайдер *</label>
+                    <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Provider *</label>
                     <select wire:model="rateForm.provider_id"
                             class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-sky-500 dark:text-white">
                         @foreach($allProvidersList as $p)
@@ -1140,10 +1144,10 @@
 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Метод оплаты *</label>
+                        <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Payment Method *</label>
                         <select wire:model="rateForm.payment_method"
                                 class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-sky-500 dark:text-white">
-                            <option value="card">Карта (Card)</option>
+                            <option value="card">Card (Visa/Mastercard)</option>
                             <option value="sepa">SEPA</option>
                             <option value="swift">SWIFT</option>
                             <option value="internal">Internal (Book-to-Book)</option>
@@ -1152,22 +1156,22 @@
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Направление *</label>
+                        <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Flow Type *</label>
                         <select wire:model="rateForm.flow_type"
                                 class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-sky-500 dark:text-white">
-                            <option value="payin">Pay-in (Входящий)</option>
-                            <option value="payout">Pay-out (Выплата)</option>
-                            <option value="refund">Refund (Возврат)</option>
+                            <option value="payin">Pay-in (Incoming)</option>
+                            <option value="payout">Pay-out (Payout)</option>
+                            <option value="refund">Refund</option>
                         </select>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Регион карты</label>
+                        <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Card Region</label>
                         <select wire:model="rateForm.card_region"
                                 class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-sky-500 dark:text-white">
-                            <option value="all">Все регионы (All)</option>
+                            <option value="all">All Regions</option>
                             <option value="eu">EU / EEA</option>
                             <option value="non_eu">Non-EU</option>
                             <option value="international">International</option>
@@ -1176,10 +1180,10 @@
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Аудитория</label>
+                        <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Audience</label>
                         <select wire:model="rateForm.target_audience"
                                 class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-sky-500 dark:text-white">
-                            <option value="all">All (Любая)</option>
+                            <option value="all">All</option>
                             <option value="b2b">B2B</option>
                             <option value="b2c">B2C</option>
                             <option value="c2b">C2B</option>
@@ -1190,19 +1194,19 @@
                 {{-- Fee structure --}}
                 <div class="grid grid-cols-3 gap-3 bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700">
                     <div>
-                        <label class="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Ставка % *</label>
+                        <label class="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Percent Rate (%) *</label>
                         <input type="number" step="0.01" min="0" wire:model="rateForm.percent_rate" placeholder="4.20"
                                class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-800 dark:text-white" />
                     </div>
 
                     <div>
-                        <label class="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Фикс (€) *</label>
+                        <label class="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Fixed Fee (€) *</label>
                         <input type="number" step="0.01" min="0" wire:model="rateForm.fixed_fee" placeholder="0.30"
                                class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-800 dark:text-white" />
                     </div>
 
                     <div>
-                        <label class="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Мин. сбор (€)</label>
+                        <label class="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Min Fee (€)</label>
                         <input type="number" step="0.01" min="0" wire:model="rateForm.min_fee" placeholder="0.60"
                                class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-800 dark:text-white" />
                     </div>
@@ -1217,25 +1221,25 @@
                     </div>
                     <div>
                         <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Max Volume Tier (€)</label>
-                        <input type="number" step="10000" min="0" wire:model="rateForm.tier_max_volume" placeholder="2000000 (пусто = без лимита)"
+                        <input type="number" step="10000" min="0" wire:model="rateForm.tier_max_volume" placeholder="2000000 (empty = no limit)"
                                class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-sky-500 dark:text-white" />
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Комментарий / Условие</label>
-                    <input type="text" wire:model="rateForm.notes" placeholder="Например: Tier 1: €0 - €2M"
+                    <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Condition Notes</label>
+                    <input type="text" wire:model="rateForm.notes" placeholder="e.g. Tier 1: €0 - €2M / mo"
                            class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-sky-500 dark:text-white" />
                 </div>
 
                 <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-200 dark:border-slate-800">
                     <button type="button" wire:click="$set('showRateModal', false)"
                             class="px-4 py-2 text-sm font-semibold rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
-                        Отмена
+                        Cancel
                     </button>
                     <button type="submit"
                             class="px-5 py-2 text-sm font-semibold rounded-xl bg-sky-600 hover:bg-sky-500 text-white shadow-md shadow-sky-600/20">
-                        Сохранить
+                        Save Rate
                     </button>
                 </div>
             </form>
@@ -1248,8 +1252,8 @@
     <div class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
             <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
-                <h3 class="text-lg font-bold text-slate-800 dark:text-white">
-                    {{ $editingFeeId ? 'Редактировать сервисный сбор' : 'Добавить сервисный сбор' }}
+                <h3 class="text-base font-bold text-slate-800 dark:text-white">
+                    {{ $editingFeeId ? 'Edit Service Fee' : 'Add Service Fee' }}
                 </h3>
                 <button wire:click="$set('showFeeModal', false)" class="text-slate-400 hover:text-slate-600 dark:hover:text-white">
                     <i class="fa-solid fa-xmark text-lg"></i>
@@ -1258,7 +1262,7 @@
 
             <form wire:submit.prevent="saveFee" class="space-y-4">
                 <div>
-                    <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Провайдер *</label>
+                    <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Provider *</label>
                     <select wire:model="feeForm.provider_id"
                             class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-sky-500 dark:text-white">
                         @foreach($allProvidersList as $p)
@@ -1269,23 +1273,24 @@
 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Код сбора *</label>
+                        <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Fee Code *</label>
                         <select wire:model="feeForm.fee_code"
                                 class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-sky-500 dark:text-white">
-                            <option value="onboarding">Onboarding / Setup</option>
-                            <option value="api_integration">API Integration</option>
-                            <option value="monthly_maintenance">Monthly Maintenance</option>
-                            <option value="monthly_iban">Monthly Dedicated IBAN</option>
+                            <option value="onboarding">Account Opening / Onboarding</option>
+                            <option value="api_integration">API Integration & Support</option>
+                            <option value="monthly_maintenance">Monthly Account Maintenance</option>
+                            <option value="monthly_iban">Monthly Dedicated IBAN Fee</option>
                             <option value="chargeback">Chargeback Fee</option>
-                            <option value="fx_margin">FX Margin</option>
-                            <option value="closure_fee">Account Closure</option>
-                            <option value="audit_letter">Audit Letter / Cert</option>
+                            <option value="fx_margin">FX Margin / Commission</option>
+                            <option value="crypto_exchange">Digital Crypto Exchange</option>
+                            <option value="account_closing">Account Closing</option>
+                            <option value="auditor_letter">Auditor Confirmation Letter</option>
                             <option value="custom">Other / Custom</option>
                         </select>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Название сбора *</label>
+                        <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Fee Title *</label>
                         <input type="text" wire:model="feeForm.title" placeholder="Onboarding Fee"
                                class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-sky-500 dark:text-white" />
                     </div>
@@ -1293,23 +1298,23 @@
 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Тип сбора *</label>
+                        <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Fee Model *</label>
                         <select wire:model="feeForm.fee_type"
                                 class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-sky-500 dark:text-white">
-                            <option value="fixed">Фиксированный (€)</option>
-                            <option value="percentage">Процентный (%)</option>
-                            <option value="range">Диапазон (€ min – max)</option>
+                            <option value="fixed">Fixed (€)</option>
+                            <option value="percentage">Percentage (%)</option>
+                            <option value="range">Range (€ min – max)</option>
                         </select>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Период списания *</label>
+                        <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Billing Period *</label>
                         <select wire:model="feeForm.billing_period"
                                 class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-sky-500 dark:text-white">
-                            <option value="one_time">Разово (One-time)</option>
-                            <option value="monthly">Ежемесячно (Monthly)</option>
-                            <option value="yearly">Ежегодно (Yearly)</option>
-                            <option value="per_event">За операцию / событие</option>
+                            <option value="one_time">One-time</option>
+                            <option value="monthly">Monthly</option>
+                            <option value="yearly">Yearly</option>
+                            <option value="per_event">Per Event / Transaction</option>
                         </select>
                     </div>
                 </div>
@@ -1318,7 +1323,7 @@
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
-                            {{ $feeForm['fee_type'] === 'percentage' ? 'Процент (%)' : 'Сумма (€ / min)' }}
+                            {{ $feeForm['fee_type'] === 'percentage' ? 'Percentage (%)' : 'Amount (€ / min)' }}
                         </label>
                         @if($feeForm['fee_type'] === 'percentage')
                             <input type="number" step="0.01" min="0" wire:model="feeForm.percentage" placeholder="2.00"
@@ -1331,7 +1336,7 @@
 
                     @if($feeForm['fee_type'] === 'range')
                     <div>
-                        <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Сумма макс (€)</label>
+                        <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Amount Max (€)</label>
                         <input type="number" step="0.01" min="0" wire:model="feeForm.amount_max" placeholder="3000.00"
                                class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-sky-500 dark:text-white" />
                     </div>
@@ -1339,19 +1344,19 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Комментарий</label>
-                    <input type="text" wire:model="feeForm.comment" placeholder="Условия применения сбора..."
+                    <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Comments / Terms</label>
+                    <input type="text" wire:model="feeForm.comment" placeholder="Terms and conditions for this fee..."
                            class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-sky-500 dark:text-white" />
                 </div>
 
                 <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-200 dark:border-slate-800">
                     <button type="button" wire:click="$set('showFeeModal', false)"
                             class="px-4 py-2 text-sm font-semibold rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
-                        Отмена
+                        Cancel
                     </button>
                     <button type="submit"
                             class="px-5 py-2 text-sm font-semibold rounded-xl bg-sky-600 hover:bg-sky-500 text-white shadow-md shadow-sky-600/20">
-                        Сохранить
+                        Save Fee
                     </button>
                 </div>
             </form>
@@ -1364,8 +1369,8 @@
     <div class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
             <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
-                <h3 class="text-lg font-bold text-slate-800 dark:text-white">
-                    Настройка Rolling Reserve
+                <h3 class="text-base font-bold text-slate-800 dark:text-white">
+                    Configure Rolling Reserve
                 </h3>
                 <button wire:click="$set('showReserveModal', false)" class="text-slate-400 hover:text-slate-600 dark:hover:text-white">
                     <i class="fa-solid fa-xmark text-lg"></i>
@@ -1375,13 +1380,13 @@
             <form wire:submit.prevent="saveReserve" class="space-y-4">
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Ставка удержания (%) *</label>
+                        <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Hold Rate (%) *</label>
                         <input type="number" step="0.5" min="0" max="100" wire:model="reserveForm.rate_percent" placeholder="10.0"
                                class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-800 dark:text-white" />
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Срок удержания (дней) *</label>
+                        <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Hold Period (Days) *</label>
                         <input type="number" step="1" min="0" wire:model="reserveForm.hold_period_days" placeholder="180"
                                class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-800 dark:text-white" />
                     </div>
@@ -1389,32 +1394,32 @@
 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Мин. порог Floor (€)</label>
+                        <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Floor Amount (€)</label>
                         <input type="number" step="50" min="0" wire:model="reserveForm.floor_amount" placeholder="500"
                                class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-800 dark:text-white" />
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Макс. кап Cap (€)</label>
+                        <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Cap Amount (€)</label>
                         <input type="number" step="1000" min="0" wire:model="reserveForm.cap_amount" placeholder="200000"
                                class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-800 dark:text-white" />
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Условия удержания</label>
-                    <textarea wire:model="reserveForm.conditions" rows="2" placeholder="Subject to merchant risk tier..."
+                    <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Release Conditions</label>
+                    <textarea wire:model="reserveForm.conditions" rows="2" placeholder="e.g. Held for 180 days on rolling cycle. Subject to merchant risk tier."
                               class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-sky-500 dark:text-white"></textarea>
                 </div>
 
                 <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-200 dark:border-slate-800">
                     <button type="button" wire:click="$set('showReserveModal', false)"
                             class="px-4 py-2 text-sm font-semibold rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
-                        Отмена
+                        Cancel
                     </button>
                     <button type="submit"
                             class="px-5 py-2 text-sm font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/20">
-                        Сохранить политику
+                        Save Policy
                     </button>
                 </div>
             </form>
