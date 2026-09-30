@@ -49,6 +49,9 @@ class TariffsManagementTest extends TestCase
     public function test_can_switch_tabs_in_tariffs_matrix(): void
     {
         Livewire::test(TariffsIndex::class)
+            ->assertSet('activeTab', 'compare')
+            ->assertSee('Compare &amp; Best Deals', false)
+            ->call('setTab', 'cards')
             ->assertSet('activeTab', 'cards')
             ->assertSee('Card Acquiring Comparison Matrix')
             ->call('setTab', 'banking')
@@ -63,6 +66,39 @@ class TariffsManagementTest extends TestCase
             ->call('setTab', 'providers')
             ->assertSet('activeTab', 'providers')
             ->assertSee('Add Provider');
+    }
+
+    /**
+     * Test e-commerce comparison catalog mode with cheapest-first sorting and modals.
+     */
+    public function test_storefront_compare_mode_shows_cheapest_first_and_handles_modals(): void
+    {
+        $guruPay = Provider::where('code', 'gurupay')->first();
+        $payally = Provider::where('code', 'payally')->first();
+
+        Livewire::test(TariffsIndex::class)
+            ->assertSet('activeTab', 'compare')
+            ->set('simAmount', 100.00)
+            ->set('simMethod', 'card')
+            ->set('simRegion', 'eu')
+            ->assertSee('#1 Cheapest / Best Deal')
+            ->assertSee('GuruPay')
+            // Test toggle compare selection
+            ->call('toggleCompareProvider', $guruPay->id)
+            ->call('toggleCompareProvider', $payally->id)
+            ->assertCount('selectedForCompare', 2)
+            ->assertSee('Products in Comparison')
+            ->call('openSideBySideModal')
+            ->assertSet('showSideBySideModal', true)
+            ->assertSee('Side-by-Side Product Comparison')
+            ->call('closeSideBySideModal')
+            ->assertSet('showSideBySideModal', false)
+            // Test receipt breakdown
+            ->call('openBreakdown', $guruPay->id)
+            ->assertSet('showBreakdownModal', true)
+            ->assertSee('Itemized Cost Receipt')
+            ->call('closeBreakdown')
+            ->assertSet('showBreakdownModal', false);
     }
 
     /**

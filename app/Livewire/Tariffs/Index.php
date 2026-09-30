@@ -12,8 +12,19 @@ use Livewire\Component;
 
 class Index extends Component
 {
-    // Active navigation tab: cards | banking | fees | simulator | providers
-    public string $activeTab = 'cards';
+    // Active navigation tab: compare | cards | banking | fees | simulator | providers
+    public string $activeTab = 'compare';
+
+    // Compare Storefront Mode State
+    public string $sortBy = 'fee_asc'; // fee_asc | net_desc | reserve_asc | name_asc
+
+    public array $selectedForCompare = [];
+
+    public bool $showSideBySideModal = false;
+
+    public bool $showBreakdownModal = false;
+
+    public ?int $breakdownProviderId = null;
 
     // Global Filters
     public string $search = '';
@@ -415,6 +426,46 @@ class Index extends Component
         $this->dispatch('tariff-updated', message: $message);
     }
 
+    // --- Compare & Breakdown Modal Actions ---
+    public function toggleCompareProvider(int $providerId): void
+    {
+        if (in_array($providerId, $this->selectedForCompare)) {
+            $this->selectedForCompare = array_values(array_diff($this->selectedForCompare, [$providerId]));
+        } else {
+            $this->selectedForCompare[] = $providerId;
+        }
+    }
+
+    public function clearCompare(): void
+    {
+        $this->selectedForCompare = [];
+        $this->showSideBySideModal = false;
+    }
+
+    public function openSideBySideModal(): void
+    {
+        if (count($this->selectedForCompare) > 0) {
+            $this->showSideBySideModal = true;
+        }
+    }
+
+    public function closeSideBySideModal(): void
+    {
+        $this->showSideBySideModal = false;
+    }
+
+    public function openBreakdown(int $providerId): void
+    {
+        $this->breakdownProviderId = $providerId;
+        $this->showBreakdownModal = true;
+    }
+
+    public function closeBreakdown(): void
+    {
+        $this->breakdownProviderId = null;
+        $this->showBreakdownModal = false;
+    }
+
     /**
      * Compute simulation rankings across all active providers.
      */
@@ -443,6 +494,11 @@ class Index extends Component
             );
 
             if ($sim['is_supported']) {
+                $onboardingFee = $provider->serviceFees->whereIn('fee_code', ['onboarding', 'account_opening'])->first();
+                $monthlyFee = $provider->serviceFees->whereIn('fee_code', ['monthly_maintenance', 'monthly_iban'])->first();
+                $fxFee = $provider->serviceFees->whereIn('fee_code', ['fx_margin', 'fx_main', 'fx_delayed'])->first();
+                $cbFee = $provider->serviceFees->where('fee_code', 'chargeback')->first();
+
                 $results[] = [
                     'provider' => $provider,
                     'rate' => $sim['rate'],
@@ -452,12 +508,25 @@ class Index extends Component
                     'reserve_percent' => $sim['reserve_percent'],
                     'settlement_amount' => $sim['settlement_amount'],
                     'currency' => $this->simCurrency,
+                    'onboarding_fee' => $onboardingFee?->formatted_fee ?? '—',
+                    'monthly_fee' => $monthlyFee?->formatted_fee ?? '—',
+                    'fx_fee' => $fxFee?->formatted_fee ?? '—',
+                    'chargeback_fee' => $cbFee?->formatted_fee ?? '—',
                 ];
             }
         }
 
-        // Sort by lowest fee (Cheapest first)
-        usort($results, fn ($a, $b) => $a['fee'] <=> $b['fee']);
+        // Apply sorting
+        if ($this->sortBy === 'net_desc') {
+            usort($results, fn ($a, $b) => $b['settlement_amount'] <=> $a['settlement_amount']);
+        } elseif ($this->sortBy === 'reserve_asc') {
+            usort($results, fn ($a, $b) => $a['reserve_amount'] <=> $b['reserve_amount']);
+        } elseif ($this->sortBy === 'name_asc') {
+            usort($results, fn ($a, $b) => strcmp($a['provider']->name, $b['provider']->name));
+        } else {
+            // Default: lowest fee first (cheapest)
+            usort($results, fn ($a, $b) => $a['fee'] <=> $b['fee']);
+        }
 
         return $results;
     }
@@ -505,6 +574,33 @@ class Index extends Component
             ->orderBy('percent_rate')
             ->first();
 
+        // Compared providers for Side-by-Side Modal
+        $comparedProviders = count($this->selectedForCompare) > 0
+            ? Provider::with(['processingRates', 'serviceFees', 'reserve'])
+                ->whereIn('id', $this->selectedForCompare)
+                ->get()
+            : collect();
+
+        // Breakdown Provider Data if modal active
+        $breakdownData = null;
+        if ($this->breakdownProviderId) {
+            $bProvider = Provider::with(['processingRates', 'serviceFees', 'reserve'])->find($this->breakdownProviderId);
+            if ($bProvider) {
+                $bSim = $bProvider->simulateTransactionCost(
+                    amount: (float) $this->simAmount,
+                    paymentMethod: $this->simMethod,
+                    flowType: $this->simFlow,
+                    cardRegion: $this->simRegion,
+                    audience: $this->simAudience,
+                    monthlyVolume: (float) $this->simMonthlyVolume
+                );
+                $breakdownData = [
+                    'provider' => $bProvider,
+                    'sim' => $bSim,
+                ];
+            }
+        }
+
         return view('livewire.tariffs.index', [
             'providers' => $providers,
             'allProvidersList' => Provider::orderBy('name')->get(),
@@ -515,6 +611,8 @@ class Index extends Component
             'lowestCardRate' => $lowestCardRate,
             'lowestSepaRate' => $lowestSepaRate,
             'simulationResults' => $this->simulationResults,
+            'comparedProviders' => $comparedProviders,
+            'breakdownData' => $breakdownData,
         ])->layout('layouts.app');
     }
 }

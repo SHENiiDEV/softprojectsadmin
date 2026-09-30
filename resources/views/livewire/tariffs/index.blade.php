@@ -121,6 +121,12 @@
     {{-- Clean Modern Segmented Tab Navigation --}}
     <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm p-1.5">
         <nav class="flex flex-wrap items-center gap-1">
+            <button wire:click="setTab('compare')"
+                    class="flex items-center px-4 py-2.5 text-xs font-semibold rounded-xl transition-all {{ $activeTab === 'compare' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-600/20 font-bold' : 'text-emerald-700 dark:text-emerald-400 bg-emerald-50/70 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/50' }}">
+                <i class="fa-solid fa-bolt mr-2 text-sm text-amber-300"></i>
+                Compare &amp; Best Deals
+            </button>
+
             <button wire:click="setTab('cards')"
                     class="flex items-center px-4 py-2.5 text-xs font-semibold rounded-xl transition-all {{ $activeTab === 'cards' ? 'bg-sky-500 text-white shadow-md shadow-sky-500/20 font-bold' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60' }}">
                 <i class="fa-solid fa-credit-card mr-2 text-sm"></i>
@@ -130,13 +136,13 @@
             <button wire:click="setTab('banking')"
                     class="flex items-center px-4 py-2.5 text-xs font-semibold rounded-xl transition-all {{ $activeTab === 'banking' ? 'bg-sky-500 text-white shadow-md shadow-sky-500/20 font-bold' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60' }}">
                 <i class="fa-solid fa-building-columns mr-2 text-sm"></i>
-                Banking (SEPA & SWIFT)
+                Banking (SEPA &amp; SWIFT)
             </button>
 
             <button wire:click="setTab('fees')"
                     class="flex items-center px-4 py-2.5 text-xs font-semibold rounded-xl transition-all {{ $activeTab === 'fees' ? 'bg-sky-500 text-white shadow-md shadow-sky-500/20 font-bold' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60' }}">
                 <i class="fa-solid fa-receipt mr-2 text-sm"></i>
-                Setup & Maintenance Fees
+                Setup &amp; Maintenance Fees
             </button>
 
             <button wire:click="setTab('simulator')"
@@ -154,7 +160,7 @@
     </div>
 
     {{-- Global Filters Bar --}}
-    @if(in_array($activeTab, ['cards', 'banking', 'fees', 'providers']))
+    @if(in_array($activeTab, ['compare', 'cards', 'banking', 'fees', 'providers']))
     <div class="flex flex-col md:flex-row items-center justify-between gap-4 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
         <div class="relative w-full md:w-80">
             <svg class="absolute left-3.5 top-3 h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -194,6 +200,303 @@
                 <span>Active only</span>
             </label>
         </div>
+    </div>
+    @endif
+
+    {{-- ========================================================================= --}}
+    {{-- TAB 0: COMPARE & BEST DEALS (ONLINE STORE CATALOG STYLE) --}}
+    {{-- ========================================================================= --}}
+    @if($activeTab === 'compare')
+    <div class="space-y-6">
+        {{-- Interactive Catalog Filters Toolbar --}}
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                {{-- Quick Amount Selector --}}
+                <div class="space-y-1.5">
+                    <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                        Transaction Amount
+                    </label>
+                    <div class="flex flex-wrap items-center gap-1.5">
+                        <div class="relative w-36">
+                            <span class="absolute left-3 top-2 text-xs font-bold text-slate-400">€</span>
+                            <input type="number" step="10" min="1" wire:model.live.debounce.250ms="simAmount"
+                                   class="w-full pl-7 pr-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-white focus:ring-2 focus:ring-emerald-500" />
+                        </div>
+                        @foreach([50, 100, 250, 500, 1000, 5000, 10000] as $preset)
+                            <button type="button" wire:click="$set('simAmount', {{ $preset }})"
+                                    class="px-2.5 py-1.5 text-xs font-semibold rounded-xl transition-all {{ (float)$simAmount === (float)$preset ? 'bg-emerald-600 text-white shadow-sm font-bold' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 hover:text-emerald-600' }}">
+                                €{{ number_format($preset) }}
+                            </button>
+                        @endforeach
+                    </div>
+                </div>
+
+                {{-- Sort By Selector --}}
+                <div class="space-y-1.5">
+                    <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                        Sort Products By
+                    </label>
+                    <select wire:model.live="sortBy"
+                            class="px-3.5 py-1.5 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-emerald-500">
+                        <option value="fee_asc">🏆 Lowest Fee (Cheapest First)</option>
+                        <option value="net_desc">💰 Highest Net Payout (Merchant Gets More)</option>
+                        <option value="reserve_asc">🛡️ Lowest Rolling Reserve Hold</option>
+                        <option value="name_asc">🔤 Provider Name (A-Z)</option>
+                    </select>
+                </div>
+            </div>
+
+            {{-- Method & Geography Selector Pills --}}
+            <div class="pt-3 border-t border-slate-200/70 dark:border-slate-800/80 flex flex-wrap items-center justify-between gap-3">
+                {{-- Payment Method Switcher --}}
+                <div class="flex flex-wrap items-center gap-1.5">
+                    <span class="text-xs font-bold text-slate-400 mr-1">Method:</span>
+                    <button type="button" wire:click="$set('simMethod', 'card')"
+                            class="px-3 py-1.5 text-xs font-semibold rounded-xl transition-all {{ $simMethod === 'card' ? 'bg-sky-500 text-white font-bold shadow-sm' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700' }}">
+                        <i class="fa-solid fa-credit-card mr-1.5"></i> Card Acquiring
+                    </button>
+                    <button type="button" wire:click="$set('simMethod', 'sepa')"
+                            class="px-3 py-1.5 text-xs font-semibold rounded-xl transition-all {{ $simMethod === 'sepa' ? 'bg-teal-600 text-white font-bold shadow-sm' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700' }}">
+                        <i class="fa-solid fa-building-columns mr-1.5"></i> SEPA Wire
+                    </button>
+                    <button type="button" wire:click="$set('simMethod', 'swift')"
+                            class="px-3 py-1.5 text-xs font-semibold rounded-xl transition-all {{ $simMethod === 'swift' ? 'bg-indigo-600 text-white font-bold shadow-sm' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700' }}">
+                        <i class="fa-solid fa-globe mr-1.5"></i> SWIFT Wire
+                    </button>
+                    <button type="button" wire:click="$set('simMethod', 'crypto')"
+                            class="px-3 py-1.5 text-xs font-semibold rounded-xl transition-all {{ $simMethod === 'crypto' ? 'bg-amber-600 text-white font-bold shadow-sm' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700' }}">
+                        <i class="fa-brands fa-bitcoin mr-1.5"></i> Crypto / Digital
+                    </button>
+                </div>
+
+                {{-- Geo Region / Audience Pill Switcher --}}
+                <div class="flex flex-wrap items-center gap-1.5">
+                    @if($simMethod === 'card')
+                        <span class="text-xs font-bold text-slate-400 mr-1">Region:</span>
+                        <button type="button" wire:click="$set('simRegion', 'eu')"
+                                class="px-2.5 py-1 text-xs font-medium rounded-lg transition-all {{ $simRegion === 'eu' ? 'bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 font-bold border border-sky-300' : 'bg-slate-50 dark:bg-slate-800 text-slate-500' }}">
+                            🇪🇺 EU Cards
+                        </button>
+                        <button type="button" wire:click="$set('simRegion', 'non_eu')"
+                                class="px-2.5 py-1 text-xs font-medium rounded-lg transition-all {{ $simRegion === 'non_eu' ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 font-bold border border-amber-300' : 'bg-slate-50 dark:bg-slate-800 text-slate-500' }}">
+                            🌐 Non-EU / Intl
+                        </button>
+                        <button type="button" wire:click="$set('simRegion', 'corporate')"
+                                class="px-2.5 py-1 text-xs font-medium rounded-lg transition-all {{ $simRegion === 'corporate' ? 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 font-bold border border-purple-300' : 'bg-slate-50 dark:bg-slate-800 text-slate-500' }}">
+                            🏢 Corporate
+                        </button>
+                    @elseif($simMethod === 'sepa')
+                        <span class="text-xs font-bold text-slate-400 mr-1">Audience:</span>
+                        <button type="button" wire:click="$set('simAudience', 'b2b')"
+                                class="px-2.5 py-1 text-xs font-medium rounded-lg transition-all {{ $simAudience === 'b2b' ? 'bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300 font-bold border border-teal-300' : 'bg-slate-50 dark:bg-slate-800 text-slate-500' }}">
+                            🏢 B2B Commercial
+                        </button>
+                        <button type="button" wire:click="$set('simAudience', 'b2c')"
+                                class="px-2.5 py-1 text-xs font-medium rounded-lg transition-all {{ $simAudience === 'b2c' ? 'bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300 font-bold border border-teal-300' : 'bg-slate-50 dark:bg-slate-800 text-slate-500' }}">
+                            👥 B2C Retail
+                        </button>
+                        <button type="button" wire:click="$set('simAudience', 'c2b')"
+                                class="px-2.5 py-1 text-xs font-medium rounded-lg transition-all {{ $simAudience === 'c2b' ? 'bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-300 font-bold border border-teal-300' : 'bg-slate-50 dark:bg-slate-800 text-slate-500' }}">
+                            🛒 C2B Inward
+                        </button>
+                    @endif
+                </div>
+            </div>
+        </div>
+
+        {{-- Storefront Comparison Cards Grid --}}
+        @php $simList = $simulationResults; @endphp
+        @if(count($simList) > 0)
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                @foreach($simList as $index => $item)
+                    @php
+                        $p = $item['provider'];
+                        $isCheapest = ($index === 0 && $sortBy === 'fee_asc');
+                        $savings = ($index === 0 && count($simList) > 1) ? round($simList[1]['fee'] - $item['fee'], 2) : 0;
+                        $isSelected = in_array($p->id, $selectedForCompare);
+                    @endphp
+                    <div class="bg-white dark:bg-slate-900 rounded-2xl transition-all duration-200 flex flex-col justify-between relative overflow-hidden {{ $isCheapest ? 'border-2 border-emerald-500 dark:border-emerald-500 shadow-xl shadow-emerald-500/10 ring-4 ring-emerald-500/10' : 'border border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-md' }}">
+                        
+                        {{-- Top Product Header & Ranking Ribbon --}}
+                        <div>
+                            @if($isCheapest)
+                                <div class="bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-[11px] font-black uppercase tracking-wider py-1.5 px-4 flex items-center justify-between shadow-sm">
+                                    <span class="flex items-center gap-1.5">
+                                        <i class="fa-solid fa-crown text-amber-300"></i> #1 Cheapest / Best Deal
+                                    </span>
+                                    @if($savings > 0)
+                                        <span class="bg-white/20 backdrop-blur-sm px-2 py-0.5 rounded-full text-[10px] font-bold">
+                                            Save €{{ number_format($savings, 2) }}
+                                        </span>
+                                    @endif
+                                </div>
+                            @elseif($index === 1 && $sortBy === 'fee_asc')
+                                <div class="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[11px] font-bold uppercase tracking-wider py-1.5 px-4 flex items-center justify-between border-b border-slate-200/80 dark:border-slate-700">
+                                    <span>#2 Runner Up</span>
+                                    <span class="text-[10px] text-slate-400">+€{{ number_format($item['fee'] - $simList[0]['fee'], 2) }} vs best</span>
+                                </div>
+                            @else
+                                <div class="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-[11px] font-semibold uppercase tracking-wider py-1.5 px-4 flex items-center justify-between border-b border-slate-200/60 dark:border-slate-800">
+                                    <span>Option #{{ $index + 1 }}</span>
+                                    <span class="text-[10px] text-slate-400">{{ strtoupper($p->type) }}</span>
+                                </div>
+                            @endif
+
+                            <div class="p-5 space-y-4">
+                                {{-- Provider Header Line --}}
+                                <div class="flex items-start justify-between">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-500 to-indigo-600 text-white font-black flex items-center justify-center text-sm shadow-md shadow-sky-500/20">
+                                            {{ strtoupper(substr($p->name, 0, 2)) }}
+                                        </div>
+                                        <div>
+                                            <h3 class="font-extrabold text-slate-800 dark:text-white text-lg tracking-tight">
+                                                {{ $p->name }}
+                                            </h3>
+                                            <div class="flex items-center gap-2 mt-0.5 text-xs text-slate-400">
+                                                <span class="font-semibold text-sky-600 dark:text-sky-400 uppercase tracking-wider text-[10px]">{{ $p->type }}</span>
+                                                <span>•</span>
+                                                <span>{{ $p->base_currency }}</span>
+                                                @if($p->website)
+                                                    <span>•</span>
+                                                    <a href="{{ $p->website }}" target="_blank" class="hover:text-sky-500 transition-colors">
+                                                        <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                                                    </a>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {{-- Compare Checkbox (E-Shop Style) --}}
+                                    <label class="flex items-center space-x-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400 cursor-pointer bg-slate-50 dark:bg-slate-800 px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-sky-500 transition-colors">
+                                        <input type="checkbox" wire:click="toggleCompareProvider({{ $p->id }})" {{ $isSelected ? 'checked' : '' }} class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 dark:bg-slate-700" />
+                                        <span>Compare</span>
+                                    </label>
+                                </div>
+
+                                {{-- Price & Payout Box (Big E-Commerce Pricing) --}}
+                                <div class="p-4 rounded-2xl {{ $isCheapest ? 'bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800' : 'bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80' }} space-y-2">
+                                    <div class="flex items-baseline justify-between">
+                                        <div>
+                                            <span class="text-xs uppercase font-bold text-slate-400">Transaction Fee</span>
+                                            <div class="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                                                €{{ number_format($item['fee'], 2) }}
+                                            </div>
+                                        </div>
+                                        <div class="text-right">
+                                            <span class="px-2.5 py-1 text-xs font-black rounded-lg {{ $isCheapest ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300' }}">
+                                                {{ $item['effective_percent'] }}% eff.
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {{-- Net Payout --}}
+                                    <div class="pt-2 border-t border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between text-xs font-semibold">
+                                        <span class="text-slate-500 dark:text-slate-400">Merchant Receives (Net):</span>
+                                        <span class="font-extrabold text-slate-800 dark:text-white text-sm">
+                                            €{{ number_format($item['settlement_amount'], 2) }}
+                                        </span>
+                                    </div>
+                                    @if($item['reserve_amount'] > 0)
+                                        <div class="flex items-center justify-between text-[11px] text-slate-400">
+                                            <span>Rolling Reserve ({{ $item['reserve_percent'] }}% hold):</span>
+                                            <span class="font-medium text-amber-600 dark:text-amber-400">-€{{ number_format($item['reserve_amount'], 2) }}</span>
+                                        </div>
+                                    @endif
+                                </div>
+
+                                {{-- Specifications / Features Breakdown (E-Store specs checklist) --}}
+                                <div class="space-y-2 text-xs">
+                                    <div class="font-bold text-[11px] uppercase tracking-wider text-slate-400 flex items-center justify-between">
+                                        <span>Tariff Specifications</span>
+                                        <i class="fa-solid fa-list-check text-slate-400"></i>
+                                    </div>
+
+                                    <div class="space-y-1.5">
+                                        <div class="flex items-center justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
+                                            <span class="text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                                                <i class="fa-solid fa-percent text-sky-500 text-[10px] w-3"></i> Processing Rate:
+                                            </span>
+                                            <span class="font-bold text-slate-800 dark:text-slate-200">
+                                                {{ $item['rate']?->formatted_rate ?? 'N/A' }}
+                                            </span>
+                                        </div>
+
+                                        <div class="flex items-center justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
+                                            <span class="text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                                                <i class="fa-solid fa-shield-halved text-emerald-500 text-[10px] w-3"></i> Rolling Reserve:
+                                            </span>
+                                            <span class="font-bold text-slate-800 dark:text-slate-200">
+                                                {{ $p->reserve ? $p->reserve->formatted_summary : 'None (0%)' }}
+                                            </span>
+                                        </div>
+
+                                        <div class="flex items-center justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
+                                            <span class="text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                                                <i class="fa-solid fa-arrow-right-arrow-left text-indigo-500 text-[10px] w-3"></i> FX Markup:
+                                            </span>
+                                            <span class="font-semibold text-slate-700 dark:text-slate-300">
+                                                {{ $item['fx_fee'] }}
+                                            </span>
+                                        </div>
+
+                                        <div class="flex items-center justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
+                                            <span class="text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                                                <i class="fa-solid fa-circle-exclamation text-rose-500 text-[10px] w-3"></i> Chargeback Fee:
+                                            </span>
+                                            <span class="font-semibold text-slate-700 dark:text-slate-300">
+                                                {{ $item['chargeback_fee'] }}
+                                            </span>
+                                        </div>
+
+                                        <div class="flex items-center justify-between py-1 border-b border-slate-100 dark:border-slate-800/60">
+                                            <span class="text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                                                <i class="fa-solid fa-rocket text-amber-500 text-[10px] w-3"></i> Onboarding / Setup:
+                                            </span>
+                                            <span class="font-semibold text-slate-700 dark:text-slate-300">
+                                                {{ $item['onboarding_fee'] }}
+                                            </span>
+                                        </div>
+
+                                        <div class="flex items-center justify-between py-1">
+                                            <span class="text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                                                <i class="fa-regular fa-calendar-check text-teal-500 text-[10px] w-3"></i> Monthly Fee:
+                                            </span>
+                                            <span class="font-semibold text-slate-700 dark:text-slate-300">
+                                                {{ $item['monthly_fee'] }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Card Bottom Actions --}}
+                        <div class="p-4 bg-slate-50/70 dark:bg-slate-800/40 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2">
+                            <button wire:click="openBreakdown({{ $p->id }})"
+                                    class="flex-1 py-2 px-3 text-xs font-bold rounded-xl {{ $isCheapest ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/20' : 'bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700' }} transition-all flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-receipt text-xs"></i>
+                                View Receipt / Details
+                            </button>
+
+                            <button wire:click="openCreateRateModal({{ $p->id }})"
+                                    title="Edit or add rates"
+                                    class="p-2 text-slate-400 hover:text-sky-600 hover:bg-white dark:hover:bg-slate-800 rounded-xl border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-colors">
+                                <i class="fa-solid fa-pen-to-square text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        @else
+            <div class="text-center py-16 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
+                <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 text-2xl">
+                    <i class="fa-solid fa-filter-circle-xmark"></i>
+                </div>
+                <h3 class="text-base font-bold text-slate-700 dark:text-slate-200">No matching providers found</h3>
+                <p class="text-xs text-slate-400 max-w-sm mx-auto mt-1">Try changing the payment method or region in the filter bar above.</p>
+            </div>
+        @endif
     </div>
     @endif
 
@@ -1423,6 +1726,318 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+    @endif
+
+    {{-- ========================================================================= --}}
+    {{-- FLOATING STICKY COMPARE BAR (WHEN 2+ PROVIDERS CHECKED) --}}
+    {{-- ========================================================================= --}}
+    @if(count($selectedForCompare) > 0)
+    <div class="fixed bottom-6 inset-x-0 z-40 max-w-xl mx-auto px-4 pointer-events-none">
+        <div class="bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-xl text-white p-4 rounded-2xl shadow-2xl border border-slate-700/80 pointer-events-auto flex items-center justify-between gap-4 transition-all">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-500 text-white flex items-center justify-center font-black text-sm shadow-md shadow-emerald-500/20">
+                    {{ count($selectedForCompare) }}
+                </div>
+                <div>
+                    <div class="text-xs font-black uppercase tracking-wider text-emerald-400">Products in Comparison</div>
+                    <div class="text-xs text-slate-300 font-medium">Ready for side-by-side analysis</div>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-2">
+                <button wire:click="clearCompare" class="px-3 py-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors">
+                    Clear
+                </button>
+                <button wire:click="openSideBySideModal" class="px-4 py-2 text-xs font-extrabold bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white rounded-xl shadow-lg shadow-emerald-500/25 transition-all flex items-center gap-1.5">
+                    <i class="fa-solid fa-scale-balanced"></i>
+                    Compare ({{ count($selectedForCompare) }})
+                </button>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    {{-- ========================================================================= --}}
+    {{-- SIDE-BY-SIDE STOREFRONT COMPARISON MODAL --}}
+    {{-- ========================================================================= --}}
+    @if($showSideBySideModal)
+    <div class="fixed inset-0 z-50 overflow-y-auto bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-5xl w-full max-h-[90vh] overflow-y-auto p-6 md:p-8 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-6">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-200/80 dark:border-slate-800">
+                <div>
+                    <span class="text-xs font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-1 rounded-lg">
+                        Side-by-Side Product Comparison
+                    </span>
+                    <h3 class="text-xl font-black text-slate-800 dark:text-white mt-1">
+                        Comparing {{ count($comparedProviders) }} Payment Providers
+                    </h3>
+                </div>
+                <button wire:click="closeSideBySideModal" class="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            {{-- Comparison Table Columns --}}
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs">
+                    <thead>
+                        <tr class="border-b border-slate-200 dark:border-slate-800">
+                            <th class="py-4 px-4 w-48 text-slate-400 font-bold uppercase tracking-wider text-[11px]">Feature / Metric</th>
+                            @foreach($comparedProviders as $cp)
+                                <th class="py-4 px-4 min-w-[200px]">
+                                    <div class="space-y-1">
+                                        <div class="font-black text-slate-900 dark:text-white text-base">{{ $cp->name }}</div>
+                                        <div class="flex items-center gap-2">
+                                            <span class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-sky-50 dark:bg-sky-950 text-sky-600 dark:text-sky-400 uppercase">
+                                                {{ $cp->type }}
+                                            </span>
+                                            <span class="text-[11px] text-slate-400">{{ $cp->base_currency }}</span>
+                                        </div>
+                                    </div>
+                                </th>
+                            @endforeach
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200/60 dark:divide-slate-800/60">
+                        {{-- 1. Simulation Cost Row --}}
+                        <tr class="bg-emerald-50/50 dark:bg-emerald-950/20">
+                            <td class="py-3 px-4 font-black text-emerald-700 dark:text-emerald-300">
+                                Fee on €{{ number_format($simAmount) }} ({{ strtoupper($simMethod) }})
+                            </td>
+                            @foreach($comparedProviders as $cp)
+                                @php
+                                    $cpSim = $cp->simulateTransactionCost((float)$simAmount, $simMethod, $simFlow, $simRegion, $simAudience, (float)$simMonthlyVolume);
+                                @endphp
+                                <td class="py-3 px-4">
+                                    @if($cpSim['is_supported'])
+                                        <div class="font-black text-emerald-600 dark:text-emerald-400 text-sm">
+                                            €{{ number_format($cpSim['fee'], 2) }}
+                                        </div>
+                                        <div class="text-[11px] text-slate-500">
+                                            {{ $cpSim['effective_percent'] }}% eff. • Net: €{{ number_format($cpSim['settlement_amount'], 2) }}
+                                        </div>
+                                    @else
+                                        <span class="text-slate-400 italic">Not supported</span>
+                                    @endif
+                                </td>
+                            @endforeach
+                        </tr>
+
+                        {{-- 2. Card EU Rate --}}
+                        <tr>
+                            <td class="py-3 px-4 font-bold text-slate-600 dark:text-slate-400">EU Cards (Visa/MC)</td>
+                            @foreach($comparedProviders as $cp)
+                                @php $rate = $cp->processingRates->where('payment_method', 'card')->where('card_region', 'eu')->first(); @endphp
+                                <td class="py-3 px-4 font-semibold text-slate-800 dark:text-slate-200">
+                                    {{ $rate ? $rate->formatted_rate : '—' }}
+                                </td>
+                            @endforeach
+                        </tr>
+
+                        {{-- 3. Card Non-EU Rate --}}
+                        <tr>
+                            <td class="py-3 px-4 font-bold text-slate-600 dark:text-slate-400">Non-EU / Intl Cards</td>
+                            @foreach($comparedProviders as $cp)
+                                @php $rate = $cp->processingRates->where('payment_method', 'card')->whereIn('card_region', ['non_eu', 'international'])->first(); @endphp
+                                <td class="py-3 px-4 font-semibold text-slate-800 dark:text-slate-200">
+                                    {{ $rate ? $rate->formatted_rate : '—' }}
+                                </td>
+                            @endforeach
+                        </tr>
+
+                        {{-- 4. Corporate Cards --}}
+                        <tr>
+                            <td class="py-3 px-4 font-bold text-slate-600 dark:text-slate-400">Corporate Cards</td>
+                            @foreach($comparedProviders as $cp)
+                                @php $rate = $cp->processingRates->where('payment_method', 'card')->where('card_region', 'corporate')->first(); @endphp
+                                <td class="py-3 px-4 font-semibold text-slate-800 dark:text-slate-200">
+                                    {{ $rate ? $rate->formatted_rate : '—' }}
+                                </td>
+                            @endforeach
+                        </tr>
+
+                        {{-- 5. Rolling Reserve --}}
+                        <tr>
+                            <td class="py-3 px-4 font-bold text-slate-600 dark:text-slate-400">Rolling Reserve</td>
+                            @foreach($comparedProviders as $cp)
+                                <td class="py-3 px-4 font-semibold text-emerald-600 dark:text-emerald-400">
+                                    {{ $cp->reserve ? $cp->reserve->formatted_summary : '0% (None)' }}
+                                </td>
+                            @endforeach
+                        </tr>
+
+                        {{-- 6. SEPA Inward / Outward --}}
+                        <tr>
+                            <td class="py-3 px-4 font-bold text-slate-600 dark:text-slate-400">SEPA Transfers</td>
+                            @foreach($comparedProviders as $cp)
+                                @php
+                                    $sepaIn = $cp->processingRates->where('payment_method', 'sepa')->where('flow_type', 'payin')->first();
+                                    $sepaOut = $cp->processingRates->where('payment_method', 'sepa')->where('flow_type', 'payout')->first();
+                                @endphp
+                                <td class="py-3 px-4 text-slate-700 dark:text-slate-300">
+                                    <div>In: <strong class="text-slate-800 dark:text-white">{{ $sepaIn ? $sepaIn->formatted_rate : '—' }}</strong></div>
+                                    <div>Out: <strong class="text-slate-800 dark:text-white">{{ $sepaOut ? $sepaOut->formatted_rate : '—' }}</strong></div>
+                                </td>
+                            @endforeach
+                        </tr>
+
+                        {{-- 7. SWIFT Transfers --}}
+                        <tr>
+                            <td class="py-3 px-4 font-bold text-slate-600 dark:text-slate-400">SWIFT Wires</td>
+                            @foreach($comparedProviders as $cp)
+                                @php
+                                    $swiftIn = $cp->processingRates->where('payment_method', 'swift')->where('flow_type', 'payin')->first();
+                                    $swiftOut = $cp->processingRates->where('payment_method', 'swift')->where('flow_type', 'payout')->first();
+                                @endphp
+                                <td class="py-3 px-4 text-slate-700 dark:text-slate-300">
+                                    <div>In: <strong>{{ $swiftIn ? $swiftIn->formatted_rate : '—' }}</strong></div>
+                                    <div>Out: <strong>{{ $swiftOut ? $swiftOut->formatted_rate : '—' }}</strong></div>
+                                </td>
+                            @endforeach
+                        </tr>
+
+                        {{-- 8. Onboarding / Setup Fee --}}
+                        <tr>
+                            <td class="py-3 px-4 font-bold text-slate-600 dark:text-slate-400">Onboarding / Setup</td>
+                            @foreach($comparedProviders as $cp)
+                                @php $fee = $cp->serviceFees->whereIn('fee_code', ['onboarding', 'account_opening'])->first(); @endphp
+                                <td class="py-3 px-4 font-semibold text-slate-800 dark:text-slate-200">
+                                    {{ $fee ? $fee->formatted_fee : '—' }}
+                                </td>
+                            @endforeach
+                        </tr>
+
+                        {{-- 9. Monthly Maintenance Fee --}}
+                        <tr>
+                            <td class="py-3 px-4 font-bold text-slate-600 dark:text-slate-400">Monthly Maintenance</td>
+                            @foreach($comparedProviders as $cp)
+                                @php $fee = $cp->serviceFees->whereIn('fee_code', ['monthly_maintenance', 'monthly_iban'])->first(); @endphp
+                                <td class="py-3 px-4 font-semibold text-slate-800 dark:text-slate-200">
+                                    {{ $fee ? $fee->formatted_fee : '—' }}
+                                </td>
+                            @endforeach
+                        </tr>
+
+                        {{-- 10. FX Margin --}}
+                        <tr>
+                            <td class="py-3 px-4 font-bold text-slate-600 dark:text-slate-400">FX Commission</td>
+                            @foreach($comparedProviders as $cp)
+                                @php $fee = $cp->serviceFees->whereIn('fee_code', ['fx_margin', 'fx_main', 'fx_delayed'])->first(); @endphp
+                                <td class="py-3 px-4 font-semibold text-slate-800 dark:text-slate-200">
+                                    {{ $fee ? $fee->formatted_fee : '—' }}
+                                </td>
+                            @endforeach
+                        </tr>
+
+                        {{-- 11. Chargeback Fee --}}
+                        <tr>
+                            <td class="py-3 px-4 font-bold text-slate-600 dark:text-slate-400">Chargeback Fee</td>
+                            @foreach($comparedProviders as $cp)
+                                @php $fee = $cp->serviceFees->where('fee_code', 'chargeback')->first(); @endphp
+                                <td class="py-3 px-4 font-semibold text-rose-600 dark:text-rose-400">
+                                    {{ $fee ? $fee->formatted_fee : '—' }}
+                                </td>
+                            @endforeach
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="flex justify-end pt-4 border-t border-slate-200 dark:border-slate-800">
+                <button wire:click="closeSideBySideModal" class="px-5 py-2 text-xs font-bold bg-slate-800 hover:bg-slate-700 text-white rounded-xl">
+                    Close Comparison
+                </button>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    {{-- ========================================================================= --}}
+    {{-- DETAILED COST BREAKDOWN / RECEIPT MODAL --}}
+    {{-- ========================================================================= --}}
+    @if($showBreakdownModal && $breakdownData)
+    @php
+        $bProv = $breakdownData['provider'];
+        $bSim = $breakdownData['sim'];
+    @endphp
+    <div class="fixed inset-0 z-50 overflow-y-auto bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-6">
+            {{-- Header --}}
+            <div class="flex items-start justify-between pb-4 border-b border-slate-200/80 dark:border-slate-800">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 text-white font-black flex items-center justify-center text-xs">
+                        {{ strtoupper(substr($bProv->name, 0, 2)) }}
+                    </div>
+                    <div>
+                        <h3 class="font-extrabold text-slate-800 dark:text-white text-base">{{ $bProv->name }}</h3>
+                        <p class="text-xs text-slate-400">Itemized Cost Receipt</p>
+                    </div>
+                </div>
+                <button wire:click="closeBreakdown" class="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-white">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            {{-- Receipt Body --}}
+            <div class="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 space-y-3 font-mono text-xs">
+                <div class="flex justify-between text-slate-600 dark:text-slate-400">
+                    <span>Transaction Method:</span>
+                    <span class="font-bold text-slate-800 dark:text-slate-200 uppercase">{{ $simMethod }} ({{ $simRegion }})</span>
+                </div>
+
+                <div class="flex justify-between text-slate-800 dark:text-white font-bold text-sm pt-2 border-t border-slate-200 dark:border-slate-700">
+                    <span>Gross Amount:</span>
+                    <span>€{{ number_format($simAmount, 2) }}</span>
+                </div>
+
+                @if($bSim['rate'])
+                    <div class="space-y-1.5 pt-2 border-t border-slate-200 dark:border-slate-700">
+                        <div class="flex justify-between text-slate-600 dark:text-slate-400">
+                            <span>Processing Rate ({{ $bSim['rate']->percent_rate * 100 }}%):</span>
+                            <span class="text-rose-600 dark:text-rose-400">-€{{ number_format($simAmount * $bSim['rate']->percent_rate, 2) }}</span>
+                        </div>
+
+                        @if($bSim['rate']->fixed_fee > 0)
+                            <div class="flex justify-between text-slate-600 dark:text-slate-400">
+                                <span>Fixed Fee per txn:</span>
+                                <span class="text-rose-600 dark:text-rose-400">-€{{ number_format($bSim['rate']->fixed_fee, 2) }}</span>
+                            </div>
+                        @endif
+
+                        @if($bSim['rate']->min_fee && $bSim['fee'] == $bSim['rate']->min_fee)
+                            <div class="flex justify-between text-amber-600 dark:text-amber-400 text-[11px] italic">
+                                <span>Minimum Fee Applied:</span>
+                                <span>€{{ number_format($bSim['rate']->min_fee, 2) }}</span>
+                            </div>
+                        @endif
+                    </div>
+                @endif
+
+                <div class="flex justify-between font-bold text-slate-800 dark:text-white pt-2 border-t border-slate-200 dark:border-slate-700">
+                    <span>Total Provider Fee:</span>
+                    <span class="text-rose-600 dark:text-rose-400">-€{{ number_format($bSim['fee'], 2) }}</span>
+                </div>
+
+                @if($bSim['reserve_amount'] > 0)
+                    <div class="flex justify-between text-amber-600 dark:text-amber-400">
+                        <span>Rolling Reserve Hold ({{ $bSim['reserve_percent'] }}%):</span>
+                        <span>-€{{ number_format($bSim['reserve_amount'], 2) }}</span>
+                    </div>
+                @endif
+
+                {{-- Net Payout Highlight --}}
+                <div class="flex justify-between font-black text-emerald-600 dark:text-emerald-400 text-base pt-3 border-t-2 border-emerald-500/50">
+                    <span>Net Settlement Payout:</span>
+                    <span>€{{ number_format($bSim['settlement_amount'], 2) }}</span>
+                </div>
+            </div>
+
+            {{-- Close Button --}}
+            <button wire:click="closeBreakdown" class="w-full py-2.5 text-xs font-bold rounded-xl bg-slate-800 hover:bg-slate-700 text-white transition-colors">
+                Close Receipt
+            </button>
         </div>
     </div>
     @endif
