@@ -125,6 +125,16 @@
                     </a>
                     @endif
 
+                    <!-- Tariffs & Acquiring Link -->
+                    @if(config('features.tariffs', true))
+                    <a href="{{ route('tariffs.index') }}"
+                       class="flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 group {{ request()->routeIs('tariffs.*') ? 'bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-400' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-800 dark:hover:text-white' }}"
+                       wire:navigate>
+                        <i class="fa-solid fa-scale-balanced mr-3 text-base text-indigo-500 transition-transform duration-200 group-hover:scale-110"></i>
+                        Tariffs & Matrix
+                    </a>
+                    @endif
+
                     <!-- Companies Link -->
                     @can('view_projects')
                     <a href="{{ route('projects.index') }}"
@@ -367,6 +377,13 @@
                         <a href="{{ route('pci-dss.index') }}" class="flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 group {{ request()->routeIs('pci-dss.*') ? 'bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-400' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-800 dark:hover:text-white' }}" wire:navigate>
                             <i class="fa-solid fa-shield-halved mr-3 text-base text-sky-500 transition-transform duration-200 group-hover:scale-110"></i>
                             PCI DSS
+                        </a>
+                        @endif
+
+                        @if(config('features.tariffs', true))
+                        <a href="{{ route('tariffs.index') }}" class="flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 group {{ request()->routeIs('tariffs.*') ? 'bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-400' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-800 dark:hover:text-white' }}" wire:navigate>
+                            <i class="fa-solid fa-scale-balanced mr-3 text-base text-indigo-500 transition-transform duration-200 group-hover:scale-110"></i>
+                            Tariffs & Matrix
                         </a>
                         @endif
 

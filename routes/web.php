@@ -21,6 +21,7 @@ use App\Livewire\Reports\ProductivityReport;
 use App\Livewire\Reports\TimeReport;
 use App\Livewire\Settings;
 use App\Livewire\Settings\EmailTemplates;
+use App\Livewire\Tariffs\Index as TariffsIndex;
 use App\Livewire\Tasks\KanbanBoard;
 
 Route::get('/', function () {
@@ -36,6 +37,7 @@ Route::view('dashboard', 'dashboard')
 Route::middleware(['auth'])->group(function () {
     Route::get('/clients', Index::class)->middleware(['feature:clients'])->name('clients.index');
     Route::get('/pci-dss', PciDssIndex::class)->middleware(['feature:pci_dss'])->name('pci-dss.index');
+    Route::get('/tariffs', TariffsIndex::class)->middleware(['feature:tariffs'])->name('tariffs.index');
 
     Route::get('/projects', ProjectsIndex::class)->middleware('permission:view_projects')->name('projects.index');
     Route::get('/projects/create', ProjectsCreate::class)->middleware('permission:manage_projects')->name('projects.create');

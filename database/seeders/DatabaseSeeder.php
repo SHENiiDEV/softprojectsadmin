@@ -52,6 +52,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             RolesAndPermissionsSeeder::class,
             EmailTemplateSeeder::class,
+            ProviderTariffsSeeder::class,
         ]);
 
         // 3. Create all specialized team members with proper roles
