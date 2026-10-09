@@ -301,8 +301,8 @@
                                             <span class="px-1.5 py-0.2 text-[9px] font-bold rounded bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300">Client</span>
                                         @endif
                                     </div>
-                                    <span class="text-[10px] text-slate-400 font-medium" title="{{ $cmt->created_at->format('d.m.Y H:i') }}">
-                                        {{ $cmt->created_at->diffForHumans() }}
+                                    <span class="text-[10px] text-slate-400 font-medium" title="{{ $cmt->created_at->format('d.m.Y H:i:s') }}">
+                                        {{ $cmt->created_at->format('d.m.Y H:i:s') }} ({{ $cmt->created_at->diffForHumans() }})
                                     </span>
                                 </div>
                                 <p class="text-slate-600 dark:text-slate-400 line-clamp-2 leading-relaxed">

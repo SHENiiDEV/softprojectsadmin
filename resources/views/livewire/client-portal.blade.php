@@ -745,7 +745,7 @@
                                                         @if(!$isClient)
                                                             <span class="text-[9px] font-semibold bg-indigo-100 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded">Team</span>
                                                         @endif
-                                                        <span class="text-[10px] text-slate-400 dark:text-slate-500">{{ $comment->created_at->diffForHumans() }}</span>
+                                                        <span class="text-[10px] text-slate-400 dark:text-slate-500">{{ $comment->created_at->format('d.m.Y H:i:s') }} ({{ $comment->created_at->diffForHumans() }})</span>
                                                     </div>
                                                     <div class="text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">{!! $comment->formatted_content !!}</div>
 
@@ -765,7 +765,7 @@
                                                                             <span class="text-[11px] font-bold text-slate-700 dark:text-slate-300">
                                                                                 {{ $reply->user ? $reply->user->name : ($reply->client ? $reply->client->name : 'System') }}
                                                                             </span>
-                                                                            <span class="text-[10px] text-slate-400 dark:text-slate-500">{{ $reply->created_at->diffForHumans() }}</span>
+                                                                            <span class="text-[10px] text-slate-400 dark:text-slate-500">{{ $reply->created_at->format('d.m.Y H:i:s') }} ({{ $reply->created_at->diffForHumans() }})</span>
                                                                         </div>
                                                                         <div class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed whitespace-pre-wrap">{!! $reply->formatted_content !!}</div>
                                                                     </div>

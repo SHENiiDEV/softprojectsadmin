@@ -26,7 +26,7 @@
                 {{ $authorName }}
             </span>
             <span class="text-[9px] text-slate-400 dark:text-slate-500 ml-1.5" title="{{ $comment->created_at->format('d.m.Y H:i:s') }}">
-                {{ $createdAt->diffForHumans() }}
+                {{ $comment->created_at->format('d.m.Y H:i:s') }} ({{ $createdAt->diffForHumans() }})
             </span>
         </div>
     </div>
