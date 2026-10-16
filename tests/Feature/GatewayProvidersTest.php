@@ -124,4 +124,50 @@ class GatewayProvidersTest extends TestCase
         $this->assertContains('CheckoutGlobal', $website->gateways);
         $this->assertContains('Stripe', $website->gateways);
     }
+
+    /**
+     * Test removing a gateway provider via GatewayService::remove().
+     */
+    public function test_can_remove_gateway_provider_via_service(): void
+    {
+        GatewayService::add('TemporaryGateway');
+        $this->assertTrue(GatewayService::isValid('TemporaryGateway'));
+
+        GatewayService::remove('TemporaryGateway');
+        $this->assertFalse(GatewayService::isValid('TemporaryGateway'));
+        $this->assertNotContains('TemporaryGateway', GatewayService::all());
+    }
+
+    /**
+     * Test removing a gateway provider via Artisan command `gateway:remove`.
+     */
+    public function test_artisan_gateway_remove_command(): void
+    {
+        GatewayService::add('CliToRemove');
+        $this->assertTrue(GatewayService::isValid('CliToRemove'));
+
+        $this->artisan('gateway:remove', ['name' => 'CliToRemove'])
+            ->expectsOutput("Gateway provider 'CliToRemove' has been successfully removed.")
+            ->assertExitCode(0);
+
+        $this->assertFalse(GatewayService::isValid('CliToRemove'));
+    }
+
+    /**
+     * Test removing a gateway provider via WebsitesSection UI.
+     */
+    public function test_can_remove_gateway_via_websites_section_ui(): void
+    {
+        GatewayService::add('UiToRemove');
+
+        Livewire::test(WebsitesSection::class, ['project' => $this->project])
+            ->call('openCreateForm')
+            ->set('gateways', ['UiToRemove', 'Stripe'])
+            ->call('removeGateway', 'UiToRemove')
+            ->assertSet('gateways', ['Stripe'])
+            ->assertSee('Gateway &#039;UiToRemove&#039; has been removed', false);
+
+        $this->assertFalse(GatewayService::isValid('UiToRemove'));
+        $this->assertNotContains('UiToRemove', GatewayService::all());
+    }
 }

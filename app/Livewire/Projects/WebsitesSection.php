@@ -118,6 +118,18 @@ class WebsitesSection extends Component
         session()->flash('gateway_added_message', "Gateway '{$added}' added and selected!");
     }
 
+    /**
+     * Remove a gateway provider from the available list.
+     */
+    public function removeGateway(string $name): void
+    {
+        GatewayService::remove($name);
+
+        $this->gateways = array_values(array_filter($this->gateways, fn ($g) => $g !== $name));
+
+        session()->flash('gateway_added_message', "Gateway '{$name}' has been removed from available providers.");
+    }
+
     protected function rules(): array
     {
         $available = GatewayService::all();

@@ -122,10 +122,19 @@
                     <!-- Gateway Checklist Grid -->
                     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 max-h-[190px] overflow-y-auto custom-scroll">
                         @forelse($this->availableGateways as $gw)
-                            <label class="flex items-center space-x-2 text-xs text-slate-700 dark:text-slate-300 cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors py-0.5">
-                                <input type="checkbox" wire:model="gateways" value="{{ $gw }}" class="rounded bg-slate-50 dark:bg-slate-950 border-slate-300 dark:border-slate-800 text-indigo-600 focus:ring-indigo-500/20 focus:ring-offset-slate-900">
-                                <span class="{{ in_array($gw, $gateways) ? 'font-bold text-indigo-600 dark:text-indigo-400' : '' }}">{{ $gw }}</span>
-                            </label>
+                            <div class="group/gw flex items-center justify-between text-xs text-slate-700 dark:text-slate-300 py-0.5 hover:text-indigo-600 dark:hover:text-indigo-400">
+                                <label class="flex items-center space-x-2 cursor-pointer flex-1 truncate">
+                                    <input type="checkbox" wire:model="gateways" value="{{ $gw }}" class="rounded bg-slate-50 dark:bg-slate-950 border-slate-300 dark:border-slate-800 text-indigo-600 focus:ring-indigo-500/20 focus:ring-offset-slate-900">
+                                    <span class="truncate {{ in_array($gw, $gateways) ? 'font-bold text-indigo-600 dark:text-indigo-400' : '' }}">{{ $gw }}</span>
+                                </label>
+                                <button type="button"
+                                        wire:click="removeGateway('{{ $gw }}')"
+                                        wire:confirm="Remove '{{ $gw }}' from available gateways?"
+                                        title="Remove {{ $gw }}"
+                                        class="opacity-0 group-hover/gw:opacity-100 text-slate-400 hover:text-rose-500 transition-opacity p-0.5 text-[10px] ml-1 flex-shrink-0">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
                         @empty
                             <div class="col-span-full py-4 text-center text-xs text-slate-400 dark:text-slate-500">
                                 No gateways match "{{ $gatewaySearch }}". Add it below!
