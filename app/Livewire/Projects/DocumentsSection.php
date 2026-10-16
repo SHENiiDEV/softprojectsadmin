@@ -3,6 +3,7 @@
 namespace App\Livewire\Projects;
 
 use App\Models\Project;
+use App\Services\GatewayService;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
@@ -62,6 +63,13 @@ class DocumentsSection extends Component
             }
             if (! empty($this->project->boarding->provider_name) && ! in_array($this->project->boarding->provider_name, $list, true)) {
                 $list[] = $this->project->boarding->provider_name;
+            }
+        }
+
+        // Merge with all registered gateway providers so any gateway (like Stripe) is always available
+        foreach (GatewayService::all() as $gw) {
+            if (! in_array($gw, $list, true)) {
+                $list[] = $gw;
             }
         }
 

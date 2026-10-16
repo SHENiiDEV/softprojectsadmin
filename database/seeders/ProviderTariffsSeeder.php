@@ -396,5 +396,114 @@ class ProviderTariffsSeeder extends Seeder
                 'conditions' => 'Evaluated individually upon completed due diligence & risk assessment.',
             ]
         );
+
+        // -------------------------------------------------------------------------
+        // 3. STRIPE (Global Payment Gateway & Acquirer)
+        // -------------------------------------------------------------------------
+        $stripe = Provider::updateOrCreate(
+            ['code' => 'stripe'],
+            [
+                'name' => 'Stripe',
+                'type' => 'acquiring',
+                'base_currency' => 'EUR',
+                'website' => 'https://stripe.com',
+                'contact_person' => 'Merchant Support',
+                'contact_email' => 'support@stripe.com',
+                'account_manager' => 'Stripe Account Team',
+                'notes' => 'Global technology company building economic infrastructure. Standard card acquiring and international processing.',
+                'is_active' => true,
+            ]
+        );
+
+        $stripeRates = [
+            // Standard European cards: 1.5% + €0.25
+            [
+                'payment_method' => 'card',
+                'flow_type' => 'payin',
+                'target_audience' => 'all',
+                'card_region' => 'eu',
+                'percent_rate' => 0.0150,
+                'fixed_fee' => 0.25,
+                'min_fee' => 0.25,
+                'notes' => 'Standard European cards (Visa, Mastercard, Maestro): 1.5% + €0.25',
+            ],
+            // Non-EU / International cards: 2.9% + €0.25
+            [
+                'payment_method' => 'card',
+                'flow_type' => 'payin',
+                'target_audience' => 'all',
+                'card_region' => 'non_eu',
+                'percent_rate' => 0.0290,
+                'fixed_fee' => 0.25,
+                'min_fee' => 0.25,
+                'notes' => 'Non-European / International cards: 2.9% + €0.25',
+            ],
+            [
+                'payment_method' => 'card',
+                'flow_type' => 'payin',
+                'target_audience' => 'all',
+                'card_region' => 'international',
+                'percent_rate' => 0.0290,
+                'fixed_fee' => 0.25,
+                'min_fee' => 0.25,
+                'notes' => 'International cards: 2.9% + €0.25',
+            ],
+            // Corporate cards: 2.9% + €0.25
+            [
+                'payment_method' => 'card',
+                'flow_type' => 'payin',
+                'target_audience' => 'all',
+                'card_region' => 'corporate',
+                'percent_rate' => 0.0290,
+                'fixed_fee' => 0.25,
+                'min_fee' => 0.25,
+                'notes' => 'Commercial / Corporate cards: 2.9% + €0.25',
+            ],
+            // SEPA Direct Debit: 0.8% + €0.29 (capped at €5.00)
+            [
+                'payment_method' => 'sepa',
+                'flow_type' => 'payin',
+                'target_audience' => 'all',
+                'card_region' => 'all',
+                'percent_rate' => 0.0080,
+                'fixed_fee' => 0.29,
+                'min_fee' => 0.29,
+                'max_fee' => 5.00,
+                'tier_min_volume' => 0,
+                'tier_max_volume' => null,
+                'notes' => 'SEPA Direct Debit (0.8% + €0.29, cap €5.00)',
+            ],
+        ];
+
+        foreach ($stripeRates as $r) {
+            ProviderProcessingRate::updateOrCreate(
+                [
+                    'provider_id' => $stripe->id,
+                    'payment_method' => $r['payment_method'],
+                    'flow_type' => $r['flow_type'],
+                    'card_region' => $r['card_region'] ?? 'all',
+                    'target_audience' => $r['target_audience'] ?? 'all',
+                    'tier_min_volume' => $r['tier_min_volume'] ?? 0,
+                ],
+                array_merge($r, [
+                    'provider_id' => $stripe->id,
+                    'currency' => 'EUR',
+                    'is_active' => true,
+                ])
+            );
+        }
+
+        $stripeFees = [
+            ['fee_code' => 'chargeback', 'title' => 'Chargeback / Dispute fee', 'fee_type' => 'fixed', 'billing_period' => 'per_event', 'amount' => 15.00, 'amount_max' => null, 'percentage' => null, 'comment' => '€15.00 EUR per disputed transaction'],
+            ['fee_code' => 'onboarding', 'title' => 'Account setup / Setup fee', 'fee_type' => 'fixed', 'billing_period' => 'one_time', 'amount' => 0.00, 'amount_max' => null, 'percentage' => null, 'comment' => 'No setup fees or recurring charges'],
+            ['fee_code' => 'monthly_maintenance', 'title' => 'Monthly fee', 'fee_type' => 'fixed', 'billing_period' => 'monthly', 'amount' => 0.00, 'amount_max' => null, 'percentage' => null, 'comment' => 'No monthly maintenance fees'],
+        ];
+
+        foreach ($stripeFees as $f) {
+            ProviderServiceFee::updateOrCreate(
+                ['provider_id' => $stripe->id, 'fee_code' => $f['fee_code']],
+                array_merge($f, ['provider_id' => $stripe->id, 'currency' => 'EUR'])
+            );
+        }
     }
 }

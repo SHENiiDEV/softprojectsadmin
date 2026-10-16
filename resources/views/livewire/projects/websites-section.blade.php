@@ -89,17 +89,80 @@
                 </div>
 
                 <!-- Gateway Providers -->
-                <div class="md:col-span-2 space-y-2">
-                    <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Gateway Providers</label>
-                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 max-h-[180px] overflow-y-auto custom-scroll">
-                        @foreach(\App\Livewire\Projects\WebsitesSection::AVAILABLE_GATEWAYS as $gw)
-                            <label class="flex items-center space-x-2 text-xs text-slate-700 dark:text-slate-300 cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
-                                <input type="checkbox" wire:model="gateways" value="{{ $gw }}" class="rounded bg-slate-50 dark:bg-slate-950 border-slate-300 dark:border-slate-800 text-indigo-600 focus:ring-indigo-500/20 focus:ring-offset-slate-900">
-                                <span>{{ $gw }}</span>
+                <div class="md:col-span-2 space-y-2.5">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                            <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                Gateway Providers
                             </label>
-                        @endforeach
+                            @if(count($gateways) > 0)
+                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400 border border-indigo-200/40 dark:border-indigo-800/40">
+                                    {{ count($gateways) }} selected
+                                </span>
+                            @endif
+                        </div>
+
+                        <!-- Quick search filter -->
+                        <div class="relative w-full sm:w-56">
+                            <input type="text"
+                                   wire:model.live.debounce.150ms="gatewaySearch"
+                                   placeholder="Filter gateways..."
+                                   class="w-full pl-7 pr-3 py-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                            <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2 top-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                            @if($gatewaySearch)
+                                <button type="button" wire:click="$set('gatewaySearch', '')" class="absolute right-2 top-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                </button>
+                            @endif
+                        </div>
+                    </div>
+
+                    <!-- Gateway Checklist Grid -->
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 max-h-[190px] overflow-y-auto custom-scroll">
+                        @forelse($this->availableGateways as $gw)
+                            <label class="flex items-center space-x-2 text-xs text-slate-700 dark:text-slate-300 cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors py-0.5">
+                                <input type="checkbox" wire:model="gateways" value="{{ $gw }}" class="rounded bg-slate-50 dark:bg-slate-950 border-slate-300 dark:border-slate-800 text-indigo-600 focus:ring-indigo-500/20 focus:ring-offset-slate-900">
+                                <span class="{{ in_array($gw, $gateways) ? 'font-bold text-indigo-600 dark:text-indigo-400' : '' }}">{{ $gw }}</span>
+                            </label>
+                        @empty
+                            <div class="col-span-full py-4 text-center text-xs text-slate-400 dark:text-slate-500">
+                                No gateways match "{{ $gatewaySearch }}". Add it below!
+                            </div>
+                        @endforelse
                     </div>
                     @error('gateways') <span class="text-[10px] text-rose-500 mt-1 block">{{ $message }}</span> @enderror
+
+                    <!-- Quick Add New Gateway Box -->
+                    <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div class="flex items-center gap-2 flex-1">
+                            <span class="text-xs text-slate-500 dark:text-slate-400 flex-shrink-0 font-medium">
+                                <i class="fa-solid fa-plus-circle text-indigo-500 mr-1"></i> Add new provider:
+                            </span>
+                            <input type="text"
+                                   wire:model="newGatewayName"
+                                   wire:keydown.enter.prevent="addNewGateway"
+                                   placeholder="e.g. Stripe, Adyen, Checkout.com..."
+                                   class="flex-1 px-3 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                        </div>
+                        <button type="button"
+                                wire:click="addNewGateway"
+                                class="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-xs transition-colors flex items-center justify-center gap-1.5 shadow-sm">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                            <span>Add Gateway</span>
+                        </button>
+                    </div>
+
+                    @if(session()->has('gateway_added_message'))
+                        <div class="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-900/40 px-3 py-1.5 rounded-lg flex items-center gap-1.5">
+                            <i class="fa-solid fa-check-circle"></i>
+                            {{ session('gateway_added_message') }}
+                        </div>
+                    @endif
+                    @error('newGatewayName')
+                        <span class="text-[10px] text-rose-500 block">{{ $message }}</span>
+                    @enderror
                 </div>
 
                 <!-- Form Buttons -->

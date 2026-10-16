@@ -4,6 +4,7 @@ namespace App\Livewire\Projects;
 
 use App\Models\Project;
 use App\Models\Website;
+use App\Services\GatewayService;
 use Livewire\Component;
 
 class WebsitesSection extends Component
@@ -35,6 +36,7 @@ class WebsitesSection extends Component
         'Rapyd',
         'Revolut',
         'Skrill',
+        'Stripe',
         'Syspay',
         'ThePaymentFactory',
         'Trustpayments',
@@ -62,6 +64,11 @@ class WebsitesSection extends Component
 
     public string $mastercard_status = 'Stopped';
 
+    // Quick add & search for gateways
+    public string $newGatewayName = '';
+
+    public string $gatewaySearch = '';
+
     // Transfer Modal
     public bool $showTransferModal = false;
 
@@ -71,14 +78,56 @@ class WebsitesSection extends Component
 
     public ?int $transferToProjectId = null;
 
+    /**
+     * Get all available gateway providers, filtered by search if present.
+     *
+     * @return array<int, string>
+     */
+    public function getAvailableGatewaysProperty(): array
+    {
+        $all = GatewayService::all();
+
+        if (trim($this->gatewaySearch) !== '') {
+            $search = mb_strtolower(trim($this->gatewaySearch));
+            $all = array_filter($all, fn ($g) => str_contains(mb_strtolower($g), $search));
+        }
+
+        return array_values($all);
+    }
+
+    /**
+     * Quickly add a new gateway provider right from the UI.
+     */
+    public function addNewGateway(): void
+    {
+        $name = trim($this->newGatewayName);
+        if ($name === '') {
+            $this->addError('newGatewayName', 'Gateway name cannot be empty.');
+
+            return;
+        }
+
+        $added = GatewayService::add($name);
+
+        if (! in_array($added, $this->gateways, true)) {
+            $this->gateways[] = $added;
+        }
+
+        $this->newGatewayName = '';
+        $this->resetErrorBag('newGatewayName');
+        session()->flash('gateway_added_message', "Gateway '{$added}' added and selected!");
+    }
+
     protected function rules(): array
     {
+        $available = GatewayService::all();
+
         return [
             'name' => 'required|string|max:255',
             'url' => 'required|url',
             'status' => 'required|in:Live,Test,No integration',
             'gateways' => 'nullable|array',
-            'gateways.*' => 'string|in:'.implode(',', self::AVAILABLE_GATEWAYS),
+            'gateways.*' => 'string|in:'.implode(',', $available),
             'visa_status' => 'required|in:In Progress,Working,Stopped',
             'mastercard_status' => 'required|in:In Progress,Working,Stopped',
         ];
@@ -198,6 +247,8 @@ class WebsitesSection extends Component
         $this->gateways = [];
         $this->visa_status = 'Stopped';
         $this->mastercard_status = 'Stopped';
+        $this->newGatewayName = '';
+        $this->gatewaySearch = '';
         $this->resetValidation();
     }
 
