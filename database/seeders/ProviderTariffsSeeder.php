@@ -505,5 +505,10 @@ class ProviderTariffsSeeder extends Seeder
                 array_merge($f, ['provider_id' => $stripe->id, 'currency' => 'EUR'])
             );
         }
+
+        // -------------------------------------------------------------------------
+        // 4. FMPay (FM Finance Ltd - Rowanlea Ltd / Jumlee Schedule)
+        // -------------------------------------------------------------------------
+        $this->call(FmpayTariffSeeder::class);
     }
 }

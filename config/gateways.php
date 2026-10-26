@@ -26,6 +26,7 @@ return [
         'Ex-Payments',
         'Fenige',
         'Fibonatix',
+        'FMPay',
         'GuruPay',
         'JFX',
         'Madfin',

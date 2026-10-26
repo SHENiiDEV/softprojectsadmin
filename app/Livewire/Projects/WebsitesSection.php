@@ -20,6 +20,7 @@ class WebsitesSection extends Component
         'Ex-Payments',
         'Fenige',
         'Fibonatix',
+        'FMPay',
         'GuruPay',
         'JFX',
         'Madfin',
