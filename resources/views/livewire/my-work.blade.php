@@ -18,18 +18,99 @@
     ═══════════════════════════════════════════════════════════ --}}
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-            <h1 class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">My Work</h1>
-            <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Tasks assigned to me</p>
+            <div class="flex items-center gap-3">
+                <h1 class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">My Work</h1>
+                @if($viewMode === 'done')
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Done Archive
+                    </span>
+                @else
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800/80">
+                        Active Tasks
+                    </span>
+                @endif
+            </div>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                @if($viewMode === 'done')
+                    Completed tasks assigned to me
+                @else
+                    Tasks assigned to me (To Do, In Progress, Review)
+                @endif
+            </p>
         </div>
-        <a href="{{ route('tasks.kanban') }}"
-           class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-indigo-700 dark:text-indigo-300
-                  bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-700
-                  rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-all duration-200 cursor-pointer">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/>
-            </svg>
-            Open Kanban
-        </a>
+        <div class="flex items-center gap-2">
+            @if($viewMode === 'done')
+                <button type="button"
+                        wire:click="setViewMode('active')"
+                        class="inline-flex items-center gap-2 px-3.5 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-all cursor-pointer shadow-sm">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                    </svg>
+                    Back to Active
+                </button>
+            @endif
+            <a href="{{ route('tasks.kanban') }}"
+               class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-indigo-700 dark:text-indigo-300
+                      bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-700
+                      rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-all duration-200 cursor-pointer">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/>
+                </svg>
+                Open Kanban
+            </a>
+        </div>
+    </div>
+
+    {{-- ═══════════════════════════════════════════════════════════
+         VIEW MODE SWITCHER (Active vs Done)
+    ═══════════════════════════════════════════════════════════ --}}
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-100 dark:bg-slate-800/80 p-1.5 rounded-2xl border border-slate-200/80 dark:border-slate-700/80">
+        <div class="flex items-center gap-1.5 w-full sm:w-auto">
+            <button type="button"
+                    wire:click="setViewMode('active')"
+                    class="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 text-sm rounded-xl transition-all cursor-pointer {{ $viewMode === 'active' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm font-semibold ring-1 ring-slate-200/50 dark:ring-slate-600/50' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium' }}">
+                <svg class="w-4 h-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                </svg>
+                <span>Active Tasks</span>
+                <span class="px-2 py-0.5 text-xs rounded-full font-bold {{ $viewMode === 'active' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/80 dark:text-indigo-300' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400' }}">
+                    {{ $stats['active_total'] }}
+                </span>
+            </button>
+
+            <button type="button"
+                    wire:click="setViewMode('done')"
+                    class="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 text-sm rounded-xl transition-all cursor-pointer {{ $viewMode === 'done' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm font-semibold ring-1 ring-slate-200/50 dark:ring-slate-600/50' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium' }}">
+                <svg class="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span>Done</span>
+                <span class="px-2 py-0.5 text-xs rounded-full font-bold {{ $viewMode === 'done' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400' }}">
+                    {{ $stats['done_total'] }}
+                </span>
+            </button>
+        </div>
+
+        @if($viewMode === 'active')
+            <div class="hidden sm:flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 pr-2">
+                <span>Active stages:</span>
+                <span class="font-medium text-slate-700 dark:text-slate-300">To Do</span>
+                <span>•</span>
+                <span class="font-medium text-blue-600 dark:text-blue-400">In Progress</span>
+                <span>•</span>
+                <span class="font-medium text-purple-600 dark:text-purple-400">Review</span>
+            </div>
+        @else
+            <div class="hidden sm:flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 pr-2 font-medium">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                </svg>
+                <span>Completed tasks archive</span>
+            </div>
+        @endif
     </div>
 
     {{-- ═══════════════════════════════════════════════════════════
@@ -74,24 +155,51 @@
     {{-- ═══════════════════════════════════════════════════════════
          STATS
     ═══════════════════════════════════════════════════════════ --}}
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div class="rounded-xl p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
-            <p class="text-xs font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-1">Total</p>
-            <p class="text-3xl font-bold text-slate-800 dark:text-white tabular-nums">{{ $stats['total'] }}</p>
+    @if($viewMode === 'done')
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div class="rounded-xl p-4 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900/50 shadow-sm">
+                <p class="text-xs font-semibold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 mb-1">Total Done</p>
+                <p class="text-3xl font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">{{ $stats['done_total'] }}</p>
+            </div>
+            <div class="rounded-xl p-4 bg-green-50 dark:bg-green-950/40 border border-green-100 dark:border-green-900/50 shadow-sm">
+                <p class="text-xs font-semibold uppercase tracking-widest text-green-600 dark:text-green-400 mb-1">Done Today</p>
+                <p class="text-3xl font-bold text-green-700 dark:text-green-400 tabular-nums">{{ $stats['done_today'] }}</p>
+            </div>
+            <div class="rounded-xl p-4 bg-teal-50 dark:bg-teal-950/40 border border-teal-100 dark:border-teal-900/50 shadow-sm">
+                <p class="text-xs font-semibold uppercase tracking-widest text-teal-600 dark:text-teal-400 mb-1">Done This Week</p>
+                <p class="text-3xl font-bold text-teal-700 dark:text-teal-400 tabular-nums">{{ $stats['done_this_week'] }}</p>
+            </div>
+            <div class="rounded-xl p-4 bg-cyan-50 dark:bg-cyan-950/40 border border-cyan-100 dark:border-cyan-900/50 shadow-sm">
+                <p class="text-xs font-semibold uppercase tracking-widest text-cyan-600 dark:text-cyan-400 mb-1">Done This Month</p>
+                <p class="text-3xl font-bold text-cyan-700 dark:text-cyan-400 tabular-nums">{{ $stats['done_this_month'] }}</p>
+            </div>
         </div>
-        <div class="rounded-xl p-4 bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/50 shadow-sm">
-            <p class="text-xs font-semibold uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-1">In Progress</p>
-            <p class="text-3xl font-bold text-blue-700 dark:text-blue-400 tabular-nums">{{ $stats['in_progress'] }}</p>
+    @else
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <button type="button"
+                    wire:click="$set('filterStatus', '')"
+                    class="text-left rounded-xl p-4 bg-white dark:bg-slate-800 border {{ empty($filterStatus) ? 'ring-2 ring-indigo-500 border-indigo-500 shadow-md' : 'border-slate-200 dark:border-slate-700 shadow-sm' }} hover:border-indigo-300 transition-all cursor-pointer">
+                <p class="text-xs font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-1">Active Tasks</p>
+                <p class="text-3xl font-bold text-slate-800 dark:text-white tabular-nums">{{ $stats['active_total'] }}</p>
+            </button>
+            <button type="button"
+                    wire:click="$set('filterStatus', 'in_progress')"
+                    class="text-left rounded-xl p-4 bg-blue-50 dark:bg-blue-950/40 border {{ $filterStatus === 'in_progress' ? 'ring-2 ring-blue-500 border-blue-500 shadow-md' : 'border-blue-100 dark:border-blue-900/50 shadow-sm' }} hover:border-blue-300 transition-all cursor-pointer">
+                <p class="text-xs font-semibold uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-1">In Progress</p>
+                <p class="text-3xl font-bold text-blue-700 dark:text-blue-400 tabular-nums">{{ $stats['in_progress'] }}</p>
+            </button>
+            <button type="button"
+                    wire:click="$set('filterStatus', 'review')"
+                    class="text-left rounded-xl p-4 bg-purple-50 dark:bg-purple-950/40 border {{ $filterStatus === 'review' ? 'ring-2 ring-purple-500 border-purple-500 shadow-md' : 'border-purple-100 dark:border-purple-900/50 shadow-sm' }} hover:border-purple-300 transition-all cursor-pointer">
+                <p class="text-xs font-semibold uppercase tracking-widest text-purple-600 dark:text-purple-400 mb-1">In Review</p>
+                <p class="text-3xl font-bold text-purple-700 dark:text-purple-400 tabular-nums">{{ $stats['review'] }}</p>
+            </button>
+            <div class="rounded-xl p-4 bg-red-50 dark:bg-red-950/40 border border-red-100 dark:border-red-900/50 shadow-sm">
+                <p class="text-xs font-semibold uppercase tracking-widest text-red-600 dark:text-red-400 mb-1">Overdue</p>
+                <p class="text-3xl font-bold text-red-600 dark:text-red-400 tabular-nums">{{ $stats['overdue'] }}</p>
+            </div>
         </div>
-        <div class="rounded-xl p-4 bg-red-50 dark:bg-red-950/40 border border-red-100 dark:border-red-900/50 shadow-sm">
-            <p class="text-xs font-semibold uppercase tracking-widest text-red-600 dark:text-red-400 mb-1">Overdue</p>
-            <p class="text-3xl font-bold text-red-600 dark:text-red-400 tabular-nums">{{ $stats['overdue'] }}</p>
-        </div>
-        <div class="rounded-xl p-4 bg-green-50 dark:bg-green-950/40 border border-green-100 dark:border-green-900/50 shadow-sm">
-            <p class="text-xs font-semibold uppercase tracking-widest text-green-600 dark:text-green-400 mb-1">Done Today</p>
-            <p class="text-3xl font-bold text-green-700 dark:text-green-400 tabular-nums">{{ $stats['done_today'] }}</p>
-        </div>
-    </div>
+    @endif
 
     {{-- ═══════════════════════════════════════════════════════════
          FILTERS
@@ -110,15 +218,23 @@
         </div>
 
         {{-- Status --}}
-        <select wire:model.live="filterStatus"
-                class="px-3 py-2 text-sm rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700
-                       text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer">
-            <option value="">All (except done)</option>
-            <option value="todo">To Do</option>
-            <option value="in_progress">In Progress</option>
-            <option value="review">Review</option>
-            <option value="done">Done</option>
-        </select>
+        @if($viewMode === 'active')
+            <select wire:model.live="filterStatus"
+                    class="px-3 py-2 text-sm rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700
+                           text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer">
+                <option value="">All active (To Do / In Progress / Review)</option>
+                <option value="todo">To Do</option>
+                <option value="in_progress">In Progress</option>
+                <option value="review">Review</option>
+            </select>
+        @else
+            <div class="inline-flex items-center gap-1.5 px-3 py-2 text-sm rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 font-medium">
+                <svg class="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                </svg>
+                <span>Status: Done</span>
+            </div>
+        @endif
 
         {{-- Priority --}}
         <select wire:model.live="filterPriority"
@@ -145,15 +261,41 @@
          TASK LIST
     ═══════════════════════════════════════════════════════════ --}}
     @if($tasks->isEmpty())
-        <div class="flex flex-col items-center justify-center py-20 text-center">
-            <div class="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4">
-                <svg class="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
+        @if($viewMode === 'done')
+            <div class="flex flex-col items-center justify-center py-20 text-center">
+                <div class="w-16 h-16 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900/50 flex items-center justify-center mb-4">
+                    <svg class="w-8 h-8 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <p class="text-slate-700 dark:text-slate-200 font-semibold text-lg">No completed tasks</p>
+                <p class="text-slate-400 dark:text-slate-500 text-sm mt-1 mb-4">No completed tasks match your selected filters.</p>
+                <button type="button"
+                        wire:click="setViewMode('active')"
+                        class="px-4 py-2 text-sm font-semibold rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 transition cursor-pointer shadow-sm">
+                    Back to Active Tasks
+                </button>
             </div>
-            <p class="text-slate-600 dark:text-slate-300 font-semibold text-lg">No tasks</p>
-            <p class="text-slate-400 dark:text-slate-500 text-sm mt-1">No tasks match the selected filters.</p>
-        </div>
+        @else
+            <div class="flex flex-col items-center justify-center py-20 text-center">
+                <div class="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4">
+                    <svg class="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <p class="text-slate-600 dark:text-slate-300 font-semibold text-lg">No active tasks</p>
+                <p class="text-slate-400 dark:text-slate-500 text-sm mt-1 {{ $stats['done_total'] > 0 ? 'mb-4' : '' }}">
+                    No active tasks in To Do, In Progress, or Review match the selected filters.
+                </p>
+                @if($stats['done_total'] > 0)
+                    <button type="button"
+                            wire:click="setViewMode('done')"
+                            class="px-4 py-2 text-sm font-medium rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition cursor-pointer shadow-sm">
+                        View completed tasks ({{ $stats['done_total'] }})
+                    </button>
+                @endif
+            </div>
+        @endif
     @else
         <div class="space-y-3">
             @foreach($tasks as $task)

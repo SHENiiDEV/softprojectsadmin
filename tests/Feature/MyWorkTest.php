@@ -85,4 +85,107 @@ class MyWorkTest extends TestCase
             ->set('sortBy', 'latest_comment')
             ->assertSeeInOrder(['Task B (Newer Comment)', 'Task A (Older Comment)']);
     }
+
+    public function test_default_view_only_shows_todo_in_progress_and_review_and_excludes_done(): void
+    {
+        $user = User::factory()->create();
+
+        Task::create([
+            'title' => 'Todo Task Active',
+            'status' => 'todo',
+            'priority' => 'medium',
+            'assigned_to' => $user->id,
+        ]);
+
+        Task::create([
+            'title' => 'In Progress Task Active',
+            'status' => 'in_progress',
+            'priority' => 'high',
+            'assigned_to' => $user->id,
+        ]);
+
+        Task::create([
+            'title' => 'Review Task Active',
+            'status' => 'review',
+            'priority' => 'low',
+            'assigned_to' => $user->id,
+        ]);
+
+        Task::create([
+            'title' => 'Completed Task Hidden',
+            'status' => 'done',
+            'priority' => 'medium',
+            'assigned_to' => $user->id,
+        ]);
+
+        $this->actingAs($user);
+
+        Livewire::test(MyWork::class)
+            ->assertSee('Todo Task Active')
+            ->assertSee('In Progress Task Active')
+            ->assertSee('Review Task Active')
+            ->assertDontSee('Completed Task Hidden')
+            ->assertViewHas('stats', function ($stats) {
+                return $stats['total'] === 3
+                    && $stats['active_total'] === 3
+                    && $stats['done_total'] === 1;
+            });
+    }
+
+    public function test_can_switch_to_done_view_mode_and_see_completed_tasks_and_updated_top_stats(): void
+    {
+        $user = User::factory()->create();
+
+        Task::create([
+            'title' => 'Active Working Task',
+            'status' => 'in_progress',
+            'priority' => 'high',
+            'assigned_to' => $user->id,
+        ]);
+
+        Task::create([
+            'title' => 'Archive Completed Task',
+            'status' => 'done',
+            'priority' => 'low',
+            'assigned_to' => $user->id,
+        ]);
+
+        $this->actingAs($user);
+
+        Livewire::test(MyWork::class)
+            ->call('setViewMode', 'done')
+            ->assertSee('Archive Completed Task')
+            ->assertDontSee('Active Working Task')
+            ->assertSee('Total Done')
+            ->assertViewHas('stats', function ($stats) {
+                return $stats['total'] === 1
+                    && $stats['active_total'] === 1
+                    && $stats['done_total'] === 1;
+            });
+    }
+
+    public function test_changing_task_status_to_done_removes_it_from_active_list(): void
+    {
+        $user = User::factory()->create();
+
+        $task = Task::create([
+            'title' => 'Task to be finished',
+            'status' => 'in_progress',
+            'priority' => 'medium',
+            'assigned_to' => $user->id,
+        ]);
+
+        $this->actingAs($user);
+
+        Livewire::test(MyWork::class)
+            ->assertSee('Task to be finished')
+            ->call('changeStatus', $task->id, 'done')
+            ->assertDontSee('Task to be finished')
+            ->assertViewHas('stats', function ($stats) {
+                return $stats['active_total'] === 0
+                    && $stats['done_total'] === 1;
+            });
+
+        $this->assertEquals('done', $task->fresh()->status);
+    }
 }

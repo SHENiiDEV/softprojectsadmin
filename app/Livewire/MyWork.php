@@ -15,6 +15,9 @@ use Livewire\Component;
 
 class MyWork extends Component
 {
+    // View mode: 'active' (default: todo, in_progress, review) or 'done'
+    public string $viewMode = 'active';
+
     // Filters
     public string $filterStatus = '';
 
@@ -23,6 +26,14 @@ class MyWork extends Component
     public string $sortBy = 'default'; // default | latest_comment | due_date
 
     public string $search = '';
+
+    protected array $queryString = [
+        'viewMode' => ['except' => 'active'],
+        'filterStatus' => ['except' => ''],
+        'filterPriority' => ['except' => ''],
+        'sortBy' => ['except' => 'default'],
+        'search' => ['except' => ''],
+    ];
 
     // Tasks data
     public Collection $tasks;
@@ -36,13 +47,42 @@ class MyWork extends Component
 
     public function mount(): void
     {
+        if ($this->filterStatus === 'done') {
+            $this->viewMode = 'done';
+        } elseif ($this->viewMode === 'done') {
+            $this->filterStatus = 'done';
+        }
+
         $this->tasks = collect();
         $this->loadTasks();
         $this->loadActiveTimers();
     }
 
+    public function setViewMode(string $mode): void
+    {
+        $this->viewMode = $mode === 'done' ? 'done' : 'active';
+        if ($this->viewMode === 'done') {
+            $this->filterStatus = 'done';
+        } else {
+            if ($this->filterStatus === 'done') {
+                $this->filterStatus = '';
+            }
+        }
+        $this->loadTasks();
+    }
+
+    public function updatedViewMode(): void
+    {
+        $this->setViewMode($this->viewMode);
+    }
+
     public function updatedFilterStatus(): void
     {
+        if ($this->filterStatus === 'done') {
+            $this->viewMode = 'done';
+        } elseif ($this->viewMode === 'done' && $this->filterStatus !== 'done') {
+            $this->viewMode = 'active';
+        }
         $this->loadTasks();
     }
 
@@ -90,19 +130,24 @@ class MyWork extends Component
             $query->orderByRaw('due_date IS NULL, due_date ASC')
                 ->orderBy('id', 'desc');
         } else {
-            $query->orderByRaw("CASE status
-                WHEN 'in_progress' THEN 1
-                WHEN 'review'      THEN 2
-                WHEN 'todo'        THEN 3
-                WHEN 'done'        THEN 4
-                ELSE 5 END")
-                ->orderByRaw('due_date IS NULL, due_date ASC');
+            if ($this->viewMode === 'done' || $this->filterStatus === 'done') {
+                $query->orderBy('updated_at', 'desc')->orderBy('id', 'desc');
+            } else {
+                $query->orderByRaw("CASE status
+                    WHEN 'in_progress' THEN 1
+                    WHEN 'review'      THEN 2
+                    WHEN 'todo'        THEN 3
+                    ELSE 4 END")
+                    ->orderByRaw('due_date IS NULL, due_date ASC');
+            }
         }
 
-        if ($this->filterStatus) {
+        if ($this->viewMode === 'done' || $this->filterStatus === 'done') {
+            $query->where('status', 'done');
+        } elseif ($this->filterStatus && in_array($this->filterStatus, ['todo', 'in_progress', 'review'])) {
             $query->where('status', $this->filterStatus);
         } else {
-            $query->whereNotIn('status', ['done']);
+            $query->whereIn('status', ['todo', 'in_progress', 'review']);
         }
 
         if ($this->filterPriority) {
@@ -218,7 +263,12 @@ class MyWork extends Component
         $task->status = $newStatus;
         $task->save();
 
-        $this->flash('Task status updated.', 'success');
+        if ($newStatus === 'done') {
+            $this->flash('Task marked as completed and moved to Done archive.', 'success');
+        } else {
+            $this->flash('Task status updated to '.str_replace('_', ' ', ucfirst($newStatus)).'.', 'success');
+        }
+
         $this->loadTasks();
         $this->loadActiveTimers();
     }
@@ -248,11 +298,34 @@ class MyWork extends Component
     public function render()
     {
         $userId = Auth::id();
+        $baseQuery = Task::assignedToUser($userId);
+
+        $activeTotal = (clone $baseQuery)->whereIn('status', ['todo', 'in_progress', 'review'])->count();
+        $todoCount = (clone $baseQuery)->where('status', 'todo')->count();
+        $inProgressCount = (clone $baseQuery)->where('status', 'in_progress')->count();
+        $reviewCount = (clone $baseQuery)->where('status', 'review')->count();
+        $overdueCount = (clone $baseQuery)
+            ->whereNotNull('due_date')
+            ->where('due_date', '<', now()->startOfDay())
+            ->whereIn('status', ['todo', 'in_progress', 'review'])
+            ->count();
+
+        $doneTotal = (clone $baseQuery)->where('status', 'done')->count();
+        $doneToday = (clone $baseQuery)->where('status', 'done')->whereDate('updated_at', today())->count();
+        $doneThisWeek = (clone $baseQuery)->where('status', 'done')->where('updated_at', '>=', now()->startOfWeek())->count();
+        $doneThisMonth = (clone $baseQuery)->where('status', 'done')->where('updated_at', '>=', now()->startOfMonth())->count();
+
         $stats = [
-            'total' => Task::assignedToUser($userId)->count(),
-            'in_progress' => Task::assignedToUser($userId)->where('status', 'in_progress')->count(),
-            'overdue' => Task::assignedToUser($userId)->whereNotNull('due_date')->where('due_date', '<', now()->startOfDay())->whereNotIn('status', ['done'])->count(),
-            'done_today' => Task::assignedToUser($userId)->where('status', 'done')->whereDate('updated_at', today())->count(),
+            'total' => $activeTotal, // Done is explicitly excluded from total tasks
+            'active_total' => $activeTotal,
+            'todo' => $todoCount,
+            'in_progress' => $inProgressCount,
+            'review' => $reviewCount,
+            'overdue' => $overdueCount,
+            'done_total' => $doneTotal,
+            'done_today' => $doneToday,
+            'done_this_week' => $doneThisWeek,
+            'done_this_month' => $doneThisMonth,
         ];
 
         // Active timer info for currently running
