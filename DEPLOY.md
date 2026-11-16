@@ -302,10 +302,12 @@ chmod 644 /etc/cron.d/softprojects
 ```bash
 cd /var/www/softprojects-admin
 php artisan config:cache && php artisan route:cache && php artisan view:cache && php artisan event:cache
-chown -R www-data:www-data storage bootstrap/cache
 
 php artisan telegram:set-webhook https://soft-projects.io/telegram/webhook
 php artisan gmail:watch        # если настроен Gmail
+
+# artisan запускался от root и мог создать файлы с его владельцем (логи, кэш) — возвращаем www-data
+chown -R www-data:www-data storage bootstrap/cache
 ```
 
 Проверка: откройте https://soft-projects.io, войдите, отправьте боту `/start`.
