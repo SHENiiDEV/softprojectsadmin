@@ -188,4 +188,25 @@ class MyWorkTest extends TestCase
 
         $this->assertEquals('done', $task->fresh()->status);
     }
+
+    public function test_starting_timer_on_someone_elses_task_shows_visible_error(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+
+        $task = Task::create([
+            'title' => 'Not my task',
+            'status' => 'todo',
+            'priority' => 'medium',
+            'assigned_to' => $other->id,
+        ]);
+
+        Livewire::actingAs($user)
+            ->test(MyWork::class)
+            ->call('toggleTimer', $task->id)
+            ->assertSet('flashType', 'error')
+            ->assertSee('This is not your task!');
+
+        $this->assertSame(0, $task->timeLogs()->count());
+    }
 }
