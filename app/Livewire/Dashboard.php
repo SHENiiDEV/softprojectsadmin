@@ -3,9 +3,13 @@
 namespace App\Livewire;
 
 use App\Models\ActivityLog;
+use App\Models\PciDssDocument;
 use App\Models\Project;
 use App\Models\Report;
+use App\Models\SupportTicket;
 use App\Models\Task;
+use App\Models\TaskTimeLog;
+use App\Models\User;
 use Illuminate\Support\Collection;
 use Livewire\Component;
 
@@ -79,6 +83,50 @@ class Dashboard extends Component
         return $items;
     }
 
+    /**
+     * Seconds the user logged within the given period, plus whether a timer is running now.
+     *
+     * @return array{today: int, week: int, running: bool}
+     */
+    private function timeSummary(User $user): array
+    {
+        $logs = TaskTimeLog::where('user_id', $user->id)
+            ->where(fn ($q) => $q->where('started_at', '>=', now()->startOfWeek())->orWhereNull('stopped_at'))
+            ->get(['started_at', 'stopped_at', 'duration_seconds']);
+
+        return [
+            'today' => (int) $logs->filter(fn ($log) => $log->started_at->isToday())->sum('duration_seconds'),
+            'week' => (int) $logs->filter(fn ($log) => $log->started_at->gte(now()->startOfWeek()))->sum('duration_seconds'),
+            'running' => $logs->contains(fn ($log) => $log->stopped_at === null),
+        ];
+    }
+
+    /**
+     * Open tasks and overdue counts per assignee (primary assignee only), busiest first.
+     *
+     * @return Collection<int, array{user: User, open: int, overdue: int}>
+     */
+    private function teamWorkload(): Collection
+    {
+        $tasks = Task::whereNotNull('assigned_to')
+            ->where('status', '!=', 'done')
+            ->whereNull('archived_at')
+            ->get(['assigned_to', 'due_date']);
+
+        $users = User::whereIn('id', $tasks->pluck('assigned_to')->unique())->get()->keyBy('id');
+
+        return $tasks->groupBy('assigned_to')
+            ->map(fn (Collection $group, $userId) => [
+                'user' => $users[$userId] ?? null,
+                'open' => $group->count(),
+                'overdue' => $group->filter(fn (Task $task) => $task->due_date !== null && $task->due_date->lt(today()))->count(),
+            ])
+            ->filter(fn (array $row) => $row['user'] !== null)
+            ->sortByDesc(fn (array $row) => [$row['overdue'], $row['open']])
+            ->take(6)
+            ->values();
+    }
+
     public function render()
     {
         $user = auth()->user();
@@ -141,6 +189,27 @@ class Dashboard extends Component
                 ->get();
         }
 
+        $documents = ['expired' => 0, 'expiring' => 0, 'items' => collect()];
+
+        if ($user->can('view_pci_dss') && config('features.pci_dss')) {
+            $threshold = today()->addDays(30);
+            $dated = PciDssDocument::whereNotNull('valid_until')->where('valid_until', '<=', $threshold);
+
+            $documents['expired'] = (clone $dated)->where('valid_until', '<', today())->count();
+            $documents['expiring'] = (clone $dated)->where('valid_until', '>=', today())->count();
+            $documents['items'] = (clone $dated)->with(['client:id,name', 'project:id,name'])->orderBy('valid_until')->limit(5)->get();
+        }
+
+        $tickets = ['count' => 0, 'items' => collect()];
+
+        if ($canViewTasks) {
+            $tickets['count'] = SupportTicket::where('status', 'open')->count();
+            $tickets['items'] = SupportTicket::where('status', 'open')->with('project:id,name')->latest()->limit(5)->get();
+        }
+
+        $time = config('features.task_time_logs') ? $this->timeSummary($user) : null;
+        $workload = $user->can('view_reports') ? $this->teamWorkload() : collect();
+
         return view('livewire.dashboard', [
             'greeting' => $this->greeting(),
             'canViewTasks' => $canViewTasks,
@@ -155,6 +224,10 @@ class Dashboard extends Component
             'projectCounts' => $projectCounts,
             'recentProjects' => $canViewProjects ? Project::notArchived()->latest('updated_at')->limit(5)->get() : collect(),
             'activity' => $activity,
+            'documents' => $documents,
+            'tickets' => $tickets,
+            'time' => $time,
+            'workload' => $workload,
         ])->layout('layouts.app');
     }
 }

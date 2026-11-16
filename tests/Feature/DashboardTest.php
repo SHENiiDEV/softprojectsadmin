@@ -4,8 +4,11 @@ namespace Tests\Feature;
 
 use App\Models\ActivityLog;
 use App\Models\Project;
+use App\Models\PciDssDocument;
 use App\Models\Report;
+use App\Models\SupportTicket;
 use App\Models\Task;
+use App\Models\TaskTimeLog;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -113,5 +116,75 @@ class DashboardTest extends TestCase
 
         $this->actingAs($worker)->get('/dashboard')->assertOk()->assertDontSee('New company');
         $this->actingAs($manager)->get('/dashboard')->assertOk()->assertSee('New company');
+    }
+
+    public function test_expiring_pci_documents_are_listed_for_users_with_access(): void
+    {
+        $admin = User::factory()->create()->assignRole('admin');
+        $worker = User::factory()->create()->assignRole('worker');
+
+        PciDssDocument::factory()->create(['title' => 'Quarterly ASV scan', 'valid_until' => today()->subDays(3)]);
+        PciDssDocument::factory()->create(['title' => 'Annual AOC', 'valid_until' => today()->addDays(10)]);
+        PciDssDocument::factory()->create(['title' => 'Far future SAQ', 'valid_until' => today()->addDays(200)]);
+
+        $this->actingAs($admin)->get('/dashboard')
+            ->assertOk()
+            ->assertSee('Quarterly ASV scan')
+            ->assertSee('Annual AOC')
+            ->assertDontSee('Far future SAQ');
+
+        $this->actingAs($worker)->get('/dashboard')->assertOk()->assertDontSee('Quarterly ASV scan');
+    }
+
+    public function test_open_support_tickets_are_listed(): void
+    {
+        $admin = User::factory()->create()->assignRole('admin');
+
+        SupportTicket::create(['gmail_thread_id' => 't1', 'customer_email' => 'buyer@example.com', 'subject' => 'Where is my refund', 'status' => 'open']);
+        SupportTicket::create(['gmail_thread_id' => 't2', 'customer_email' => 'old@example.com', 'subject' => 'Already answered', 'status' => 'answered']);
+
+        $this->actingAs($admin)->get('/dashboard')
+            ->assertOk()
+            ->assertSee('Open email tickets')
+            ->assertSee('Where is my refund')
+            ->assertDontSee('Already answered');
+    }
+
+    public function test_my_time_card_shows_logged_time_when_time_logs_enabled(): void
+    {
+        config(['features.task_time_logs' => true]);
+
+        $admin = User::factory()->create()->assignRole('admin');
+        $project = Project::factory()->create();
+        $task = Task::create(['title' => 'Timed', 'project_id' => $project->id, 'assigned_to' => $admin->id, 'status' => 'in_progress', 'priority' => 'low']);
+
+        TaskTimeLog::create([
+            'task_id' => $task->id,
+            'user_id' => $admin->id,
+            'started_at' => now()->subHours(2),
+            'stopped_at' => now()->subHour(),
+            'duration_seconds' => 5400,
+        ]);
+
+        $this->actingAs($admin)->get('/dashboard')
+            ->assertOk()
+            ->assertSee('My time')
+            ->assertSee('1:30');
+
+        config(['features.task_time_logs' => false]);
+
+        $this->actingAs($admin)->get('/dashboard')->assertOk()->assertDontSee('My time');
+    }
+
+    public function test_team_workload_is_visible_to_managers_only(): void
+    {
+        $manager = User::factory()->create()->assignRole('manager');
+        $worker = User::factory()->create(['name' => 'Busy Bee'])->assignRole('worker');
+        $project = Project::factory()->create();
+
+        Task::create(['title' => 'Late one', 'project_id' => $project->id, 'assigned_to' => $worker->id, 'status' => 'todo', 'priority' => 'low', 'due_date' => today()->subDay()]);
+
+        $this->actingAs($manager)->get('/dashboard')->assertOk()->assertSee('Team workload')->assertSee('Busy Bee');
+        $this->actingAs($worker)->get('/dashboard')->assertOk()->assertDontSee('Team workload');
     }
 }
