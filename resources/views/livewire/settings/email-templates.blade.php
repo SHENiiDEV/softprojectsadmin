@@ -63,7 +63,7 @@
 
     <!-- Create / Edit Template Modal -->
     @if($showModal)
-        <div class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex p-4 modal-safe-center">
             <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-5">
                 <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-3">
                     <h3 class="font-outfit font-bold text-lg text-slate-800 dark:text-slate-100">

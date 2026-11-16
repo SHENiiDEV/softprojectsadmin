@@ -37,7 +37,7 @@
         @endif
 
         @if($showDelete && (auth()->user()->hasAnyRole(['admin', 'manager']) || $comment->user_id === auth()->id()))
-            <button type="button" wire:click="{{ $deleteWire }}" wire:confirm="Are you sure you want to delete this?" class="text-[10px] text-slate-400 hover:text-rose-500 transition-all opacity-0 group-hover:opacity-100 p-1">
+            <button type="button" wire:click="{{ $deleteWire }}" wire:confirm="Are you sure you want to delete this?" class="text-[10px] text-slate-400 hover:text-rose-500 transition-all [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-within:opacity-100 p-1">
                 <i class="fa-solid fa-trash-can"></i>
             </button>
         @endif

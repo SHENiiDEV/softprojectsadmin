@@ -35,7 +35,7 @@
         <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 p-5 rounded-2xl shadow-sm flex items-center justify-between hover:shadow-md transition-shadow duration-150">
             <div>
                 <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider block">Total Registry</span>
-                <span class="font-outfit font-extrabold text-2xl text-slate-850 dark:text-white mt-1.5 block">{{ $stats['total'] }}</span>
+                <span class="font-outfit font-extrabold text-2xl text-slate-800 dark:text-white mt-1.5 block">{{ $stats['total'] }}</span>
             </div>
             <div class="p-3 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400">
                 <i class="fa-solid fa-city text-lg block"></i>
@@ -86,7 +86,7 @@
                     <input type="text" 
                            wire:model.live.debounce.300ms="search" 
                            placeholder="Search by name, UBO..." 
-                           class="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800/80 rounded-xl text-sm text-slate-850 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-200">
+                           class="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800/80 rounded-xl text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-200">
                 </div>
 
                 <!-- Client Filter -->
@@ -232,7 +232,7 @@
                                     <td class="py-4 px-6 whitespace-nowrap">
                                         @if($project->client)
                                             <div class="relative inline-block text-left" x-data="{ open: false }" @mouseenter="open = true" @mouseleave="open = false">
-                                                <span class="cursor-pointer inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-750 dark:bg-indigo-950/30 dark:text-indigo-400 transition-all hover:bg-indigo-100 hover:text-indigo-850 whitespace-nowrap">
+                                                <span class="cursor-pointer inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-400 transition-all hover:bg-indigo-100 hover:text-indigo-800 whitespace-nowrap">
                                                     {{ $project->client->name }}
                                                     @if($project->websites->isNotEmpty())
                                                         <i class="fa-solid fa-globe ml-1.5 text-[10px] opacity-70"></i>
@@ -253,7 +253,7 @@
                                                         <div class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Websites</div>
                                                         <div class="space-y-1 max-h-40 overflow-y-auto">
                                                             @foreach($project->websites as $web)
-                                                                <a href="{{ $web->url }}" target="_blank" class="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-850/80 text-xs font-mono font-medium text-slate-700 dark:text-slate-355 hover:text-sky-600 dark:hover:text-sky-400 transition-colors">
+                                                                <a href="{{ $web->url }}" target="_blank" class="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/80 text-xs font-mono font-medium text-slate-700 dark:text-slate-355 hover:text-sky-600 dark:hover:text-sky-400 transition-colors">
                                                                     <span class="truncate pr-2">{{ parse_url($web->url, PHP_URL_HOST) ?: $web->url }}</span>
                                                                     <i class="fa-solid fa-arrow-up-right-from-square text-[9px] opacity-60"></i>
                                                                 </a>
@@ -270,7 +270,7 @@
                                     </td>
 
                                     <!-- UBO -->
-                                    <td class="py-4 px-6 text-slate-650 dark:text-slate-400 truncate max-w-[150px]">
+                                    <td class="py-4 px-6 text-slate-600 dark:text-slate-400 truncate max-w-[150px]">
                                         {{ $project->ubo ?: '-' }}
                                     </td>
 
@@ -422,7 +422,7 @@
                                             {{ $project->name }}
                                         </a>
                                         @if($project->client)
-                                            <span class="inline-block text-[10px] font-bold text-indigo-650 dark:text-indigo-405 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100/50 dark:border-indigo-900/30 px-2 py-0.5 rounded-md mt-1 truncate max-w-[150px]">
+                                            <span class="inline-block text-[10px] font-bold text-indigo-600 dark:text-indigo-405 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100/50 dark:border-indigo-900/30 px-2 py-0.5 rounded-md mt-1 truncate max-w-[150px]">
                                                 {{ $project->client->name }}
                                             </span>
                                         @else
@@ -456,7 +456,7 @@
                             <div class="my-5 py-4 border-t border-b border-slate-100 dark:border-slate-800/60 space-y-2.5 text-xs">
                                 <div class="flex items-center justify-between text-slate-500 dark:text-slate-400">
                                     <span class="font-medium">Director:</span>
-                                    <div class="flex items-center space-x-1.5 font-semibold text-slate-755 dark:text-slate-350">
+                                    <div class="flex items-center space-x-1.5 font-semibold text-slate-755 dark:text-slate-300">
                                         @if($project->director)
                                             <span>{{ $project->director->name }}</span>
                                             @if($project->director->managed_by)
@@ -475,7 +475,7 @@
                                 </div>
                                 <div class="flex items-center justify-between text-slate-500 dark:text-slate-400">
                                     <span class="font-medium">MCC Code:</span>
-                                    <span class="font-mono bg-slate-50 dark:bg-slate-950 px-2 py-0.5 rounded border border-slate-150/40 dark:border-slate-800 text-slate-600 dark:text-slate-400 font-semibold">{{ $project->mcc ?: '-' }}</span>
+                                    <span class="font-mono bg-slate-50 dark:bg-slate-950 px-2 py-0.5 rounded border border-slate-100/40 dark:border-slate-800 text-slate-600 dark:text-slate-400 font-semibold">{{ $project->mcc ?: '-' }}</span>
                                 </div>
                                 <div class="flex items-center justify-between text-slate-500 dark:text-slate-400">
                                     <span class="font-medium">Manager:</span>
@@ -509,7 +509,7 @@
                             <!-- Footer Actions -->
                             <div class="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800/60">
                                 <!-- Details Button -->
-                                <a href="{{ route('projects.show', $project->id) }}" class="inline-flex items-center justify-center px-3.5 py-1.5 text-xs font-bold text-slate-700 hover:text-sky-700 bg-slate-50 hover:bg-sky-50 dark:bg-slate-950 dark:text-slate-350 dark:hover:text-sky-400 border border-slate-200/50 dark:border-slate-800 rounded-xl transition-all" wire:navigate>
+                                <a href="{{ route('projects.show', $project->id) }}" class="inline-flex items-center justify-center px-3.5 py-1.5 text-xs font-bold text-slate-700 hover:text-sky-700 bg-slate-50 hover:bg-sky-50 dark:bg-slate-950 dark:text-slate-300 dark:hover:text-sky-400 border border-slate-200/50 dark:border-slate-800 rounded-xl transition-all" wire:navigate>
                                     <i class="fa-solid fa-eye mr-1.5 text-[10px]"></i> View Details
                                 </a>
 
@@ -577,7 +577,7 @@
                 <!-- Modal Panel -->
                 <div class="inline-block align-bottom bg-white dark:bg-slate-900 rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full border border-slate-100 dark:border-slate-800/80">
                     <div class="px-6 py-5 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between bg-slate-50/50 dark:bg-slate-950/20">
-                        <h3 class="text-base font-bold text-slate-850 dark:text-white font-outfit" id="modal-title">
+                        <h3 class="text-base font-bold text-slate-800 dark:text-white font-outfit" id="modal-title">
                             Add Note to {{ $noteProjectName }}
                         </h3>
                         <button type="button" wire:click="$set('showNoteModal', false)" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors focus:outline-none cursor-pointer">

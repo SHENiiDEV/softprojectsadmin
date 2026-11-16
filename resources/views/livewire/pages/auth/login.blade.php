@@ -69,7 +69,7 @@ new #[Layout('layouts.guest')] class extends Component
             <label for="remember" class="inline-flex items-center cursor-pointer select-none">
                 <input wire:model="form.remember" id="remember" type="checkbox" 
                        class="rounded bg-slate-900/50 border-slate-800 text-sky-600 focus:ring-sky-500/20 focus:ring-offset-slate-900 mr-2" name="remember">
-                <span class="text-slate-400 hover:text-slate-350 transition-colors">Remember me</span>
+                <span class="text-slate-400 hover:text-slate-300 transition-colors">Remember me</span>
             </label>
 
             @if (Route::has('password.request'))

@@ -214,7 +214,7 @@
     <!-- Modals -->
     <!-- Create/Edit Modal -->
     @if($showModal)
-        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
+        <div class="fixed inset-0 overflow-y-auto z-50 flex p-4 modal-safe-center bg-slate-950/60 backdrop-blur-sm">
             <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
                 <div class="flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-800">
                     <h3 class="font-outfit font-bold text-lg text-slate-800 dark:text-white">
@@ -293,7 +293,7 @@
                             Cancel
                         </button>
                         <button type="submit" 
-                                class="px-4 py-2 text-sm font-semibold text-white bg-indigo-650 hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-500 rounded-xl transition duration-150">
+                                class="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-500 rounded-xl transition duration-150">
                             Save
                         </button>
                     </div>
@@ -304,7 +304,7 @@
 
     <!-- Password Reset Modal -->
     @if($showResetModal)
-        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
+        <div class="fixed inset-0 overflow-y-auto z-50 flex p-4 modal-safe-center bg-slate-950/60 backdrop-blur-sm">
             <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
                 <div class="flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-800">
                     <h3 class="font-outfit font-bold text-lg text-slate-800 dark:text-white">Reset User Password</h3>

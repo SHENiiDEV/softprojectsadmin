@@ -133,11 +133,11 @@
         <template x-for="(u, index) in filteredUsers" :key="u.username">
             <button type="button"
                     @click="selectUser(u.username)"
-                    :class="index === activeIndex ? 'bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-400 font-semibold' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-850/80'"
+                    :class="index === activeIndex ? 'bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-400 font-semibold' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/80'"
                     class="w-full text-left px-3 py-1.5 rounded-lg text-xs transition-colors flex items-center justify-between">
                 <span class="flex items-center gap-1.5">
                     <span x-text="u.name"></span>
-                    <span x-show="u.type === 'Client'" class="px-1.5 py-0.2 text-[8px] font-bold uppercase tracking-wider rounded bg-indigo-50 dark:bg-indigo-950/40 text-indigo-650 dark:text-indigo-400 border border-indigo-150/40 dark:border-indigo-900/30">Client</span>
+                    <span x-show="u.type === 'Client'" class="px-1.5 py-0.2 text-[8px] font-bold uppercase tracking-wider rounded bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-100/40 dark:border-indigo-900/30">Client</span>
                 </span>
                 <span class="text-[10px] text-slate-400 dark:text-slate-500" x-text="'@' + u.username"></span>
             </button>

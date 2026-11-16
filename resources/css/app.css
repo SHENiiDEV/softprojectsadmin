@@ -5,3 +5,11 @@
 [x-cloak] {
     display: none !important;
 }
+
+/*
+ * Modal overlays: centre the panel when it fits, scroll the overlay when it is taller than the viewport.
+ * (flex `items-center` alone clips the top and bottom of tall modals, hiding action buttons.)
+ */
+.modal-safe-center > * {
+    margin: auto;
+}
