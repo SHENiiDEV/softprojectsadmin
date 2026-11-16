@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Tariffs;
 
+use App\Livewire\Concerns\RequiresPermission;
 use App\Models\Provider;
 use App\Models\ProviderProcessingRate;
 use App\Models\ProviderReserve;
@@ -12,6 +13,8 @@ use Livewire\Component;
 
 class Index extends Component
 {
+    use RequiresPermission;
+
     // Active navigation tab: compare | cards | banking | fees | simulator | providers
     public string $activeTab = 'compare';
 
@@ -130,6 +133,11 @@ class Index extends Component
     // Notification message
     public ?string $successMessage = null;
 
+    public function mount(): void
+    {
+        $this->requirePermission('view_tariffs');
+    }
+
     public function setTab(string $tab): void
     {
         $this->activeTab = $tab;
@@ -137,6 +145,8 @@ class Index extends Component
 
     public function toggleProviderStatus(int $providerId): void
     {
+        $this->requirePermission('manage_tariffs');
+
         $provider = Provider::findOrFail($providerId);
         $provider->is_active = ! $provider->is_active;
         $provider->save();
@@ -147,6 +157,8 @@ class Index extends Component
     // --- Provider CRUD ---
     public function openCreateProviderModal(): void
     {
+        $this->requirePermission('manage_tariffs');
+
         $this->resetValidation();
         $this->editingProviderId = null;
         $this->providerForm = [
@@ -166,6 +178,8 @@ class Index extends Component
 
     public function openEditProviderModal(int $id): void
     {
+        $this->requirePermission('manage_tariffs');
+
         $this->resetValidation();
         $provider = Provider::findOrFail($id);
         $this->editingProviderId = $provider->id;
@@ -186,6 +200,8 @@ class Index extends Component
 
     public function saveProvider(): void
     {
+        $this->requirePermission('manage_tariffs');
+
         $rules = [
             'providerForm.name' => 'required|string|max:100',
             'providerForm.code' => 'required|string|max:50|unique:providers,code,'.($this->editingProviderId ?? 'NULL').',id',
@@ -216,6 +232,8 @@ class Index extends Component
 
     public function deleteProvider(int $id): void
     {
+        $this->requirePermission('manage_tariffs');
+
         $provider = Provider::findOrFail($id);
         $name = $provider->name;
         $provider->delete();
@@ -226,6 +244,8 @@ class Index extends Component
     // --- Rate CRUD ---
     public function openCreateRateModal(?int $providerId = null): void
     {
+        $this->requirePermission('manage_tariffs');
+
         $this->resetValidation();
         $this->editingRateId = null;
         $this->rateProviderId = $providerId ?: (Provider::first()?->id);
@@ -250,6 +270,8 @@ class Index extends Component
 
     public function openEditRateModal(int $rateId): void
     {
+        $this->requirePermission('manage_tariffs');
+
         $this->resetValidation();
         $rate = ProviderProcessingRate::findOrFail($rateId);
         $this->editingRateId = $rate->id;
@@ -275,6 +297,8 @@ class Index extends Component
 
     public function saveRate(): void
     {
+        $this->requirePermission('manage_tariffs');
+
         $this->validate([
             'rateForm.provider_id' => 'required|exists:providers,id',
             'rateForm.payment_method' => 'required|in:card,sepa,swift,crypto,internal',
@@ -302,6 +326,8 @@ class Index extends Component
 
     public function deleteRate(int $rateId): void
     {
+        $this->requirePermission('manage_tariffs');
+
         $rate = ProviderProcessingRate::findOrFail($rateId);
         $rate->delete();
         $this->dispatchNotify('Rate deleted.');
@@ -310,6 +336,8 @@ class Index extends Component
     // --- Service Fee CRUD ---
     public function openCreateFeeModal(?int $providerId = null): void
     {
+        $this->requirePermission('manage_tariffs');
+
         $this->resetValidation();
         $this->editingFeeId = null;
         $this->feeProviderId = $providerId ?: (Provider::first()?->id);
@@ -330,6 +358,8 @@ class Index extends Component
 
     public function openEditFeeModal(int $feeId): void
     {
+        $this->requirePermission('manage_tariffs');
+
         $this->resetValidation();
         $fee = ProviderServiceFee::findOrFail($feeId);
         $this->editingFeeId = $fee->id;
@@ -351,6 +381,8 @@ class Index extends Component
 
     public function saveFee(): void
     {
+        $this->requirePermission('manage_tariffs');
+
         $this->validate([
             'feeForm.provider_id' => 'required|exists:providers,id',
             'feeForm.fee_code' => 'required|string|max:50',
@@ -379,6 +411,8 @@ class Index extends Component
 
     public function deleteFee(int $feeId): void
     {
+        $this->requirePermission('manage_tariffs');
+
         $fee = ProviderServiceFee::findOrFail($feeId);
         $fee->delete();
         $this->dispatchNotify('Service fee deleted.');
@@ -387,6 +421,8 @@ class Index extends Component
     // --- Rolling Reserve Modal ---
     public function openEditReserveModal(int $providerId): void
     {
+        $this->requirePermission('manage_tariffs');
+
         $this->resetValidation();
         $this->reserveProviderId = $providerId;
         $reserve = ProviderReserve::where('provider_id', $providerId)->first();
@@ -405,6 +441,8 @@ class Index extends Component
 
     public function saveReserve(): void
     {
+        $this->requirePermission('manage_tariffs');
+
         $this->validate([
             'reserveForm.provider_id' => 'required|exists:providers,id',
             'reserveForm.rate_percent' => 'required|numeric|min:0|max:100',

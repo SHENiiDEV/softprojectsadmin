@@ -2,12 +2,15 @@
 
 namespace App\Livewire\Projects;
 
+use App\Livewire\Concerns\RequiresPermission;
 use App\Models\Project;
 use App\Models\Report;
 use Livewire\Component;
 
 class ReportsSection extends Component
 {
+    use RequiresPermission;
+
     public Project $project;
 
     public Report $report;
@@ -49,6 +52,8 @@ class ReportsSection extends Component
 
     public function save(): void
     {
+        $this->requirePermission('manage_projects');
+
         $this->validate();
 
         $this->report->update([

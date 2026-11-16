@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Projects;
 
+use App\Livewire\Concerns\RequiresPermission;
 use App\Models\Project;
 use App\Models\Website;
 use App\Services\GatewayService;
@@ -9,6 +10,8 @@ use Livewire\Component;
 
 class WebsitesSection extends Component
 {
+    use RequiresPermission;
+
     public const AVAILABLE_GATEWAYS = [
         'Blik',
         'Cardaq',
@@ -101,6 +104,8 @@ class WebsitesSection extends Component
      */
     public function addNewGateway(): void
     {
+        $this->requirePermission('manage_projects');
+
         $name = trim($this->newGatewayName);
         if ($name === '') {
             $this->addError('newGatewayName', 'Gateway name cannot be empty.');
@@ -124,6 +129,8 @@ class WebsitesSection extends Component
      */
     public function removeGateway(string $name): void
     {
+        $this->requirePermission('manage_projects');
+
         GatewayService::remove($name);
 
         $this->gateways = array_values(array_filter($this->gateways, fn ($g) => $g !== $name));
@@ -153,12 +160,16 @@ class WebsitesSection extends Component
 
     public function openCreateForm(): void
     {
+        $this->requirePermission('manage_projects');
+
         $this->resetForm();
         $this->showForm = true;
     }
 
     public function edit(int $id): void
     {
+        $this->requirePermission('manage_projects');
+
         $this->resetForm();
         $website = Website::findOrFail($id);
         $this->editingId = $website->id;
@@ -173,6 +184,8 @@ class WebsitesSection extends Component
 
     public function save(): void
     {
+        $this->requirePermission('manage_projects');
+
         $this->validate();
 
         if ($this->editingId) {
@@ -203,6 +216,8 @@ class WebsitesSection extends Component
 
     public function delete(int $id): void
     {
+        $this->requirePermission('manage_projects');
+
         $website = Website::findOrFail($id);
         $website->delete();
         session()->flash('message', 'Website successfully deleted.');
@@ -215,6 +230,8 @@ class WebsitesSection extends Component
 
     public function openTransferModal(int $websiteId): void
     {
+        $this->requirePermission('manage_projects');
+
         $website = Website::findOrFail($websiteId);
         $this->transferWebsiteId = $website->id;
         $this->transferWebsiteName = $website->name.' ('.$website->url.')';
@@ -233,6 +250,8 @@ class WebsitesSection extends Component
 
     public function transferWebsite(): void
     {
+        $this->requirePermission('manage_projects');
+
         $this->validate([
             'transferToProjectId' => 'required|exists:projects,id|different:project.id',
         ], [

@@ -2,11 +2,15 @@
 
 namespace App\Providers;
 
+use App\Http\Middleware\CheckFeatureEnabled;
 use App\Models\Setting;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
+use Livewire\Livewire;
+use Spatie\Permission\Middleware\PermissionMiddleware;
+use Spatie\Permission\Middleware\RoleMiddleware;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -23,6 +27,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Re-apply route-level authorization on Livewire update requests (otherwise only `auth` is persisted).
+        Livewire::addPersistentMiddleware([
+            CheckFeatureEnabled::class,
+            PermissionMiddleware::class,
+            RoleMiddleware::class,
+        ]);
+
         RateLimiter::for('telegram-messages', function (object $job) {
             return Limit::perSecond(20);
         });

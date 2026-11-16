@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Livewire\Concerns\RequiresPermission;
 use App\Models\ActivityLog;
 use App\Models\Client;
 use App\Models\Credential;
@@ -14,6 +15,8 @@ use Livewire\WithFileUploads;
 
 class CredentialVault extends Component
 {
+    use RequiresPermission;
+
     use WithFileUploads;
 
     // Filters
@@ -71,6 +74,8 @@ class CredentialVault extends Component
 
     public function mount(): void
     {
+        $this->requirePermission('view_credentials');
+
         $this->credentials = collect();
         $this->projects = collect();
         $this->companyWebsites = collect();
@@ -139,6 +144,8 @@ class CredentialVault extends Component
 
     public function openCredential(int $id): void
     {
+        $this->requirePermission('view_credentials');
+
         $this->selectedCredential = Credential::with(['project', 'website'])->findOrFail($id);
         $this->showPassword = false;
         $this->showModal = true;
@@ -160,6 +167,8 @@ class CredentialVault extends Component
 
     public function openCreateModal(?int $projectId = null): void
     {
+        $this->requirePermission('manage_credentials');
+
         $this->resetErrorBag();
         $this->newName = '';
         $this->newType = 'cms';
@@ -189,6 +198,8 @@ class CredentialVault extends Component
 
     public function saveNewCredential(): void
     {
+        $this->requirePermission('manage_credentials');
+
         $this->validate([
             'newProjectId' => 'required|exists:projects,id',
             'newName' => 'required|string|max:255',
@@ -225,6 +236,8 @@ class CredentialVault extends Component
 
     public function openImportModal(): void
     {
+        $this->requirePermission('manage_credentials');
+
         $this->importFile = null;
         $this->rawJsonInput = '';
         $this->showImportModal = true;
@@ -239,6 +252,8 @@ class CredentialVault extends Component
 
     public function processImport(): void
     {
+        $this->requirePermission('manage_credentials');
+
         $jsonString = '';
 
         if ($this->importFile) {
@@ -339,6 +354,8 @@ class CredentialVault extends Component
 
     public function togglePassword(): void
     {
+        $this->requirePermission('view_credentials');
+
         $this->showPassword = ! $this->showPassword;
 
         if ($this->showPassword && $this->selectedCredential) {
@@ -353,6 +370,8 @@ class CredentialVault extends Component
 
     public function copyToClipboard(string $field): void
     {
+        $this->requirePermission('view_credentials');
+
         if ($this->selectedCredential) {
             $this->dispatch('copy-to-clipboard', value: $this->selectedCredential->$field);
         }

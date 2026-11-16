@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Projects;
 
+use App\Livewire\Concerns\RequiresPermission;
 use App\Models\Project;
 use App\Services\GatewayService;
 use Livewire\Component;
@@ -9,6 +10,8 @@ use Livewire\WithFileUploads;
 
 class DocumentsSection extends Component
 {
+    use RequiresPermission;
+
     use WithFileUploads;
 
     public Project $project;
@@ -105,6 +108,8 @@ class DocumentsSection extends Component
 
     public function uploadDocuments(): void
     {
+        $this->requirePermission('manage_projects');
+
         $this->validate([
             'files.*' => 'required|file|max:102400', // 100MB max per file to support large KYB zip packages
             'selectedAcquirer' => 'required|string',
@@ -136,6 +141,8 @@ class DocumentsSection extends Component
 
     public function editDocumentMetadata(int $id): void
     {
+        $this->requirePermission('manage_projects');
+
         $media = $this->project->media()->findOrFail($id);
         $this->editingDocId = $id;
         $this->editAcquirer = $media->getCustomProperty('acquirer', 'General');
@@ -144,6 +151,8 @@ class DocumentsSection extends Component
 
     public function saveDocumentMetadata(): void
     {
+        $this->requirePermission('manage_projects');
+
         if (! $this->editingDocId) {
             return;
         }
@@ -166,6 +175,8 @@ class DocumentsSection extends Component
 
     public function deleteDocument(int $id): void
     {
+        $this->requirePermission('manage_projects');
+
         $media = $this->project->media()->findOrFail($id);
         $media->delete();
         $this->project->refresh();

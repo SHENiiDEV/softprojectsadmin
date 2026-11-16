@@ -40,7 +40,10 @@ class ProcessGmailSyncJob implements ShouldQueue
         ],
     ];
 
-    public function __construct(public string $historyId, public ?string $emailAddress = null) {}
+    public function __construct(public string $historyId, public ?string $emailAddress = null)
+    {
+        $this->onQueue('gmail');
+    }
 
     public function handle(GmailSyncService $syncService): void
     {
@@ -98,7 +101,7 @@ class ProcessGmailSyncJob implements ShouldQueue
             $subject = $msg['subject'] ?: 'No Subject';
             $bodyText = $msg['body'];
 
-            $minDateStr = env('GMAIL_SYNC_MIN_DATE');
+            $minDateStr = config('services.gmail_sync.min_date');
             if (! empty($minDateStr) && ! app()->environment('testing')) {
                 $sentAt = ! empty($msg['date']) ? Carbon::parse($msg['date']) : now();
                 if ($sentAt->lt(Carbon::parse($minDateStr))) {

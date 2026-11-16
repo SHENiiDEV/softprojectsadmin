@@ -30,6 +30,12 @@ class RolesAndPermissionsSeeder extends Seeder
             'view_activity',
             'view_credentials',
             'manage_credentials',
+            'view_clients',
+            'manage_clients',
+            'view_pci_dss',
+            'manage_pci_dss',
+            'view_tariffs',
+            'manage_tariffs',
             'view_reports',
             'manage_users',
         ];
@@ -53,6 +59,12 @@ class RolesAndPermissionsSeeder extends Seeder
             'view_activity',
             'view_credentials',
             'manage_credentials',
+            'view_clients',
+            'manage_clients',
+            'view_pci_dss',
+            'manage_pci_dss',
+            'view_tariffs',
+            'manage_tariffs',
             'view_reports',
         ]);
 
@@ -65,6 +77,10 @@ class RolesAndPermissionsSeeder extends Seeder
             'view_calendar',
             'view_activity',
             'view_credentials',
+            'view_clients',
+            'manage_clients',
+            'view_pci_dss',
+            'view_tariffs',
             'manage_users',
         ]);
 

@@ -29,6 +29,8 @@ class TelegramNotificationTest extends TestCase
     {
         parent::setUp();
 
+        config(['services.telegram.webhook_secret' => 'test-telegram-secret']);
+
         // Seed roles & permissions
         $this->seed(RolesAndPermissionsSeeder::class);
 
@@ -139,7 +141,7 @@ class TelegramNotificationTest extends TestCase
             ],
         ];
 
-        $response = $this->postJson('/telegram/webhook', $payload);
+        $response = $this->postJson('/telegram/webhook', $payload, ['X-Telegram-Bot-Api-Secret-Token' => 'test-telegram-secret']);
         $response->assertStatus(200);
 
         $user = $user->fresh();
@@ -388,7 +390,7 @@ class TelegramNotificationTest extends TestCase
             ],
         ];
 
-        $response = $this->postJson('/telegram/webhook', $payload);
+        $response = $this->postJson('/telegram/webhook', $payload, ['X-Telegram-Bot-Api-Secret-Token' => 'test-telegram-secret']);
         $response->assertStatus(200);
 
         Http::assertSent(function ($request) {

@@ -69,32 +69,26 @@ class PwaMobileNavigationTest extends TestCase
         $response->assertSee('navigator.serviceWorker.register(\'/sw.js\')', false);
     }
 
-    public function test_mobile_bottom_navigation_bar_renders_all_required_menus(): void
+    public function test_mobile_bottom_navigation_bar_renders_primary_menus_and_more_button(): void
     {
+        config(['features.my_work' => true]);
+
         $response = $this->actingAs($this->user)->get('/dashboard');
 
         $response->assertStatus(200);
         $response->assertSee('aria-label="Mobile Navigation"', false);
 
-        // 1. Dashboard (Left 1)
+        // Pinned items: Dashboard, Companies, Tasks, My Work
         $response->assertSee(route('dashboard'));
-        $response->assertSee('Dashboard');
-
-        // 2. Companies (Left 2)
         $response->assertSee(route('projects.index'));
-        $response->assertSee('Companies');
-
-        // 3. My Work (Center Main)
+        $response->assertSee(route('tasks.kanban'));
         $response->assertSee(route('my.work'));
-        $response->assertSee('My Work');
+        $response->assertSeeInOrder(['Dashboard', 'Companies', 'Tasks', 'My Work', 'More']);
 
-        // 4. PCI DSS (Right 1)
+        // Everything else lives in the drawer opened by "More"
+        $response->assertSee('@click="sidebarOpen = true"', false);
         $response->assertSee(route('pci-dss.index'));
-        $response->assertSee('PCI DSS');
-
-        // 5. Credentials (Right 2)
         $response->assertSee(route('credentials'));
-        $response->assertSee('Credentials');
     }
 
     public function test_pwa_service_worker_has_push_and_notification_click_handlers(): void

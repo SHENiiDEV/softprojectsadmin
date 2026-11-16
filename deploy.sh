@@ -63,7 +63,15 @@ php artisan gmail:watch 2>/dev/null || true
 
 # 7. Ensure Storage Permissions
 echo "🔒 7. Ensuring storage permissions..."
-chmod -R 775 storage bootstrap/cache 2>/dev/null || true
+# Run as root, so hand everything back to the web server user (php-fpm / queue worker run as www-data)
+chown -R www-data:www-data . 2>/dev/null || true
+chmod -R ug+rwX storage bootstrap/cache 2>/dev/null || true
+if [ -f .env ]; then
+    chown root:www-data .env && chmod 640 .env
+fi
+
+# Reload PHP-FPM so opcache (validate_timestamps=0) picks up the new code
+systemctl reload php8.4-fpm 2>/dev/null || true
 
 echo "========================================"
 echo "✅ Deployment completed successfully!"

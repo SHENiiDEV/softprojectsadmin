@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Projects;
 
+use App\Livewire\Concerns\RequiresPermission;
 use App\Models\Boarding;
 use App\Models\Project;
 use App\Services\NotificationService;
@@ -9,6 +10,8 @@ use Livewire\Component;
 
 class BoardingSection extends Component
 {
+    use RequiresPermission;
+
     public Project $project;
 
     public Boarding $boarding;
@@ -143,6 +146,8 @@ class BoardingSection extends Component
 
     public function save(): void
     {
+        $this->requirePermission('manage_projects');
+
         $oldProviders = $this->boarding->providers_data ?: [];
 
         // Determine primary provider from active gateways

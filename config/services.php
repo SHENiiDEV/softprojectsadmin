@@ -38,10 +38,15 @@ return [
     'telegram' => [
         'bot_token' => env('TELEGRAM_BOT_TOKEN'),
         'bot_username' => env('TELEGRAM_BOT_USERNAME', 'pm_compliance_bot'),
+        'webhook_secret' => env('TELEGRAM_WEBHOOK_SECRET'),
     ],
 
     'gmail_webhook' => [
         'secret' => env('GMAIL_WEBHOOK_SECRET'),
+    ],
+
+    'gmail_sync' => [
+        'min_date' => env('GMAIL_SYNC_MIN_DATE'),
     ],
 
     'google' => [
