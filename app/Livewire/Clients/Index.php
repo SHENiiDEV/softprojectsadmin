@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Clients;
 
+use App\Livewire\Concerns\RequiresPermission;
 use App\Models\Client;
 use App\Models\Project;
 use Illuminate\Support\Facades\DB;
@@ -10,6 +11,8 @@ use Livewire\WithPagination;
 
 class Index extends Component
 {
+    use RequiresPermission;
+
     use WithPagination;
 
     public string $search = '';
@@ -39,9 +42,8 @@ class Index extends Component
 
     public function mount(): void
     {
-        if (! auth()->user()?->hasAnyRole(['admin', 'manager', 'curator'])) {
-            abort(403);
-        }
+        $this->requirePermission('view_clients');
+
     }
 
     public function updatingSearch(): void
@@ -70,6 +72,8 @@ class Index extends Component
 
     public function openCreateModal(): void
     {
+        $this->requirePermission('manage_clients');
+
         $this->resetValidation();
         $this->clientId = null;
         $this->name = '';
@@ -78,6 +82,8 @@ class Index extends Component
 
     public function openEditModal(int $id): void
     {
+        $this->requirePermission('manage_clients');
+
         $this->resetValidation();
         $client = Client::findOrFail($id);
         $this->clientId = $client->id;
@@ -87,6 +93,8 @@ class Index extends Component
 
     public function saveClient(): void
     {
+        $this->requirePermission('manage_clients');
+
         if (! auth()->user()->hasAnyRole(['admin', 'manager'])) {
             session()->flash('error', 'You do not have permission to modify clients.');
 
@@ -115,6 +123,8 @@ class Index extends Component
 
     public function deleteClient(int $id): void
     {
+        $this->requirePermission('manage_clients');
+
         if (! auth()->user()->hasAnyRole(['admin', 'manager'])) {
             session()->flash('error', 'You do not have permission to delete clients.');
 

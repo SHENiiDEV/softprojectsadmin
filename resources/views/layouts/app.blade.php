@@ -105,7 +105,7 @@
                     </a>
 
                     <!-- Clients Link -->
-                    @if(config('features.clients'))
+                    @if(config('features.clients') && auth()->user()->can('view_clients'))
                     <a href="{{ route('clients.index') }}"
                        class="flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 group {{ request()->routeIs('clients.*') ? 'bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-400' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-800 dark:hover:text-white' }}">
                         <svg class="mr-3 h-5 w-5 transition-transform duration-200 group-hover:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -116,7 +116,7 @@
                     @endif
 
                     <!-- PCI DSS Link -->
-                    @if(config('features.pci_dss', true))
+                    @if(config('features.pci_dss', true) && auth()->user()->can('view_pci_dss'))
                     <a href="{{ route('pci-dss.index') }}"
                        class="flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 group {{ request()->routeIs('pci-dss.*') ? 'bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-400' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-800 dark:hover:text-white' }}"
                        wire:navigate>
@@ -126,7 +126,7 @@
                     @endif
 
                     <!-- Tariffs & Acquiring Link -->
-                    @if(config('features.tariffs', true))
+                    @if(config('features.tariffs', true) && auth()->user()->can('view_tariffs'))
                     <a href="{{ route('tariffs.index') }}"
                        class="flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 group {{ request()->routeIs('tariffs.*') ? 'bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-400' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-800 dark:hover:text-white' }}"
                        wire:navigate>
@@ -215,7 +215,7 @@
                     @endcan
                     @endif
 
-                    @if(config('features.credential_vault'))
+                    @if(config('features.credential_vault') && auth()->user()->can('view_credentials'))
                     <a href="{{ route('credentials') }}"
                        class="flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 group {{ request()->routeIs('credentials') ? 'bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-400' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-800 dark:hover:text-white' }}">
                         <svg class="mr-3 h-5 w-5 transition-transform duration-200 group-hover:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -364,7 +364,7 @@
                         </a>
                         @endcan
 
-                        @if(config('features.clients'))
+                        @if(config('features.clients') && auth()->user()->can('view_clients'))
                         <a href="{{ route('clients.index') }}" class="flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 group {{ request()->routeIs('clients.*') ? 'bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-400' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-800 dark:hover:text-white' }}">
                             <svg class="mr-3 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -373,14 +373,14 @@
                         </a>
                         @endif
 
-                        @if(config('features.pci_dss', true))
+                        @if(config('features.pci_dss', true) && auth()->user()->can('view_pci_dss'))
                         <a href="{{ route('pci-dss.index') }}" class="flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 group {{ request()->routeIs('pci-dss.*') ? 'bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-400' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-800 dark:hover:text-white' }}" wire:navigate>
                             <i class="fa-solid fa-shield-halved mr-3 text-base text-sky-500 transition-transform duration-200 group-hover:scale-110"></i>
                             PCI DSS
                         </a>
                         @endif
 
-                        @if(config('features.tariffs', true))
+                        @if(config('features.tariffs', true) && auth()->user()->can('view_tariffs'))
                         <a href="{{ route('tariffs.index') }}" class="flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 group {{ request()->routeIs('tariffs.*') ? 'bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-400' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-800 dark:hover:text-white' }}" wire:navigate>
                             <i class="fa-solid fa-scale-balanced mr-3 text-base text-indigo-500 transition-transform duration-200 group-hover:scale-110"></i>
                             Tariffs & Matrix
@@ -441,7 +441,7 @@
                         @endcan
                         @endif
 
-                        @if(config('features.credential_vault'))
+                        @if(config('features.credential_vault') && auth()->user()->can('view_credentials'))
                         <a href="{{ route('credentials') }}" class="flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 group {{ request()->routeIs('credentials') ? 'bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-400' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-800 dark:hover:text-white' }}">
                             <svg class="mr-3 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
                             Credentials
@@ -650,6 +650,7 @@
                     <span class="text-[10px] tracking-tight mt-1 {{ request()->routeIs('my.work') ? 'text-sky-600 dark:text-sky-400 font-bold' : 'text-slate-600 dark:text-slate-400 font-semibold' }}">My Work</span>
                 </a>
 
+                @can('view_pci_dss')
                 <!-- 4. PCI DSS -->
                 <a href="{{ route('pci-dss.index') }}"
                    class="flex flex-col items-center justify-center py-1 group transition-colors duration-200 {{ request()->routeIs('pci-dss.*') ? 'text-sky-600 dark:text-sky-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200' }}"
@@ -662,7 +663,9 @@
                     </div>
                     <span class="text-[10px] tracking-tight mt-0.5 {{ request()->routeIs('pci-dss.*') ? 'font-semibold' : 'font-medium' }}">PCI DSS</span>
                 </a>
+                @endcan
 
+                @can('view_credentials')
                 <!-- 5. Credentials -->
                 <a href="{{ route('credentials') }}"
                    class="flex flex-col items-center justify-center py-1 group transition-colors duration-200 {{ request()->routeIs('credentials') ? 'text-sky-600 dark:text-sky-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200' }}"
@@ -677,6 +680,7 @@
                     </div>
                     <span class="text-[10px] tracking-tight mt-0.5 {{ request()->routeIs('credentials') ? 'font-semibold' : 'font-medium' }}">Credentials</span>
                 </a>
+                @endcan
             </div>
         </nav>
 

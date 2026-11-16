@@ -2,11 +2,14 @@
 
 namespace App\Livewire\Settings;
 
+use App\Livewire\Concerns\RequiresPermission;
 use App\Models\EmailTemplate;
 use Livewire\Component;
 
 class EmailTemplates extends Component
 {
+    use RequiresPermission;
+
     public $templates;
 
     public bool $showModal = false;
@@ -30,6 +33,8 @@ class EmailTemplates extends Component
 
     public function mount(): void
     {
+        $this->requirePermission('view_tasks');
+
         $this->loadTemplates();
     }
 
@@ -40,6 +45,8 @@ class EmailTemplates extends Component
 
     public function openModal(?int $id = null): void
     {
+        $this->requirePermission('manage_tasks');
+
         $this->resetValidation();
 
         if ($id) {
@@ -62,6 +69,8 @@ class EmailTemplates extends Component
 
     public function saveTemplate(): void
     {
+        $this->requirePermission('manage_tasks');
+
         $this->validate();
 
         EmailTemplate::updateOrCreate(
@@ -82,6 +91,8 @@ class EmailTemplates extends Component
 
     public function deleteTemplate(int $id): void
     {
+        $this->requirePermission('manage_tasks');
+
         EmailTemplate::findOrFail($id)->delete();
         $this->loadTemplates();
         session()->flash('message', 'Email template deleted successfully.');

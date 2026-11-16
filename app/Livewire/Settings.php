@@ -29,6 +29,12 @@ class Settings extends Component
         'view_activity' => 'View Activity Center',
         'view_credentials' => 'View Credentials Vault',
         'manage_credentials' => 'Manage Credentials (Create/Edit/Delete)',
+        'view_clients' => 'View Clients',
+        'manage_clients' => 'Manage Clients (Create/Edit/Delete)',
+        'view_pci_dss' => 'View PCI DSS Documents',
+        'manage_pci_dss' => 'Manage PCI DSS Documents (Upload/Edit/Delete)',
+        'view_tariffs' => 'View Tariffs & Matrix',
+        'manage_tariffs' => 'Manage Tariffs (Providers/Rates/Fees)',
         'view_reports' => 'View Reports (Time & Productivity)',
         'manage_users' => 'Manage Users Settings',
     ];

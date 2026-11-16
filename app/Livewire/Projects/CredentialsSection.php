@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Projects;
 
+use App\Livewire\Concerns\RequiresPermission;
 use App\Models\Credential;
 use App\Models\Project;
 use App\Models\Website;
@@ -10,6 +11,8 @@ use Livewire\Component;
 
 class CredentialsSection extends Component
 {
+    use RequiresPermission;
+
     public Project $project;
 
     public bool $showForm = false;
@@ -53,17 +56,23 @@ class CredentialsSection extends Component
 
     public function mount(Project $project): void
     {
+        $this->requirePermission('view_credentials');
+
         $this->project = $project;
     }
 
     public function openCreateForm(): void
     {
+        $this->requirePermission('manage_credentials');
+
         $this->resetForm();
         $this->showForm = true;
     }
 
     public function edit(int $id): void
     {
+        $this->requirePermission('manage_credentials');
+
         $this->resetForm();
         $credential = Credential::findOrFail($id);
         $this->editingId = $credential->id;
@@ -80,6 +89,8 @@ class CredentialsSection extends Component
 
     public function save(): void
     {
+        $this->requirePermission('manage_credentials');
+
         $this->validate();
 
         if ($this->editingId) {
@@ -130,6 +141,8 @@ class CredentialsSection extends Component
 
     public function delete(int $id): void
     {
+        $this->requirePermission('manage_credentials');
+
         $credential = Credential::findOrFail($id);
         $credential->delete();
         session()->flash('message', 'Credential successfully deleted.');

@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Projects;
 
+use App\Livewire\Concerns\RequiresPermission;
 use App\Models\ActivityLog;
 use App\Models\Project;
 use App\Models\Review;
@@ -11,6 +12,8 @@ use Livewire\Component;
 
 class OperationsSection extends Component
 {
+    use RequiresPermission;
+
     public Project $project;
 
     // Sub-tab selection: smm | reviews
@@ -87,6 +90,8 @@ class OperationsSection extends Component
 
     public function addPost(): void
     {
+        $this->requirePermission('manage_projects');
+
         $this->validate([
             'smmTitle' => 'required|string|min:3|max:255',
             'smmPlatform' => 'required|string',
@@ -131,6 +136,8 @@ class OperationsSection extends Component
 
     public function editPost(int $id): void
     {
+        $this->requirePermission('manage_projects');
+
         $post = SmmPost::findOrFail($id);
         $this->editingPostId = $post->id;
         $this->smmPlatform = $post->platform;
@@ -143,6 +150,8 @@ class OperationsSection extends Component
 
     public function deletePost(int $id): void
     {
+        $this->requirePermission('manage_projects');
+
         $post = SmmPost::findOrFail($id);
         $post->delete();
         $this->flash('SMM Post deleted.', 'success');
@@ -150,6 +159,8 @@ class OperationsSection extends Component
 
     public function addReview(): void
     {
+        $this->requirePermission('manage_projects');
+
         $this->validate([
             'reviewerName' => 'required|string|min:2|max:255',
             'reviewPlatform' => 'required|string',
@@ -195,6 +206,8 @@ class OperationsSection extends Component
 
     public function editReview(int $id): void
     {
+        $this->requirePermission('manage_projects');
+
         $review = Review::findOrFail($id);
         $this->editingReviewId = $review->id;
         $this->reviewPlatform = $review->platform;
@@ -207,6 +220,8 @@ class OperationsSection extends Component
 
     public function deleteReview(int $id): void
     {
+        $this->requirePermission('manage_projects');
+
         $review = Review::findOrFail($id);
         $review->delete();
         $this->flash('Review deleted.', 'success');

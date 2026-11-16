@@ -2,6 +2,7 @@
 
 namespace App\Livewire\PciDss;
 
+use App\Livewire\Concerns\RequiresPermission;
 use App\Models\Client;
 use App\Models\PciDssDocument;
 use App\Models\Project;
@@ -17,6 +18,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class Index extends Component
 {
+    use RequiresPermission;
+
     use WithFileUploads;
     use WithPagination;
 
@@ -93,6 +96,8 @@ class Index extends Component
 
     public function mount(?int $client = null): void
     {
+        $this->requirePermission('view_pci_dss');
+
         if ($client && Client::where('id', $client)->exists()) {
             $this->selectedClientId = $client;
         }
@@ -139,6 +144,8 @@ class Index extends Component
 
     public function openUploadModal(?int $clientId = null): void
     {
+        $this->requirePermission('manage_pci_dss');
+
         $this->resetValidation();
         $this->uploadFile = null;
         $this->uploadTitle = '';
@@ -174,6 +181,8 @@ class Index extends Component
 
     public function uploadDocument(): void
     {
+        $this->requirePermission('manage_pci_dss');
+
         $this->validate([
             'uploadClientId' => 'required|exists:clients,id',
             'uploadProjectId' => 'nullable|exists:projects,id',
@@ -227,6 +236,8 @@ class Index extends Component
 
     public function openEditModal(int $id): void
     {
+        $this->requirePermission('manage_pci_dss');
+
         $this->resetValidation();
         $doc = PciDssDocument::findOrFail($id);
 
@@ -256,6 +267,8 @@ class Index extends Component
 
     public function saveEdit(): void
     {
+        $this->requirePermission('manage_pci_dss');
+
         if (! $this->editingDocId) {
             return;
         }
@@ -292,12 +305,16 @@ class Index extends Component
 
     public function confirmDelete(int $id): void
     {
+        $this->requirePermission('manage_pci_dss');
+
         $this->deletingDocId = $id;
         $this->showDeleteModal = true;
     }
 
     public function deleteDocument(): void
     {
+        $this->requirePermission('manage_pci_dss');
+
         if (! $this->deletingDocId) {
             return;
         }
@@ -318,6 +335,8 @@ class Index extends Component
 
     public function downloadDocument(int $id): StreamedResponse
     {
+        $this->requirePermission('view_pci_dss');
+
         $doc = PciDssDocument::findOrFail($id);
 
         if (! Storage::disk('local')->exists($doc->file_path)) {

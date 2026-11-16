@@ -35,9 +35,9 @@ Route::view('dashboard', 'dashboard')
     ->name('dashboard');
 
 Route::middleware(['auth'])->group(function () {
-    Route::get('/clients', Index::class)->middleware(['feature:clients'])->name('clients.index');
-    Route::get('/pci-dss', PciDssIndex::class)->middleware(['feature:pci_dss'])->name('pci-dss.index');
-    Route::get('/tariffs', TariffsIndex::class)->middleware(['feature:tariffs'])->name('tariffs.index');
+    Route::get('/clients', Index::class)->middleware(['feature:clients', 'permission:view_clients'])->name('clients.index');
+    Route::get('/pci-dss', PciDssIndex::class)->middleware(['feature:pci_dss', 'permission:view_pci_dss'])->name('pci-dss.index');
+    Route::get('/tariffs', TariffsIndex::class)->middleware(['feature:tariffs', 'permission:view_tariffs'])->name('tariffs.index');
 
     Route::get('/projects', ProjectsIndex::class)->middleware('permission:view_projects')->name('projects.index');
     Route::get('/projects/create', ProjectsCreate::class)->middleware('permission:manage_projects')->name('projects.create');
@@ -52,7 +52,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/reports/time', TimeReport::class)->middleware(['feature:time_tracking', 'permission:view_reports'])->name('reports.time');
     Route::get('/reports/productivity', ProductivityReport::class)->middleware(['feature:time_tracking', 'permission:view_reports'])->name('reports.productivity');
 
-    Route::get('/settings/email-templates', EmailTemplates::class)->name('settings.email-templates');
+    Route::get('/settings/email-templates', EmailTemplates::class)->middleware('permission:view_tasks')->name('settings.email-templates');
 
     Route::view('profile', 'profile')->name('profile');
 });
@@ -73,7 +73,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/health-score', CompanyHealthScore::class)->middleware(['feature:health_score', 'permission:view_projects'])->name('health.score');
     Route::get('/my-work', MyWork::class)->middleware(['feature:my_work', 'permission:view_tasks'])->name('my.work');
     Route::get('/activity', ActivityCenter::class)->middleware(['feature:activity_center', 'permission:view_activity'])->name('activity.center');
-    Route::get('/credentials', CredentialVault::class)->middleware(['feature:credential_vault'])->name('credentials');
-    Route::get('/settings', Settings::class)->middleware('feature:settings_panel')->name('settings');
+    Route::get('/credentials', CredentialVault::class)->middleware(['feature:credential_vault', 'permission:view_credentials'])->name('credentials');
+    Route::get('/settings', Settings::class)->middleware(['feature:settings_panel', 'role:admin'])->name('settings');
     Route::get('/calendar', CalendarView::class)->middleware(['feature:calendar', 'permission:view_calendar'])->name('calendar');
 });
