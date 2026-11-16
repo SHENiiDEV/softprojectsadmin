@@ -173,6 +173,7 @@ php artisan key:generate --force
 sed -i "s|__DB_PASSWORD__|${DB_PASS}|" .env
 sed -i "s|__TELEGRAM_WEBHOOK_SECRET__|$(openssl rand -hex 32)|" .env
 sed -i "s|__GMAIL_WEBHOOK_SECRET__|$(openssl rand -hex 32)|" .env
+sed -i "s|__GMAIL_PUBSUB_TOKEN__|$(openssl rand -hex 32)|" .env
 nano .env    # заполните __SMTP_*__, __TELEGRAM_BOT_TOKEN__, GOOGLE_*, при необходимости ENABLE_*
 ```
 
@@ -221,6 +222,29 @@ systemctl status certbot.timer   # автопродление; проверка:
 ```
 
 Certbot сам добавит блок `listen 443 ssl` и редирект с HTTP на HTTPS.
+
+## Cloudflare (после того как домен привязан)
+
+1. **SSL/TLS → Full (strict).** Режим Flexible даёт бесконечные редиректы вместе с редиректом certbot.
+2. **Сертификат:** выпускайте его (шаг 8) при «DNS only» (серое облако), затем включайте проксирование (оранжевое).
+3. **Реальный IP клиента.** Без этого приложение видит IP Cloudflare: ломается лимит попыток входа и логи.
+   ```bash
+   cd /var/www/softprojects-admin
+   ./cloudflare-ips.sh                # nginx получает IP из CF-Connecting-IP
+   ```
+4. **Закрыть прямой доступ к серверу в обход Cloudflare** (443 только с адресов Cloudflare; 80 остаётся открытым для продления сертификата):
+   ```bash
+   ./cloudflare-ips.sh --ufw
+   ufw status | head -20              # SSH (22) должен остаться разрешённым
+   ```
+   Выполняйте **после** того, как сайт открывается через Cloudflare. Ежемесячное обновление списка:
+   ```bash
+   echo '0 4 1 * * root /var/www/softprojects-admin/cloudflare-ips.sh --ufw >> /var/log/cloudflare-ips.log 2>&1' > /etc/cron.d/cloudflare-ips
+   ```
+5. **Кэш и WAF.** Для админки поставьте Cache Rule «Bypass cache» (кроме `/build/*`). Если включаете Bot Fight Mode или WAF-правила,
+   добавьте исключения для `/telegram/webhook`, `/api/v1/*` (Telegram и Google ходят туда через Cloudflare).
+6. **Gmail Pub/Sub.** В подписке (Push endpoint) укажите URL с токеном из `.env`:
+   `https://soft-projects.io/api/v1/gmail/pubsub-webhook?token=<GMAIL_PUBSUB_TOKEN>`. Без токена эндпоинт отвечает 403/503.
 
 ## 9. Права (root → www-data)
 
@@ -348,7 +372,8 @@ REDIS_HOST=127.0.0.1
 
 - [ ] `APP_DEBUG=false`, `APP_ENV=production` (`php artisan about`)
 - [ ] демо-пользователи удалены, свой админ создан
-- [ ] `TELEGRAM_WEBHOOK_SECRET` и `GMAIL_WEBHOOK_SECRET` заданы
+- [ ] `TELEGRAM_WEBHOOK_SECRET`, `GMAIL_WEBHOOK_SECRET` и `GMAIL_PUBSUB_TOKEN` заданы
+- [ ] Cloudflare: Full (strict), `./cloudflare-ips.sh --ufw` выполнен, прямой заход на IP по HTTPS не отвечает
 - [ ] порт 3306 закрыт снаружи (`ss -tlnp | grep 3306` → только 127.0.0.1)
 - [ ] `.env` не читается всеми: `ls -l .env` → `-rw-r----- root www-data`
 - [ ] резервные копии: `mysqldump softprojects | gzip` + `storage/app` + копия `.env`

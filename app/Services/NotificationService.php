@@ -122,14 +122,10 @@ class NotificationService
         $message = "New request from client '{$client->name}' ({$company->name}): '{$task->title}'.";
         $url = route('tasks.kanban', ['task_id' => $task->id]);
 
-        // Send to admins or assigned manager
-        $recipients = User::whereIn('id', function ($q) {
-            $q->select('user_id')->from('activity_logs')->limit(10);
-        })->get();
-
-        if ($recipients->isEmpty()) {
-            $recipients = User::all();
-        }
+        // Send to the company's manager, otherwise to all admins and managers
+        $recipients = $company->manager !== null
+            ? collect([$company->manager])
+            : User::role(['admin', 'manager'])->get();
 
         foreach ($recipients as $user) {
             $user->notify(new AppNotification($title, $message, $url, 'client_portal_task'));

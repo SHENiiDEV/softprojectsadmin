@@ -57,7 +57,7 @@ Route::middleware(['auth'])->group(function () {
     Route::view('profile', 'profile')->name('profile');
 });
 
-Route::get('/portal/{hash}', ClientPortal::class)->middleware('feature:client_portal')->name('client.portal');
+Route::get('/portal/{hash}', ClientPortal::class)->middleware(['feature:client_portal', 'throttle:60,1'])->name('client.portal');
 
 Route::post('/telegram/webhook', TelegramWebhookController::class)
     ->name('telegram.webhook');

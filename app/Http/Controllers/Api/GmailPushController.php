@@ -15,6 +15,20 @@ class GmailPushController extends Controller
      */
     public function __invoke(Request $request): JsonResponse
     {
+        $expectedToken = config('services.gmail_webhook.pubsub_token');
+
+        if (! $expectedToken) {
+            Log::error('Gmail Pub/Sub push rejected: GMAIL_PUBSUB_TOKEN is not configured.');
+
+            return response()->json(['status' => 'error', 'message' => 'Webhook is not configured.'], 503);
+        }
+
+        if (! hash_equals((string) $expectedToken, (string) $request->query('token', ''))) {
+            Log::warning('Invalid Gmail Pub/Sub push token received', ['client_ip' => $request->ip()]);
+
+            return response()->json(['status' => 'error', 'message' => 'Invalid token.'], 403);
+        }
+
         $messageData = $request->input('message.data');
 
         if (! $messageData) {

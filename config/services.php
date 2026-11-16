@@ -43,6 +43,7 @@ return [
 
     'gmail_webhook' => [
         'secret' => env('GMAIL_WEBHOOK_SECRET'),
+        'pubsub_token' => env('GMAIL_PUBSUB_TOKEN'),
     ],
 
     'gmail_sync' => [
