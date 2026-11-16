@@ -24,7 +24,13 @@ class ProcessGmailAlertJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public function __construct(public array $payload) {}
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    public function __construct(public array $payload)
+    {
+        $this->onQueue('gmail');
+    }
 
     public function handle(): void
     {

@@ -3,6 +3,8 @@
 - Каталог приложения: `/var/www/softprojects-admin`
 - Домен: `soft-projects.io` (+ `www`). Замените, если домен другой (в командах и в `nginx.conf`).
 - Все команды выполняются от **root**, в конце владельцем файлов становится `www-data`.
+- Профиль сервера: **8 vCPU, 24 GB RAM, NVMe** (настройки ниже рассчитаны на него и выделяют ресурсы под админку).
+  Если сервер меньше или на нём живут другие сервисы, уменьшите значения из таблицы «Бюджет памяти».
 - DNS: A/AAAA-записи `soft-projects.io` и `www` должны указывать на сервер **до** шага 8 (Certbot).
 
 ## 1. Системные пакеты
@@ -29,23 +31,68 @@ curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && apt install -y node
 ufw allow OpenSSH && ufw allow "Nginx Full" && ufw --force enable
 ```
 
-## 2. Настройка PHP 8.4
+## 2. Настройка PHP 8.4 и пул PHP-FPM
+
+Лимиты PHP и OPcache:
 
 ```bash
 cat > /etc/php/8.4/fpm/conf.d/99-softprojects.ini <<'INI'
-upload_max_filesize = 50M
-post_max_size = 55M
 memory_limit = 512M
-max_execution_time = 120
+upload_max_filesize = 100M
+post_max_size = 110M
+max_execution_time = 300
+max_input_time = 300
 expose_php = Off
+
 opcache.enable = 1
+opcache.memory_consumption = 256
+opcache.interned_strings_buffer = 32
+opcache.max_accelerated_files = 20000
 opcache.validate_timestamps = 0
 INI
-systemctl restart php8.4-fpm
+cp /etc/php/8.4/fpm/conf.d/99-softprojects.ini /etc/php/8.4/cli/conf.d/99-softprojects.ini
+sed -i 's/^memory_limit.*/memory_limit = 1G/' /etc/php/8.4/cli/conf.d/99-softprojects.ini   # CLI: воркеры, импорт, PDF
+```
+
+Отдельный пул вместо стандартного `www` (свой сокет, лимиты процессов):
+
+```bash
+mv /etc/php/8.4/fpm/pool.d/www.conf /etc/php/8.4/fpm/pool.d/www.conf.disabled
+cat > /etc/php/8.4/fpm/pool.d/softprojects.conf <<'POOL'
+[softprojects]
+user = www-data
+group = www-data
+listen = /run/php/softprojects.sock
+listen.owner = www-data
+listen.group = www-data
+listen.backlog = 1024
+
+pm = dynamic
+pm.max_children = 40
+pm.start_servers = 10
+pm.min_spare_servers = 8
+pm.max_spare_servers = 16
+pm.max_requests = 500
+
+request_terminate_timeout = 300s
+catch_workers_output = yes
+POOL
+php-fpm8.4 -t && systemctl restart php8.4-fpm
 ```
 
 > `opcache.validate_timestamps = 0` — PHP не перечитывает файлы сам, поэтому `deploy.sh`
 > в конце делает `systemctl reload php8.4-fpm`. Если не нужно — поставьте `1`.
+> `pm.max_children = 40` ≈ 40 одновременных запросов (~100 MB на процесс ≈ 4 GB максимум).
+
+### Бюджет памяти (24 GB)
+
+| Компонент | Настройка | ~RAM |
+|---|---|---|
+| MySQL | `innodb_buffer_pool_size = 6G` | 6.5 GB |
+| PHP-FPM | 40 процессов × ~100 MB | до 4 GB |
+| Воркеры очереди | 4 + 1 gmail × ≤256 MB | до 1.3 GB |
+| OPcache, nginx, ОС | | ~1.5 GB |
+| Файловый кэш ОС (остаток) | | ~10 GB |
 
 ## 3. Код
 
@@ -76,6 +123,31 @@ echo "DB password: ${DB_PASS}"   # сохраните в менеджере па
 Проверьте, что MySQL слушает только localhost (`bind-address = 127.0.0.1` в
 `/etc/mysql/mysql.conf.d/mysqld.cnf` — значение по умолчанию) и порт 3306 не открыт в `ufw`.
 Запустите `mysql_secure_installation` один раз.
+
+Настройка MySQL под NVMe и 24 GB RAM:
+
+```bash
+cat > /etc/mysql/mysql.conf.d/99-softprojects.cnf <<'CNF'
+[mysqld]
+bind-address = 127.0.0.1
+max_connections = 200
+
+innodb_buffer_pool_size = 6G
+innodb_redo_log_capacity = 2G
+innodb_flush_method = O_DIRECT
+innodb_io_capacity = 2000
+innodb_io_capacity_max = 4000
+
+tmp_table_size = 128M
+max_heap_table_size = 128M
+
+slow_query_log = 1
+long_query_time = 1
+CNF
+systemctl restart mysql
+```
+
+> `innodb_flush_log_at_trx_commit` оставляем по умолчанию (`1`): данные не теряются при сбое питания.
 
 ## 5. Зависимости и сборка
 
@@ -166,27 +238,57 @@ chmod +x deploy.sh artisan
 
 ## 10. Очередь и планировщик
 
-Очередь обрабатывает Telegram и Gmail (`QUEUE_CONNECTION=database`), без воркера уведомления не уходят.
+Очередь обрабатывает Telegram, Gmail и конвертации медиа (`QUEUE_CONNECTION=database`).
+Воркеры разделены на две очереди:
+
+- `default` — **4 параллельных воркера** (Telegram-уведомления, медиа);
+- `gmail` — **строго 1 воркер**: письма обрабатываются по очереди, иначе два воркера могут создать дубль тикета по одной и той же переписке.
+
+`DB_QUEUE_RETRY_AFTER=360` в `.env` должен быть больше `--timeout` любого воркера (иначе задача стартует повторно, пока ещё выполняется).
 
 ```bash
-cat > /etc/systemd/system/softprojects-queue.service <<'UNIT'
+cat > /etc/systemd/system/softprojects-queue@.service <<'UNIT'
 [Unit]
-Description=SoftProjects queue worker
+Description=SoftProjects queue worker #%i
 After=network.target mysql.service
 
 [Service]
 User=www-data
 Group=www-data
 WorkingDirectory=/var/www/softprojects-admin
-ExecStart=/usr/bin/php artisan queue:work --sleep=3 --tries=3 --max-time=3600
+ExecStart=/usr/bin/php artisan queue:work --queue=default --sleep=2 --tries=3 --timeout=120 --memory=256 --max-jobs=1000 --max-time=3600
+Restart=always
+RestartSec=5
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+
+cat > /etc/systemd/system/softprojects-queue-gmail.service <<'UNIT'
+[Unit]
+Description=SoftProjects Gmail queue worker (single)
+After=network.target mysql.service
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/softprojects-admin
+ExecStart=/usr/bin/php artisan queue:work --queue=gmail --sleep=2 --tries=3 --timeout=300 --memory=256 --max-jobs=500 --max-time=3600
 Restart=always
 RestartSec=5
 
 [Install]
 WantedBy=multi-user.target
 UNIT
-systemctl daemon-reload && systemctl enable --now softprojects-queue
+
+systemctl daemon-reload
+systemctl enable --now softprojects-queue@{1..4} softprojects-queue-gmail
+systemctl list-units 'softprojects-queue*' --no-legend      # должно быть 5 активных юнитов
 ```
+
+Больше 4 воркеров `default` обычно не нужно: очередь на базе данных упирается в блокировки таблицы `jobs`,
+а не в CPU. Если очередь копится — смотрите `php artisan queue:monitor default,gmail` и таблицу `failed_jobs`.
 
 Планировщик (дедлайны, дайджест, `gmail:sync-recent` каждые 2 минуты):
 
@@ -218,6 +320,28 @@ cd /var/www/softprojects-admin && ./deploy.sh
 (systemd поднимает воркер заново), возвращает права `www-data` (`.env` остаётся `root:www-data 640`)
 и перезагружает PHP-FPM.
 
+## Дополнительно: Redis для кэша и сессий (по желанию)
+
+Кэш и сессии в MySQL работают, но Redis разгружает базу и ускоряет отклик. Ресурсов хватает, поэтому рекомендуется:
+
+```bash
+apt install -y redis-server php8.4-redis
+sed -i 's/^# *maxmemory .*/maxmemory 1gb/; s/^# *maxmemory-policy .*/maxmemory-policy allkeys-lru/' /etc/redis/redis.conf
+systemctl restart redis-server php8.4-fpm
+```
+
+В `.env` замените:
+
+```
+CACHE_STORE=redis
+SESSION_DRIVER=redis
+REDIS_CLIENT=phpredis
+REDIS_HOST=127.0.0.1
+```
+
+Затем `php artisan config:cache && systemctl restart softprojects-queue@{1..4} softprojects-queue-gmail`.
+Очередь оставьте на базе данных: так задачи не потеряются при перезапуске Redis. После смены `SESSION_DRIVER` все пользователи будут разлогинены один раз.
+
 ## Чек-лист безопасности
 
 - [ ] `APP_DEBUG=false`, `APP_ENV=production` (`php artisan about`)
@@ -227,14 +351,18 @@ cd /var/www/softprojects-admin && ./deploy.sh
 - [ ] `.env` не читается всеми: `ls -l .env` → `-rw-r----- root www-data`
 - [ ] резервные копии: `mysqldump softprojects | gzip` + `storage/app` + копия `.env`
 - [ ] `certbot renew --dry-run` проходит
+- [ ] 5 воркеров очереди активны, `failed_jobs` пуста
+- [ ] `mysql -e "SHOW VARIABLES LIKE 'innodb_buffer_pool_size'"` → 6 GB; `free -h` без своппинга
 
 ## Частые проблемы
 
 | Симптом | Причина / решение |
 |---|---|
-| 502 Bad Gateway | сокет не совпадает: `ls /var/run/php/`, должен быть `php8.4-fpm.sock` |
+| 502 Bad Gateway | нет сокета пула: `ls /run/php/` → `softprojects.sock`; `php-fpm8.4 -t`; `journalctl -u php8.4-fpm` |
+| Много 502 под нагрузкой | в логе FPM `max_children reached` → поднимите `pm.max_children` (с оглядкой на RAM) |
+| Письма не обрабатываются | `systemctl status softprojects-queue-gmail`, `tail storage/logs/laravel-*.log` |
 | 500, в логе `Permission denied` | после запуска от root: `chown -R www-data:www-data storage bootstrap/cache` |
 | Не грузятся стили | `npm run build` не выполнен или нет Node |
 | Telegram/Gmail не работают | нет секретов в `.env` (ответ 503/403), не запущен воркер очереди |
 | Изменения не видны после деплоя | `./deploy.sh` (он перезагружает FPM) или вручную `systemctl reload php8.4-fpm` |
-| Загрузка файла > 2 МБ падает | проверьте `99-softprojects.ini` и `client_max_body_size` в nginx |
+| Загрузка файла > 2 МБ падает | проверьте `99-softprojects.ini` (100M) и `client_max_body_size` (100M) в nginx |

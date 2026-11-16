@@ -40,7 +40,10 @@ class ProcessGmailSyncJob implements ShouldQueue
         ],
     ];
 
-    public function __construct(public string $historyId, public ?string $emailAddress = null) {}
+    public function __construct(public string $historyId, public ?string $emailAddress = null)
+    {
+        $this->onQueue('gmail');
+    }
 
     public function handle(GmailSyncService $syncService): void
     {
