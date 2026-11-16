@@ -54,6 +54,13 @@ class TelegramSetWebhook extends Command
             }
         }
 
+        $secret = config('services.telegram.webhook_secret');
+        if (! $secret) {
+            $this->error('TELEGRAM_WEBHOOK_SECRET is not set. Generate one (e.g. `openssl rand -hex 32`), add it to .env and retry.');
+
+            return 1;
+        }
+
         $url = $this->argument('url');
 
         if (! $url) {
@@ -65,6 +72,7 @@ class TelegramSetWebhook extends Command
         try {
             $response = Http::post("https://api.telegram.org/bot{$botToken}/setWebhook", [
                 'url' => $url,
+                'secret_token' => $secret,
             ]);
 
             if ($response->successful()) {

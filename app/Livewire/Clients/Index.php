@@ -12,7 +12,6 @@ use Livewire\WithPagination;
 class Index extends Component
 {
     use RequiresPermission;
-
     use WithPagination;
 
     public string $search = '';
@@ -43,7 +42,6 @@ class Index extends Component
     public function mount(): void
     {
         $this->requirePermission('view_clients');
-
     }
 
     public function updatingSearch(): void

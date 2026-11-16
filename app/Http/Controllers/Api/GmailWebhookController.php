@@ -18,20 +18,26 @@ class GmailWebhookController extends Controller
         $signature = $request->header('X-Signature-SHA256');
         $secret = config('services.gmail_webhook.secret');
 
-        if ($secret) {
-            $computedSignature = hash_hmac('sha256', $request->getContent(), $secret);
+        if (! $secret) {
+            Log::error('Gmail webhook rejected: GMAIL_WEBHOOK_SECRET is not configured.');
 
-            if (! $signature || ! hash_equals($computedSignature, strtolower($signature))) {
-                Log::warning('Invalid Gmail webhook signature received', [
-                    'received_signature' => $signature,
-                    'client_ip' => $request->ip(),
-                ]);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Webhook is not configured.',
+            ], 503);
+        }
 
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Invalid webhook signature.',
-                ], 401);
-            }
+        $computedSignature = hash_hmac('sha256', $request->getContent(), $secret);
+
+        if (! $signature || ! hash_equals($computedSignature, strtolower($signature))) {
+            Log::warning('Invalid Gmail webhook signature received', [
+                'client_ip' => $request->ip(),
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Invalid webhook signature.',
+            ], 401);
         }
 
         $payload = $request->all();

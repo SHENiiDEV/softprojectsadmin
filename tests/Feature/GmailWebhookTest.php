@@ -173,4 +173,17 @@ class GmailWebhookTest extends TestCase
         $task = Task::find($ticket->task_id);
         $this->assertEquals('high', $task->priority);
     }
+
+    public function test_rejects_request_when_secret_is_not_configured(): void
+    {
+        Config::set('services.gmail_webhook.secret', null);
+
+        $this->postJson('/api/v1/webhooks/gmail-alert', [
+            'thread_id' => 'thread_1',
+            'message_id' => 'msg_1',
+        ])->assertStatus(503)
+            ->assertJson(['status' => 'error']);
+
+        $this->assertEquals(0, SupportTicket::count());
+    }
 }
