@@ -111,11 +111,11 @@ new class extends Component
             </div>
 
             <!-- Telegram Notification Preferences -->
-            <div class="mt-6 border-t border-gray-250 dark:border-gray-700 pt-6 space-y-4">
+            <div class="mt-6 border-t border-gray-200 dark:border-gray-700 pt-6 space-y-4">
                 <h3 class="text-md font-medium text-gray-900 dark:text-gray-100">
                     {{ __('Telegram Notification Preferences') }}
                 </h3>
-                <p class="text-xs text-gray-650 dark:text-gray-400">
+                <p class="text-xs text-gray-600 dark:text-gray-400">
                     {{ __('Configure which events will trigger instant messages to your linked Telegram account.') }}
                 </p>
 

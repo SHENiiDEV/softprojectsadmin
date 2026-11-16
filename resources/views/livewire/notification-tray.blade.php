@@ -175,7 +175,7 @@
                     <!-- Mark as read tick button -->
                     <button wire:click.stop="markAsRead('{{ $n->id }}')" 
                             title="Mark as read"
-                            class="absolute right-4 top-4 opacity-0 group-hover:opacity-100 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-400 transition-opacity focus:outline-none">
+                            class="absolute right-4 top-4 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-within:opacity-100 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-400 transition-opacity focus:outline-none">
                         <i class="fa-solid fa-check text-xs"></i>
                     </button>
                 </div>

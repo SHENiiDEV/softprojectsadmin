@@ -656,7 +656,7 @@
             $viewTask = \App\Models\Task::with(['comments.replies', 'media'])->find($viewTaskId);
         @endphp
         @if($viewTask)
-            <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-sm animate-fade-in" @keydown.escape.window="$wire.closeModal()">
+            <div class="fixed inset-0 overflow-y-auto z-50 flex p-4 modal-safe-center bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-sm animate-fade-in" @keydown.escape.window="$wire.closeModal()">
                 <div class="bg-white dark:bg-slate-900 w-full max-w-5xl rounded-2xl max-h-[92vh] overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-700/80 flex flex-col" @click.away="$wire.closeModal()">
 
                     {{-- ── Modal Header ── --}}

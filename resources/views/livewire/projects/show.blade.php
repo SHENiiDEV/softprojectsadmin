@@ -133,7 +133,7 @@
                         <span class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">Company Websites</span>
                         <div class="flex flex-col space-y-1">
                             @forelse($project->websites as $web)
-                                <a href="{{ $web->url }}" target="_blank" class="inline-flex items-center text-sm font-medium text-sky-600 hover:text-sky-750 dark:text-sky-400 dark:hover:text-sky-300 break-all">
+                                <a href="{{ $web->url }}" target="_blank" class="inline-flex items-center text-sm font-medium text-sky-600 hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300 break-all">
                                     {{ $web->name }}: {{ $web->url }}
                                     <svg class="h-3.5 w-3.5 ml-1.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -492,7 +492,7 @@
                 <!-- Modal Panel -->
                 <div class="inline-block align-bottom bg-white dark:bg-slate-900 rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full border border-slate-100 dark:border-slate-800/80">
                     <div class="px-6 py-5 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between bg-slate-50/50 dark:bg-slate-950/20">
-                        <h3 class="text-base font-bold text-slate-850 dark:text-white font-outfit" id="modal-title">
+                        <h3 class="text-base font-bold text-slate-800 dark:text-white font-outfit" id="modal-title">
                             Add Note to {{ $project->name }}
                         </h3>
                         <button type="button" wire:click="$set('showNoteModal', false)" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors focus:outline-none cursor-pointer">

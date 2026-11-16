@@ -25,13 +25,13 @@
                     <input type="text" 
                            wire:model.live.debounce.300ms="search" 
                            placeholder="Search companies by name..." 
-                           class="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl text-xs text-slate-850 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
+                           class="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
                 </div>
 
                 <!-- Client filter -->
                 <div class="relative">
                     <select wire:model.live="filterClient" 
-                            class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl text-xs text-slate-855 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
+                            class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-855 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
                         <option value="">All Clients</option>
                         @foreach($clients as $client)
                             <option value="{{ $client->id }}">{{ $client->name }}</option>
@@ -42,7 +42,7 @@
                 <!-- Sort select -->
                 <div class="relative">
                     <select wire:model.live="sortOrder" 
-                            class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl text-xs text-slate-855 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
+                            class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-855 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
                         <option value="desc">Highest Health Score first</option>
                         <option value="asc">Lowest Health Score first</option>
                     </select>
@@ -53,12 +53,12 @@
             <div class="flex items-center bg-slate-100 dark:bg-slate-950 p-1 rounded-xl border border-slate-200/40 dark:border-slate-800/60 shadow-inner flex-shrink-0">
                 <button type="button" 
                         wire:click="$set('viewMode', 'grid')" 
-                        class="px-3.5 py-2 rounded-lg text-xs font-bold transition-all duration-150 focus:outline-none flex items-center gap-1.5 {{ $viewMode === 'grid' ? 'bg-white dark:bg-slate-800 text-sky-600 dark:text-sky-400 shadow-sm border border-slate-200/20 dark:border-slate-700/20' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-350 border border-transparent' }}">
+                        class="px-3.5 py-2 rounded-lg text-xs font-bold transition-all duration-150 focus:outline-none flex items-center gap-1.5 {{ $viewMode === 'grid' ? 'bg-white dark:bg-slate-800 text-sky-600 dark:text-sky-400 shadow-sm border border-slate-200/20 dark:border-slate-700/20' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 border border-transparent' }}">
                     <i class="fa-solid fa-table-cells"></i> Grid
                 </button>
                 <button type="button" 
                         wire:click="$set('viewMode', 'list')" 
-                        class="px-3.5 py-2 rounded-lg text-xs font-bold transition-all duration-150 focus:outline-none flex items-center gap-1.5 {{ $viewMode === 'list' ? 'bg-white dark:bg-slate-800 text-sky-600 dark:text-sky-400 shadow-sm border border-slate-200/20 dark:border-slate-700/20' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-350 border border-transparent' }}">
+                        class="px-3.5 py-2 rounded-lg text-xs font-bold transition-all duration-150 focus:outline-none flex items-center gap-1.5 {{ $viewMode === 'list' ? 'bg-white dark:bg-slate-800 text-sky-600 dark:text-sky-400 shadow-sm border border-slate-200/20 dark:border-slate-700/20' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 border border-transparent' }}">
                     <i class="fa-solid fa-list"></i> List
                 </button>
             </div>
@@ -82,7 +82,7 @@
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-800/40 text-sm">
                     @forelse($companies as $company)
                         @php $h = $company->health; @endphp
-                        <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-850/10 transition-colors">
+                        <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-colors">
                             <!-- Company Name -->
                             <td class="py-4 px-6">
                                 <div class="flex items-center gap-2.5 min-w-0">
@@ -103,10 +103,10 @@
                             <!-- Progress Bar -->
                             <td class="py-4 px-6 min-w-[150px]">
                                 <div class="space-y-1">
-                                    <div class="w-full bg-slate-100 dark:bg-slate-950 rounded-full h-1.5 overflow-hidden shadow-inner border border-slate-200/10 dark:border-slate-850">
+                                    <div class="w-full bg-slate-100 dark:bg-slate-950 rounded-full h-1.5 overflow-hidden shadow-inner border border-slate-200/10 dark:border-slate-800">
                                         <div class="h-1.5 rounded-full {{ $h['color']['bar'] }}" style="width: {{ $h['score'] }}%"></div>
                                     </div>
-                                    <span class="text-[10px] text-slate-400 dark:text-slate-550 font-semibold">{{ $h['passed'] }} / {{ $h['total'] }} Checks passed</span>
+                                    <span class="text-[10px] text-slate-400 dark:text-slate-500 font-semibold">{{ $h['passed'] }} / {{ $h['total'] }} Checks passed</span>
                                 </div>
                             </td>
                             <!-- Details Indicators -->
@@ -173,8 +173,8 @@
                                 {{ $company->name }}
                             </h3>
                             <span class="inline-flex items-center gap-1.5 mt-2 px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider
-                                @if($company->status === 'active') bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-450 border border-emerald-100/50 dark:border-emerald-900/30
-                                @elseif($company->status === 'onboarding') bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-450 border border-amber-100/50 dark:border-amber-900/30
+                                @if($company->status === 'active') bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-100/50 dark:border-emerald-900/30
+                                @elseif($company->status === 'onboarding') bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-100/50 dark:border-amber-900/30
                                 @else bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-455 border border-rose-100/50 dark:border-rose-900/30 @endif">
                                 <span class="w-1.5 h-1.5 rounded-full
                                     @if($company->status === 'active') bg-emerald-500
@@ -193,11 +193,11 @@
 
                     {{-- Progress bar --}}
                     <div class="space-y-1.5 mb-5">
-                        <div class="w-full bg-slate-100 dark:bg-slate-950 rounded-full h-2 overflow-hidden shadow-inner border border-slate-200/10 dark:border-slate-850">
+                        <div class="w-full bg-slate-100 dark:bg-slate-950 rounded-full h-2 overflow-hidden shadow-inner border border-slate-200/10 dark:border-slate-800">
                             <div class="h-2 rounded-full transition-all duration-500 ease-out {{ $h['color']['bar'] }}"
                                  style="width: {{ $h['score'] }}%"></div>
                         </div>
-                        <div class="flex items-center justify-between text-[10px] text-slate-400 dark:text-slate-550 font-semibold">
+                        <div class="flex items-center justify-between text-[10px] text-slate-400 dark:text-slate-500 font-semibold">
                             <span>Completeness</span>
                             <span>{{ $h['passed'] }} of {{ $h['total'] }} Checks</span>
                         </div>

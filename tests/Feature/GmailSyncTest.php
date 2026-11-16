@@ -20,6 +20,7 @@ class GmailSyncTest extends TestCase
     public function test_pubsub_webhook_decodes_base64_and_dispatches_job(): void
     {
         Queue::fake();
+        config(['services.gmail_webhook.pubsub_token' => 'test-pubsub-token']);
 
         $payload = [
             'message' => [
@@ -31,7 +32,7 @@ class GmailSyncTest extends TestCase
             ],
         ];
 
-        $response = $this->postJson('/api/v1/gmail/pubsub-webhook', $payload);
+        $response = $this->postJson('/api/v1/gmail/pubsub-webhook?token=test-pubsub-token', $payload);
 
         $response->assertStatus(200)
             ->assertJson(['status' => 'success', 'historyId' => '12345678']);
@@ -184,5 +185,28 @@ class GmailSyncTest extends TestCase
             'gmail_message_id' => 'msg_operator_reply',
             'is_outgoing' => true,
         ]);
+    }
+
+    public function test_pubsub_webhook_rejects_missing_or_wrong_token(): void
+    {
+        Queue::fake();
+        config(['services.gmail_webhook.pubsub_token' => 'test-pubsub-token']);
+
+        $payload = ['message' => ['data' => base64_encode(json_encode(['historyId' => '1']))]];
+
+        $this->postJson('/api/v1/gmail/pubsub-webhook', $payload)->assertForbidden();
+        $this->postJson('/api/v1/gmail/pubsub-webhook?token=wrong', $payload)->assertForbidden();
+
+        Queue::assertNothingPushed();
+    }
+
+    public function test_pubsub_webhook_is_unavailable_when_token_is_not_configured(): void
+    {
+        Queue::fake();
+        config(['services.gmail_webhook.pubsub_token' => null]);
+
+        $this->postJson('/api/v1/gmail/pubsub-webhook', [])->assertStatus(503);
+
+        Queue::assertNothingPushed();
     }
 }

@@ -1,4 +1,6 @@
 <div class="space-y-6">
+    <x-flash-message />
+
     {{-- Upload Form with Modern Drag & Dropzone --}}
     <div class="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-2xl p-6 shadow-sm">
         <div class="flex items-center justify-between mb-4">

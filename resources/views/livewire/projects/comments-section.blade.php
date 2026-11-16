@@ -11,7 +11,7 @@
         <div class="p-3.5 rounded-xl border flex items-center justify-between shadow-sm text-xs font-semibold
             {{ $flashType === 'success' ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-100 dark:border-emerald-800/40 text-emerald-800 dark:text-emerald-400' : 'bg-rose-50 dark:bg-rose-950/20 border-rose-100 dark:border-rose-800/40 text-rose-800 dark:text-rose-400' }}">
             <span>{{ $flashMessage }}</span>
-            <button type="button" wire:click="dismissFlash" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-350">
+            <button type="button" wire:click="dismissFlash" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
                 <i class="fa-solid fa-xmark"></i>
             </button>
         </div>
@@ -66,10 +66,10 @@
                                 :rows="2"
                                 placeholder="Write a reply... (use @username to mention team members)"
                                 :show-toolbar="false"
-                                class="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-850 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-150"
+                                class="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-150"
                             />
                             <div class="flex justify-end">
-                                <button type="button" wire:click="addReply({{ $comment->id }})" @click="showReplyForm = false" class="px-3 py-1 bg-sky-650 hover:bg-sky-750 text-white font-bold rounded-lg text-[10px] transition-all duration-150">
+                                <button type="button" wire:click="addReply({{ $comment->id }})" @click="showReplyForm = false" class="px-3 py-1 bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-lg text-[10px] transition-all duration-150">
                                     Submit Reply
                                 </button>
                             </div>

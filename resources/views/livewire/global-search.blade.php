@@ -15,7 +15,7 @@
          x-transition:leave="transition ease-in duration-150"
          x-transition:leave-start="opacity-100"
          x-transition:leave-end="opacity-0"
-         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+         class="fixed inset-0 overflow-y-auto z-50 flex p-4 modal-safe-center bg-slate-900/60 backdrop-blur-sm"
          style="display: none;"
          @keydown.window.prevent.cmd.k="open = !open; if(open) { $nextTick(() => $refs.searchInput.focus()) }"
          @keydown.window.prevent.ctrl.k="open = !open; if(open) { $nextTick(() => $refs.searchInput.focus()) }"
@@ -92,7 +92,7 @@
                                                   </div>
 
                                                   <!-- Chevron Indicator -->
-                                                  <div class="ml-2 opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 dark:text-slate-600">
+                                                  <div class="ml-2 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-within:opacity-100 transition-opacity text-slate-400 dark:text-slate-600">
                                                       <i class="fa-solid fa-chevron-right text-[10px]"></i>
                                                   </div>
                                               </a>

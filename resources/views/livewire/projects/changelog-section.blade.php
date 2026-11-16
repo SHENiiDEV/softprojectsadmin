@@ -30,12 +30,12 @@
                             </div>
                             <div class="flex-1 min-w-0 pt-1.5 flex justify-between space-x-4">
                                 <div>
-                                    <p class="text-sm text-slate-600 dark:text-slate-350 leading-relaxed">
+                                    <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
                                         {!! preg_replace("/'([^']+)'/", "'<span class=\"font-bold text-slate-800 dark:text-white\">$1</span>'", e($activity->description)) !!}
                                     </p>
                                     <p class="text-xs text-slate-400 dark:text-slate-500 mt-1 flex items-center gap-1.5">
                                         <i class="fa-solid fa-user text-[10px]"></i>
-                                        <span>Triggered by: <span class="font-semibold text-slate-650 dark:text-slate-400">{{ $activity->user?->name ?? ($activity->client?->name ? $activity->client->name . ' (Client Portal)' : 'System') }}</span></span>
+                                        <span>Triggered by: <span class="font-semibold text-slate-600 dark:text-slate-400">{{ $activity->user?->name ?? ($activity->client?->name ? $activity->client->name . ' (Client Portal)' : 'System') }}</span></span>
                                     </p>
                                 </div>
                                 <div class="text-right text-xs whitespace-nowrap text-slate-400 dark:text-slate-500">

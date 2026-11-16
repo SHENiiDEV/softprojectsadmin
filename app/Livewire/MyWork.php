@@ -182,7 +182,7 @@ class MyWork extends Component
         $task = Task::findOrFail($taskId);
 
         if (! $task->isAssignedToUser($user)) {
-            session()->flash('error', 'This is not your task! You can only start timers on tasks assigned to you.');
+            $this->flash('This is not your task! You can only start timers on tasks assigned to you.', 'error');
 
             return;
         }

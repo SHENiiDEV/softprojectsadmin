@@ -89,7 +89,7 @@ class CompanyHealthScore extends Component
             $score >= 50 => [
                 'bg' => 'bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-100/50 dark:border-amber-900/30',
                 'bar' => 'bg-gradient-to-r from-amber-400 to-orange-500',
-                'text' => 'text-amber-600 dark:text-amber-450',
+                'text' => 'text-amber-600 dark:text-amber-400',
             ],
             default => [
                 'bg' => 'bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400 border border-rose-100/50 dark:border-rose-900/30',

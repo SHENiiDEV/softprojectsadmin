@@ -3,6 +3,7 @@
 - Каталог приложения: `/var/www/softprojects-admin`
 - Домен: `soft-projects.io` (+ `www`). Замените, если домен другой (в командах и в `nginx.conf`).
 - Все команды выполняются от **root**, в конце владельцем файлов становится `www-data`.
+- Если на сервере уже работают другие проекты, шаги 2, 4 и 8 написаны так, чтобы их не ломать (отдельный пул FPM, отдельная база MySQL, отдельный `server`-блок nginx). Перед шагом 4 учтите `innodb_buffer_pool_size`.
 - Профиль сервера: **8 vCPU, 24 GB RAM, NVMe** (настройки ниже рассчитаны на него и выделяют ресурсы под админку).
   Если сервер меньше или на нём живут другие сервисы, уменьшите значения из таблицы «Бюджет памяти».
 - DNS: A/AAAA-записи `soft-projects.io` и `www` должны указывать на сервер **до** шага 8 (Certbot).
@@ -33,31 +34,23 @@ ufw allow OpenSSH && ufw allow "Nginx Full" && ufw --force enable
 
 ## 2. Настройка PHP 8.4 и пул PHP-FPM
 
-Лимиты PHP и OPcache:
+> Сервер может быть общим (на нём живут другие проекты), поэтому **стандартный пул `www` не трогаем**,
+> а настройки админки делаем в отдельном пуле. Общие файлы (`conf.d`) меняем только там, где иначе нельзя (OPcache).
+
+OPcache (общий для всех сайтов на этом PHP, потому что настраивается только глобально; проверку изменений файлов не отключаем):
 
 ```bash
-cat > /etc/php/8.4/fpm/conf.d/99-softprojects.ini <<'INI'
-memory_limit = 512M
-upload_max_filesize = 100M
-post_max_size = 110M
-max_execution_time = 300
-max_input_time = 300
-expose_php = Off
-
+cat > /etc/php/8.4/fpm/conf.d/99-softprojects-opcache.ini <<'INI'
 opcache.enable = 1
 opcache.memory_consumption = 256
 opcache.interned_strings_buffer = 32
 opcache.max_accelerated_files = 20000
-opcache.validate_timestamps = 0
 INI
-cp /etc/php/8.4/fpm/conf.d/99-softprojects.ini /etc/php/8.4/cli/conf.d/99-softprojects.ini
-sed -i 's/^memory_limit.*/memory_limit = 1G/' /etc/php/8.4/cli/conf.d/99-softprojects.ini   # CLI: воркеры, импорт, PDF
 ```
 
-Отдельный пул вместо стандартного `www` (свой сокет, лимиты процессов):
+Отдельный пул админки со своим сокетом, лимитами процессов и лимитами PHP:
 
 ```bash
-mv /etc/php/8.4/fpm/pool.d/www.conf /etc/php/8.4/fpm/pool.d/www.conf.disabled
 cat > /etc/php/8.4/fpm/pool.d/softprojects.conf <<'POOL'
 [softprojects]
 user = www-data
@@ -76,13 +69,22 @@ pm.max_requests = 500
 
 request_terminate_timeout = 300s
 catch_workers_output = yes
+
+php_admin_value[memory_limit] = 512M
+php_admin_value[upload_max_filesize] = 100M
+php_admin_value[post_max_size] = 110M
+php_admin_value[max_execution_time] = 300
+php_admin_value[max_input_time] = 300
+php_admin_flag[expose_php] = off
 POOL
 php-fpm8.4 -t && systemctl restart php8.4-fpm
+ls -l /run/php/      # softprojects.sock + остальные сокеты (php8.4-fpm.sock и т.д.) должны существовать
 ```
 
-> `opcache.validate_timestamps = 0` — PHP не перечитывает файлы сам, поэтому `deploy.sh`
-> в конце делает `systemctl reload php8.4-fpm`. Если не нужно — поставьте `1`.
+> Другие проекты продолжают работать через свой пул (`www` и т.п.): мы его не отключали.
 > `pm.max_children = 40` ≈ 40 одновременных запросов (~100 MB на процесс ≈ 4 GB максимум).
+> Если на сервере нет других проектов и вы хотите максимум скорости, можно добавить
+> `opcache.validate_timestamps = 0` в `99-softprojects-opcache.ini` (тогда `deploy.sh` перезагружает FPM, он это уже делает).
 
 ### Бюджет памяти (24 GB)
 
@@ -120,6 +122,7 @@ SQL
 echo "DB password: ${DB_PASS}"   # сохраните в менеджере паролей, дальше он попадёт в .env
 ```
 
+Если в MySQL уже есть другие базы, уменьшите `innodb_buffer_pool_size` (см. ниже) под свободную память и не перезапускайте MySQL в рабочее время без необходимости.
 Проверьте, что MySQL слушает только localhost (`bind-address = 127.0.0.1` в
 `/etc/mysql/mysql.conf.d/mysqld.cnf` — значение по умолчанию) и порт 3306 не открыт в `ufw`.
 Запустите `mysql_secure_installation` один раз.
@@ -173,6 +176,7 @@ php artisan key:generate --force
 sed -i "s|__DB_PASSWORD__|${DB_PASS}|" .env
 sed -i "s|__TELEGRAM_WEBHOOK_SECRET__|$(openssl rand -hex 32)|" .env
 sed -i "s|__GMAIL_WEBHOOK_SECRET__|$(openssl rand -hex 32)|" .env
+sed -i "s|__GMAIL_PUBSUB_TOKEN__|$(openssl rand -hex 32)|" .env
 nano .env    # заполните __SMTP_*__, __TELEGRAM_BOT_TOKEN__, GOOGLE_*, при необходимости ENABLE_*
 ```
 
@@ -213,7 +217,7 @@ App\Models\User::whereIn("email", ["admin@projecthub.com","manager@projecthub.co
 cd /var/www/softprojects-admin
 cp nginx.conf /etc/nginx/sites-available/softprojects-admin
 ln -sf /etc/nginx/sites-available/softprojects-admin /etc/nginx/sites-enabled/softprojects-admin
-rm -f /etc/nginx/sites-enabled/default
+# default-сайт не удаляем, если на сервере есть другие проекты; при пустом сервере: rm -f /etc/nginx/sites-enabled/default
 nginx -t && systemctl reload nginx
 
 certbot --nginx -d soft-projects.io -d www.soft-projects.io --redirect -m you@example.com --agree-tos -n
@@ -221,6 +225,29 @@ systemctl status certbot.timer   # автопродление; проверка:
 ```
 
 Certbot сам добавит блок `listen 443 ssl` и редирект с HTTP на HTTPS.
+
+## Cloudflare (после того как домен привязан)
+
+1. **SSL/TLS → Full (strict).** Режим Flexible даёт бесконечные редиректы вместе с редиректом certbot.
+2. **Сертификат:** выпускайте его (шаг 8) при «DNS only» (серое облако), затем включайте проксирование (оранжевое).
+3. **Реальный IP клиента.** Без этого приложение видит IP Cloudflare: ломается лимит попыток входа и логи.
+   ```bash
+   cd /var/www/softprojects-admin
+   ./cloudflare-ips.sh                # nginx получает IP из CF-Connecting-IP
+   ```
+4. **Закрыть прямой доступ к серверу в обход Cloudflare** (443 только с адресов Cloudflare; 80 остаётся открытым для продления сертификата):
+   ```bash
+   ./cloudflare-ips.sh --ufw
+   ufw status | head -20              # SSH (22) должен остаться разрешённым
+   ```
+   Выполняйте **после** того, как сайт открывается через Cloudflare. Ежемесячное обновление списка:
+   ```bash
+   echo '0 4 1 * * root /var/www/softprojects-admin/cloudflare-ips.sh --ufw >> /var/log/cloudflare-ips.log 2>&1' > /etc/cron.d/cloudflare-ips
+   ```
+5. **Кэш и WAF.** Для админки поставьте Cache Rule «Bypass cache» (кроме `/build/*`). Если включаете Bot Fight Mode или WAF-правила,
+   добавьте исключения для `/telegram/webhook`, `/api/v1/*` (Telegram и Google ходят туда через Cloudflare).
+6. **Gmail Pub/Sub.** В подписке (Push endpoint) укажите URL с токеном из `.env`:
+   `https://soft-projects.io/api/v1/gmail/pubsub-webhook?token=<GMAIL_PUBSUB_TOKEN>`. Без токена эндпоинт отвечает 403/503.
 
 ## 9. Права (root → www-data)
 
@@ -348,7 +375,8 @@ REDIS_HOST=127.0.0.1
 
 - [ ] `APP_DEBUG=false`, `APP_ENV=production` (`php artisan about`)
 - [ ] демо-пользователи удалены, свой админ создан
-- [ ] `TELEGRAM_WEBHOOK_SECRET` и `GMAIL_WEBHOOK_SECRET` заданы
+- [ ] `TELEGRAM_WEBHOOK_SECRET`, `GMAIL_WEBHOOK_SECRET` и `GMAIL_PUBSUB_TOKEN` заданы
+- [ ] Cloudflare: Full (strict), `./cloudflare-ips.sh --ufw` выполнен, прямой заход на IP по HTTPS не отвечает
 - [ ] порт 3306 закрыт снаружи (`ss -tlnp | grep 3306` → только 127.0.0.1)
 - [ ] `.env` не читается всеми: `ls -l .env` → `-rw-r----- root www-data`
 - [ ] резервные копии: `mysqldump softprojects | gzip` + `storage/app` + копия `.env`
@@ -360,6 +388,7 @@ REDIS_HOST=127.0.0.1
 
 | Симптом | Причина / решение |
 |---|---|
+| 502 на старых проектах | их сокет пропал: `ls /run/php/`, `nginx -T | grep fastcgi_pass`, `tail /var/log/nginx/error.log`; пул `www` отключать нельзя |
 | 502 Bad Gateway | нет сокета пула: `ls /run/php/` → `softprojects.sock`; `php-fpm8.4 -t`; `journalctl -u php8.4-fpm` |
 | Много 502 под нагрузкой | в логе FPM `max_children reached` → поднимите `pm.max_children` (с оглядкой на RAM) |
 | Письма не обрабатываются | `systemctl status softprojects-queue-gmail`, `tail storage/logs/laravel-*.log` |

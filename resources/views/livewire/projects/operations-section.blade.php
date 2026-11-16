@@ -28,7 +28,7 @@
         <div class="p-3.5 rounded-xl border flex items-center justify-between shadow-sm text-xs font-semibold
             {{ $flashType === 'success' ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-100 dark:border-emerald-800/40 text-emerald-800 dark:text-emerald-455' : 'bg-rose-50 dark:bg-rose-950/20 border-rose-100 dark:border-rose-800/40 text-rose-800 dark:text-rose-455' }}">
             <span>{{ $flashMessage }}</span>
-            <button type="button" wire:click="dismissFlash" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-350">
+            <button type="button" wire:click="dismissFlash" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
                 <i class="fa-solid fa-xmark"></i>
             </button>
         </div>
@@ -57,18 +57,18 @@
 
                     <div>
                         <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Post Title</label>
-                        <input type="text" wire:model="smmTitle" placeholder="e.g. Weekly Compliance Update" class="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-850 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
+                        <input type="text" wire:model="smmTitle" placeholder="e.g. Weekly Compliance Update" class="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
                         @error('smmTitle') <span class="text-[10px] text-rose-500 mt-1 block">{{ $message }}</span> @enderror
                     </div>
 
                     <div>
                         <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Post Content / Notes</label>
-                        <textarea wire:model="smmContent" rows="4" placeholder="Draft your content or internal scheduling notes..." class="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-850 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"></textarea>
+                        <textarea wire:model="smmContent" rows="4" placeholder="Draft your content or internal scheduling notes..." class="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"></textarea>
                     </div>
 
                     <div>
                         <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Link URL (Optional)</label>
-                        <input type="text" wire:model="smmUrl" placeholder="https://linkedin.com/posts/..." class="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-850 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
+                        <input type="text" wire:model="smmUrl" placeholder="https://linkedin.com/posts/..." class="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
                         @error('smmUrl') <span class="text-[10px] text-rose-500 mt-1 block">{{ $message }}</span> @enderror
                     </div>
 
@@ -83,7 +83,7 @@
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Published At</label>
-                            <input type="datetime-local" wire:model="smmPublishedAt" class="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-850 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
+                            <input type="datetime-local" wire:model="smmPublishedAt" class="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
                         </div>
                     </div>
 
@@ -110,7 +110,7 @@
                             <div class="flex items-start justify-between">
                                 <div class="flex items-center space-x-2">
                                     <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase tracking-wider
-                                        @if($post->platform === 'LinkedIn') bg-blue-50 text-blue-750 dark:bg-blue-950/20 dark:text-blue-400
+                                        @if($post->platform === 'LinkedIn') bg-blue-50 text-blue-700 dark:bg-blue-950/20 dark:text-blue-400
                                         @elseif($post->platform === 'Instagram') bg-pink-50 text-pink-700 dark:bg-pink-950/20 dark:text-pink-400
                                         @elseif($post->platform === 'Twitter/X') bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200
                                         @else bg-sky-50 text-sky-700 dark:bg-sky-950/20 dark:text-sky-400 @endif">
@@ -120,27 +120,27 @@
                                     <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase tracking-wider
                                         @if($post->status === 'published') bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400
                                         @elseif($post->status === 'scheduled') bg-indigo-50 text-indigo-700 dark:bg-indigo-950/20 dark:text-indigo-400
-                                        @else bg-slate-100 text-slate-500 dark:bg-slate-850 dark:text-slate-400 @endif">
+                                        @else bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 @endif">
                                         {{ $post->status }}
                                     </span>
                                 </div>
 
-                                <div class="flex items-center space-x-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button type="button" wire:click="editPost({{ $post->id }})" class="p-1.5 text-slate-400 hover:text-amber-500 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-850 transition-all" title="Edit">
+                                <div class="flex items-center space-x-0.5 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                                    <button type="button" wire:click="editPost({{ $post->id }})" class="p-1.5 text-slate-400 hover:text-amber-500 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-all" title="Edit">
                                         <i class="fa-solid fa-pencil text-xs"></i>
                                     </button>
-                                    <button type="button" wire:click="deletePost({{ $post->id }})" wire:confirm="Are you sure you want to delete this SMM post?" class="p-1.5 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-850 transition-all" title="Delete">
+                                    <button type="button" wire:click="deletePost({{ $post->id }})" wire:confirm="Are you sure you want to delete this SMM post?" class="p-1.5 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-all" title="Delete">
                                         <i class="fa-solid fa-trash-can text-xs"></i>
                                     </button>
                                 </div>
                             </div>
 
-                            <h5 class="font-semibold text-slate-800 dark:text-slate-250 text-xs mt-2">{{ $post->title }}</h5>
+                            <h5 class="font-semibold text-slate-800 dark:text-slate-200 text-xs mt-2">{{ $post->title }}</h5>
                             @if($post->content)
                                 <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-normal whitespace-pre-wrap">{{ $post->content }}</p>
                             @endif
 
-                            <div class="flex items-center justify-between text-[9px] text-slate-400 mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-850/60">
+                            <div class="flex items-center justify-between text-[9px] text-slate-400 mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800/60">
                                 <span>
                                     @if($post->status === 'published')
                                         Published At: {{ $post->published_at ? $post->published_at->format('d M Y H:i') : '-' }}
@@ -152,7 +152,7 @@
                                 </span>
                                 
                                 @if($post->url)
-                                    <a href="{{ $post->url }}" target="_blank" class="font-semibold text-sky-600 hover:text-sky-750 dark:text-sky-400 hover:underline flex items-center space-x-1">
+                                    <a href="{{ $post->url }}" target="_blank" class="font-semibold text-sky-600 hover:text-sky-700 dark:text-sky-400 hover:underline flex items-center space-x-1">
                                         <span>View live</span>
                                         <i class="fa-solid fa-arrow-up-right-from-square text-[7px]"></i>
                                     </a>
@@ -191,7 +191,7 @@
 
                     <div>
                         <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Reviewer Name</label>
-                        <input type="text" wire:model="reviewerName" placeholder="e.g. Alice Smith" class="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-850 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
+                        <input type="text" wire:model="reviewerName" placeholder="e.g. Alice Smith" class="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
                         @error('reviewerName') <span class="text-[10px] text-rose-500 mt-1 block">{{ $message }}</span> @enderror
                     </div>
 
@@ -208,12 +208,12 @@
 
                     <div>
                         <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Review content / text</label>
-                        <textarea wire:model="reviewContent" rows="4" placeholder="Type the review content here..." class="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-850 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"></textarea>
+                        <textarea wire:model="reviewContent" rows="4" placeholder="Type the review content here..." class="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"></textarea>
                     </div>
 
                     <div>
                         <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Review URL (Optional)</label>
-                        <input type="text" wire:model="reviewUrl" placeholder="https://trustpilot.com/reviews/..." class="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-850 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
+                        <input type="text" wire:model="reviewUrl" placeholder="https://trustpilot.com/reviews/..." class="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
                         @error('reviewUrl') <span class="text-[10px] text-rose-500 mt-1 block">{{ $message }}</span> @enderror
                     </div>
 
@@ -265,11 +265,11 @@
                                         {{ $rev->status }}
                                     </span>
 
-                                    <div class="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button type="button" wire:click="editReview({{ $rev->id }})" class="p-1.5 text-slate-400 hover:text-amber-500 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-850 transition-all" title="Edit">
+                                    <div class="flex items-center [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                                        <button type="button" wire:click="editReview({{ $rev->id }})" class="p-1.5 text-slate-400 hover:text-amber-500 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-all" title="Edit">
                                             <i class="fa-solid fa-pencil text-xs"></i>
                                         </button>
-                                        <button type="button" wire:click="deleteReview({{ $rev->id }})" wire:confirm="Are you sure you want to delete this review?" class="p-1.5 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-850 transition-all" title="Delete">
+                                        <button type="button" wire:click="deleteReview({{ $rev->id }})" wire:confirm="Are you sure you want to delete this review?" class="p-1.5 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-all" title="Delete">
                                             <i class="fa-solid fa-trash-can text-xs"></i>
                                         </button>
                                     </div>
@@ -277,14 +277,14 @@
                             </div>
 
                             @if($rev->content)
-                                <p class="text-xs text-slate-655 dark:text-slate-350 mt-2 leading-relaxed italic">"{{ $rev->content }}"</p>
+                                <p class="text-xs text-slate-655 dark:text-slate-300 mt-2 leading-relaxed italic">"{{ $rev->content }}"</p>
                             @endif
 
-                            <div class="flex items-center justify-between text-[9px] text-slate-400 mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-850/60">
+                            <div class="flex items-center justify-between text-[9px] text-slate-400 mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800/60">
                                 <span>Registered: {{ $rev->created_at->format('d M Y H:i') }}</span>
                                 
                                 @if($rev->url)
-                                    <a href="{{ $rev->url }}" target="_blank" class="font-semibold text-sky-600 hover:text-sky-750 dark:text-sky-400 hover:underline flex items-center space-x-1">
+                                    <a href="{{ $rev->url }}" target="_blank" class="font-semibold text-sky-600 hover:text-sky-700 dark:text-sky-400 hover:underline flex items-center space-x-1">
                                         <span>View Review</span>
                                         <i class="fa-solid fa-arrow-up-right-from-square text-[7px]"></i>
                                     </a>

@@ -77,7 +77,7 @@
                         </div>
 
                         {{-- Actions --}}
-                        <div class="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800/60 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div class="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800/60 flex items-center gap-2 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                             <button wire:click="togglePin({{ $note->id }})" title="{{ $note->pinned ? 'Unpin' : 'Pin note' }}"
                                     class="p-1.5 rounded-lg text-slate-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/20 transition-colors text-xs flex items-center gap-1">
                                 <i class="fa-solid fa-thumbtack"></i>

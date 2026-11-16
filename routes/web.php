@@ -10,6 +10,7 @@ use App\Livewire\ClientPortal;
 use App\Livewire\Clients\Index;
 use App\Livewire\CompanyHealthScore;
 use App\Livewire\CredentialVault;
+use App\Livewire\Dashboard;
 use App\Livewire\DeadlineCenter;
 use App\Livewire\MyWork;
 use App\Livewire\PciDss\Index as PciDssIndex;
@@ -30,7 +31,7 @@ Route::get('/', function () {
         : redirect()->route('login');
 });
 
-Route::view('dashboard', 'dashboard')
+Route::get('dashboard', Dashboard::class)
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
 
@@ -57,7 +58,7 @@ Route::middleware(['auth'])->group(function () {
     Route::view('profile', 'profile')->name('profile');
 });
 
-Route::get('/portal/{hash}', ClientPortal::class)->middleware('feature:client_portal')->name('client.portal');
+Route::get('/portal/{hash}', ClientPortal::class)->middleware(['feature:client_portal', 'throttle:60,1'])->name('client.portal');
 
 Route::post('/telegram/webhook', TelegramWebhookController::class)
     ->name('telegram.webhook');

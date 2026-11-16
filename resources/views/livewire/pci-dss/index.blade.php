@@ -52,7 +52,7 @@
         <div class="flex items-center gap-2.5">
             @if($selectedClient)
                 <button wire:click="closeFolder"
-                        class="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl shadow-sm transition-all duration-150 cursor-pointer">
+                        class="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl shadow-sm transition-all duration-150 cursor-pointer">
                     <i class="fa-solid fa-arrow-left text-slate-400"></i>
                     <span>All Folders</span>
                 </button>
@@ -280,7 +280,7 @@
                                             @endif
 
                                             <button wire:click.stop="openUploadModal({{ $folder['id'] }})"
-                                                    class="opacity-0 group-hover:opacity-100 w-7 h-7 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-600 dark:bg-sky-950/60 dark:hover:bg-sky-900 dark:text-sky-400 flex items-center justify-center transition-all"
+                                                    class="[@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-within:opacity-100 w-7 h-7 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-600 dark:bg-sky-950/60 dark:hover:bg-sky-900 dark:text-sky-400 flex items-center justify-center transition-all"
                                                     title="Upload directly into this folder">
                                                 <i class="fa-solid fa-plus text-xs"></i>
                                             </button>
