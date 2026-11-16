@@ -52,7 +52,7 @@ class ProcessGmailAlertJob implements ShouldQueue
             $bodyText = $this->payload['body_text'] ?? '';
             $categories = $this->payload['categories'] ?? [];
 
-            $minDateStr = env('GMAIL_SYNC_MIN_DATE');
+            $minDateStr = config('services.gmail_sync.min_date');
             if (! empty($minDateStr) && ! app()->environment('testing')) {
                 $sentAt = ! empty($this->payload['date']) ? Carbon::parse($this->payload['date']) : now();
                 if ($sentAt->lt(Carbon::parse($minDateStr))) {

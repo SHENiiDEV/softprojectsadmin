@@ -45,6 +45,10 @@ return [
         'secret' => env('GMAIL_WEBHOOK_SECRET'),
     ],
 
+    'gmail_sync' => [
+        'min_date' => env('GMAIL_SYNC_MIN_DATE'),
+    ],
+
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
