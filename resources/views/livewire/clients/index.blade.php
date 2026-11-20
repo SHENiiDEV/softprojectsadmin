@@ -245,7 +245,7 @@
                                                             @if($company->ubo)
                                                                 <p class="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
                                                                     <i class="fa-solid fa-user text-slate-400"></i>
-                                                                    <span>UBO: {{ $company->ubo }}</span>
+                                                                    <span>Director Curator: {{ $company->ubo }}</span>
                                                                 </p>
                                                             @endif
 

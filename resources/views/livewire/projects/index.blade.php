@@ -85,7 +85,7 @@
                     </span>
                     <input type="text" 
                            wire:model.live.debounce.300ms="search" 
-                           placeholder="Search by name, UBO..." 
+                           placeholder="Search by name, Director Curator..." 
                            class="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800/80 rounded-xl text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-200">
                 </div>
 
@@ -182,7 +182,7 @@
                             <tr class="text-slate-400 dark:text-slate-500 text-xs font-bold uppercase border-b border-slate-100 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-950/20">
                                 <th class="py-4 px-6">Company</th>
                                 <th class="py-4 px-6">Client</th>
-                                <th class="py-4 px-6">UBO</th>
+                                <th class="py-4 px-6">Director Curator</th>
                                 <th class="py-4 px-6">MCC Code</th>
                                 <th class="py-4 px-6">Integration</th>
                                 <th class="py-4 px-6">Director</th>
@@ -470,7 +470,7 @@
                                     </div>
                                 </div>
                                 <div class="flex items-center justify-between text-slate-500 dark:text-slate-400">
-                                    <span class="font-medium">UBO:</span>
+                                    <span class="font-medium">Director Curator:</span>
                                     <span class="font-semibold text-slate-700 dark:text-slate-355 truncate max-w-[150px]" title="{{ $project->ubo }}">{{ $project->ubo ?: '-' }}</span>
                                 </div>
                                 <div class="flex items-center justify-between text-slate-500 dark:text-slate-400">

@@ -107,7 +107,7 @@
                 </svg>
             </div>
             <div>
-                <span class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Beneficiary (UBO)</span>
+                <span class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Director Curator</span>
                 <span class="block text-sm font-bold text-slate-700 dark:text-slate-300 mt-0.5 truncate max-w-[150px]">
                     {{ $project->ubo ?: 'Not specified' }}
                 </span>

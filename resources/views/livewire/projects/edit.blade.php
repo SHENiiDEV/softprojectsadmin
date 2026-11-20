@@ -82,7 +82,7 @@
 
                         <!-- UBO -->
                         <div>
-                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Ultimate Beneficial Owner (UBO)</label>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Director Curator</label>
                             <input type="text" wire:model="ubo" class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800/80 rounded-xl text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-200" placeholder="UBO Name">
                             @error('ubo') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
                         </div>

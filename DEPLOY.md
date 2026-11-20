@@ -339,6 +339,12 @@ chown -R www-data:www-data storage bootstrap/cache
 
 Проверка: откройте https://soft-projects.io, войдите, отправьте боту `/start`.
 
+> **После любой правки `.env`** (токены, секреты, флаги): `php artisan config:cache`, затем перезапуск воркеров
+> (`php artisan queue:restart && systemctl restart softprojects-queue@{1..4} softprojects-queue-gmail`):
+> воркеры живут долго и иначе продолжают работать со старыми значениями.
+> Проверка цепочки очереди и Telegram: `php artisan tinker --execute 'App\Jobs\SendTelegramMessageJob::dispatch(App\Models\User::find(1)->telegram_id, "queue test");'`
+> Уведомление о новой задаче получает её **исполнитель** (создатель не получает его, если исполнитель другой человек).
+
 ## Обновление (каждый следующий деплой)
 
 ```bash
@@ -394,6 +400,7 @@ REDIS_HOST=127.0.0.1
 | Письма не обрабатываются | `systemctl status softprojects-queue-gmail`, `tail storage/logs/laravel-*.log` |
 | 500, в логе `Permission denied` | после запуска от root: `chown -R www-data:www-data storage bootstrap/cache` |
 | Не грузятся стили | `npm run build` не выполнен или нет Node |
+| Telegram: тест проходит, а уведомления не приходят, в логе `401 SESSION_REVOKED` | воркеры держат старый токен/конфиг: `php artisan queue:restart && systemctl restart softprojects-queue@{1..4} softprojects-queue-gmail`. Токен из Settings → Telegram перекрывает `.env` |
 | Telegram/Gmail не работают | нет секретов в `.env` (ответ 503/403), не запущен воркер очереди |
 | Изменения не видны после деплоя | `./deploy.sh` (он перезагружает FPM) или вручную `systemctl reload php8.4-fpm` |
 | Загрузка файла > 2 МБ падает | проверьте `99-softprojects.ini` (100M) и `client_max_body_size` (100M) в nginx |

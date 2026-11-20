@@ -119,7 +119,7 @@
                 <td><code>{{ $project->mcc ?: 'Not specified' }}</code></td>
             </tr>
             <tr>
-                <th>Beneficiary (UBO)</th>
+                <th>Director Curator</th>
                 <td>{{ $project->ubo ?: 'Not specified' }}</td>
             </tr>
             <tr>

@@ -45,7 +45,7 @@ class Project extends Model implements HasMedia
                 } elseif ($key === 'integration_status') {
                     $changes[] = "Integration status updated from '".($original ?? 'pending')."' to '".($value ?? 'pending')."'";
                 } elseif ($key === 'ubo') {
-                    $changes[] = "UBO updated from '".($original ?? 'not specified')."' to '".($value ?? 'not specified')."'";
+                    $changes[] = "Director Curator updated from '".($original ?? 'not specified')."' to '".($value ?? 'not specified')."'";
                 } elseif ($key === 'mcc') {
                     $changes[] = "MCC Code updated from '".($original ?? 'not specified')."' to '".($value ?? 'not specified')."'";
                 } elseif ($key === 'settlement_bank_1') {
