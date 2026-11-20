@@ -22,6 +22,9 @@ class CredentialsSection extends Component
     // Form fields
     public string $type = 'web_2_0';
 
+    /** Free-text service name, used when type is "other" (e.g. PayAlly, Oxen). */
+    public string $name = '';
+
     public string $provider_url = '';
 
     public ?int $website_id = null;
@@ -40,6 +43,7 @@ class CredentialsSection extends Component
     {
         return [
             'type' => 'required|string',
+            'name' => 'required_if:type,other|nullable|string|max:255',
             'provider_url' => 'nullable|url',
             'website_id' => [
                 'nullable',
@@ -77,6 +81,7 @@ class CredentialsSection extends Component
         $credential = Credential::findOrFail($id);
         $this->editingId = $credential->id;
         $this->type = $credential->type;
+        $this->name = $credential->name ?? '';
         $this->provider_url = $credential->provider_url ?? '';
         $this->website_id = $credential->website_id;
         $this->website_name = $credential->website ? $credential->website->name : '';
@@ -97,6 +102,7 @@ class CredentialsSection extends Component
             $credential = Credential::findOrFail($this->editingId);
             $credential->update([
                 'type' => $this->type,
+                'name' => trim($this->name) ?: null,
                 'provider_url' => $this->provider_url ?: null,
                 'website_id' => $this->website_id ?: null,
                 'login' => $this->login,
@@ -117,6 +123,7 @@ class CredentialsSection extends Component
         } else {
             $newCredential = $this->project->credentials()->create([
                 'type' => $this->type,
+                'name' => trim($this->name) ?: null,
                 'provider_url' => $this->provider_url ?: null,
                 'website_id' => $this->website_id ?: null,
                 'login' => $this->login,
@@ -158,6 +165,7 @@ class CredentialsSection extends Component
         $this->showForm = false;
         $this->editingId = null;
         $this->type = 'web_2_0';
+        $this->name = '';
         $this->provider_url = '';
         $this->website_id = null;
         $this->website_name = '';
@@ -172,8 +180,16 @@ class CredentialsSection extends Component
     {
         $credentials = $this->project->credentials()->with('website')->orderBy('id', 'desc')->get();
 
+        $knownServiceNames = Credential::where('type', 'other')
+            ->whereNotNull('name')
+            ->distinct()
+            ->orderBy('name')
+            ->limit(50)
+            ->pluck('name');
+
         return view('livewire.projects.credentials-section', [
             'credentials' => $credentials,
+            'knownServiceNames' => $knownServiceNames,
         ]);
     }
 }
