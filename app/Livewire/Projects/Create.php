@@ -46,7 +46,7 @@ class Create extends Component
 
     public string $director_fee_status = 'unpaid';
 
-    public ?int $director_managed_by = null;
+    public ?int $website_responsible_id = null;
 
     protected array $rules = [
         'name' => 'required|string|max:255',
@@ -66,7 +66,7 @@ class Create extends Component
         'settlement_bank_2' => 'nullable|string|max:2000',
         'director_name' => 'required|string|max:255',
         'director_fee_status' => 'required|string',
-        'director_managed_by' => 'nullable|exists:users,id',
+        'website_responsible_id' => 'nullable|exists:users,id',
     ];
 
     public function save(): void
@@ -108,6 +108,7 @@ class Create extends Component
             $project->websites()->create([
                 'name' => 'Main Website',
                 'url' => $this->website,
+                'responsible_user_id' => $this->website_responsible_id ?: null,
             ]);
         }
 
@@ -115,7 +116,6 @@ class Create extends Component
             'project_id' => $project->id,
             'name' => $this->director_name,
             'fee_paid_status' => $this->director_fee_status,
-            'managed_by' => $this->director_managed_by ?: null,
         ]);
 
         session()->flash('message', 'Company and director successfully added.');

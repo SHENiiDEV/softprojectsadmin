@@ -873,7 +873,7 @@
                                                         wire-model="newCommentContent"
                                                         :users="$users->map(fn($u) => ['name' => $u->name, 'username' => $u->telegram_username ?: preg_replace('/[^a-zA-Z0-9_]/', '', str_replace(' ', '_', $u->name)), 'type' => 'User'])->concat($clients->map(fn($c) => ['name' => $c->name, 'username' => preg_replace('/[^a-zA-Z0-9_]/', '', str_replace(' ', '_', $c->name)) . '_client', 'type' => 'Client']))->values()"
                                                         submit-action="$wire.addComment()"
-                                                        class="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-805 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-150"
+                                                        class="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-150"
                                                     />
                                                     
                                                     <div class="flex items-center justify-between">
@@ -1376,7 +1376,7 @@
                                                         <div class="bg-emerald-500 h-full rounded-full transition-all duration-300" style="width: {{ $modalTask->total_duration > 0 ? '100' : '0' }}%"></div>
                                                     </div>
 
-                                                    <div class="pt-1.5 flex items-center justify-between border-t border-slate-200/40 dark:border-slate-855">
+                                                    <div class="pt-1.5 flex items-center justify-between border-t border-slate-200/40 dark:border-slate-900">
                                                         @if($activeTimer)
                                                             <!-- Stop Timer with Ticking -->
                                                             <button type="button" wire:click="toggleTimer({{ $modalTask->id }})" class="w-full flex items-center justify-center space-x-1.5 px-3 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-xs font-bold shadow-sm transition-all duration-150 animate-pulse">

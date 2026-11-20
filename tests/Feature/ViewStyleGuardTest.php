@@ -35,10 +35,13 @@ class ViewStyleGuardTest extends TestCase
     public function test_view_does_not_use_nonexistent_tailwind_shades(string $path): void
     {
         $colors = 'slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose';
+        $validShades = ['50', '100', '200', '300', '400', '500', '600', '700', '800', '900', '950'];
 
-        preg_match_all('/\b(?:bg|text|border|from|to|via|ring|divide|placeholder|fill|stroke)-(?:'.$colors.')-(?:150|250|350|450|550|650|750|850)(?![0-9])/', (string) file_get_contents($path), $matches);
+        preg_match_all('/\b(?:bg|text|border|from|to|via|ring|divide|placeholder|fill|stroke)-(?:'.$colors.')-(\d{2,3})(?![0-9])/', (string) file_get_contents($path), $matches);
 
-        $this->assertSame([], $matches[0], 'Nonexistent Tailwind shade(s) in '.$path);
+        $invalid = array_values(array_filter($matches[0], fn (string $class, int $i) => ! in_array($matches[1][$i], $validShades, true), ARRAY_FILTER_USE_BOTH));
+
+        $this->assertSame([], $invalid, 'Nonexistent Tailwind shade(s) in '.$path);
     }
 
     #[DataProvider('bladeFiles')]

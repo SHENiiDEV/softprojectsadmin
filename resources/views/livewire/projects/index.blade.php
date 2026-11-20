@@ -253,7 +253,7 @@
                                                         <div class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Websites</div>
                                                         <div class="space-y-1 max-h-40 overflow-y-auto">
                                                             @foreach($project->websites as $web)
-                                                                <a href="{{ $web->url }}" target="_blank" class="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/80 text-xs font-mono font-medium text-slate-700 dark:text-slate-355 hover:text-sky-600 dark:hover:text-sky-400 transition-colors">
+                                                                <a href="{{ $web->url }}" target="_blank" class="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/80 text-xs font-mono font-medium text-slate-700 dark:text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 transition-colors">
                                                                     <span class="truncate pr-2">{{ parse_url($web->url, PHP_URL_HOST) ?: $web->url }}</span>
                                                                     <i class="fa-solid fa-arrow-up-right-from-square text-[9px] opacity-60"></i>
                                                                 </a>
@@ -290,13 +290,13 @@
                                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-semibold uppercase tracking-wider
                                             @if($project->integration_status === 'completed') bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400
                                             @elseif($project->integration_status === 'in_progress') bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400
-                                            @else bg-slate-100 text-slate-655 dark:bg-slate-800 dark:text-slate-400 @endif">
+                                            @else bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400 @endif">
                                             {{ $project->integration_status ?: 'Pending' }}
                                         </span>
                                     </td>
 
                                     <!-- Director -->
-                                    <td class="py-4 px-6 text-slate-655 dark:text-slate-355">
+                                    <td class="py-4 px-6 text-slate-700 dark:text-slate-400">
                                         @if($project->director)
                                             <div class="flex items-center space-x-2">
                                                 <div class="h-6 w-6 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 flex items-center justify-center text-[9px] font-bold uppercase border border-slate-200/50 dark:border-slate-700">
@@ -422,7 +422,7 @@
                                             {{ $project->name }}
                                         </a>
                                         @if($project->client)
-                                            <span class="inline-block text-[10px] font-bold text-indigo-600 dark:text-indigo-405 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100/50 dark:border-indigo-900/30 px-2 py-0.5 rounded-md mt-1 truncate max-w-[150px]">
+                                            <span class="inline-block text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100/50 dark:border-indigo-900/30 px-2 py-0.5 rounded-md mt-1 truncate max-w-[150px]">
                                                 {{ $project->client->name }}
                                             </span>
                                         @else
@@ -456,14 +456,9 @@
                             <div class="my-5 py-4 border-t border-b border-slate-100 dark:border-slate-800/60 space-y-2.5 text-xs">
                                 <div class="flex items-center justify-between text-slate-500 dark:text-slate-400">
                                     <span class="font-medium">Director:</span>
-                                    <div class="flex items-center space-x-1.5 font-semibold text-slate-755 dark:text-slate-300">
+                                    <div class="flex items-center space-x-1.5 font-semibold text-slate-800 dark:text-slate-300">
                                         @if($project->director)
                                             <span>{{ $project->director->name }}</span>
-                                            @if($project->director->managed_by)
-                                                <div class="h-4.5 w-4.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 flex items-center justify-center text-[7px] font-bold uppercase border border-slate-200/50 dark:border-slate-700" title="Director Managed By">
-                                                    {{ substr($project->director->manager?->name ?? 'M', 0, 2) }}
-                                                </div>
-                                            @endif
                                         @else
                                             <span class="text-slate-400 font-normal">-</span>
                                         @endif
@@ -471,7 +466,7 @@
                                 </div>
                                 <div class="flex items-center justify-between text-slate-500 dark:text-slate-400">
                                     <span class="font-medium">Director Curator:</span>
-                                    <span class="font-semibold text-slate-700 dark:text-slate-355 truncate max-w-[150px]" title="{{ $project->ubo }}">{{ $project->ubo ?: '-' }}</span>
+                                    <span class="font-semibold text-slate-700 dark:text-slate-400 truncate max-w-[150px]" title="{{ $project->ubo }}">{{ $project->ubo ?: '-' }}</span>
                                 </div>
                                 <div class="flex items-center justify-between text-slate-500 dark:text-slate-400">
                                     <span class="font-medium">MCC Code:</span>
@@ -549,7 +544,7 @@
                 @empty
                     <div class="col-span-full bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-2xl p-16 text-center text-slate-400 dark:text-slate-500">
                         <div class="flex flex-col items-center justify-center space-y-3">
-                            <i class="fa-solid fa-folder-open text-4xl text-slate-355 dark:text-slate-700"></i>
+                            <i class="fa-solid fa-folder-open text-4xl text-slate-400 dark:text-slate-700"></i>
                             <span class="text-sm font-medium">No companies found matching the search criteria.</span>
                         </div>
                     </div>

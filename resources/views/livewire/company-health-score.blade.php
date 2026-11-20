@@ -31,7 +31,7 @@
                 <!-- Client filter -->
                 <div class="relative">
                     <select wire:model.live="filterClient" 
-                            class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-855 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
+                            class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
                         <option value="">All Clients</option>
                         @foreach($clients as $client)
                             <option value="{{ $client->id }}">{{ $client->name }}</option>
@@ -42,7 +42,7 @@
                 <!-- Sort select -->
                 <div class="relative">
                     <select wire:model.live="sortOrder" 
-                            class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-855 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
+                            class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
                         <option value="desc">Highest Health Score first</option>
                         <option value="asc">Lowest Health Score first</option>
                     </select>
@@ -175,7 +175,7 @@
                             <span class="inline-flex items-center gap-1.5 mt-2 px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider
                                 @if($company->status === 'active') bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-100/50 dark:border-emerald-900/30
                                 @elseif($company->status === 'onboarding') bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-100/50 dark:border-amber-900/30
-                                @else bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-455 border border-rose-100/50 dark:border-rose-900/30 @endif">
+                                @else bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-500 border border-rose-100/50 dark:border-rose-900/30 @endif">
                                 <span class="w-1.5 h-1.5 rounded-full
                                     @if($company->status === 'active') bg-emerald-500
                                     @elseif($company->status === 'onboarding') bg-amber-500
