@@ -80,7 +80,7 @@
                 <!-- Type -->
                 <div>
                     <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">Access Type</label>
-                    <select wire:model="type" class="w-full px-3.5 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-150">
+                    <select wire:model.live="type" class="w-full px-3.5 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-150">
                         <option value="web_2_0">Web Access 2.0</option>
                         <option value="hosting">Hosting / cPanel</option>
                         <option value="mail_admin">Mail Admin</option>
@@ -89,6 +89,20 @@
                     </select>
                     @error('type') <span class="text-[10px] text-rose-500 mt-1 block">{{ $message }}</span> @enderror
                 </div>
+
+                <!-- Free-text service name for "Other" access -->
+                @if($type === 'other')
+                    <div class="md:col-span-2">
+                        <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">Service / Account Name <span class="text-rose-500">*</span></label>
+                        <input type="text" wire:model="name" list="known-service-names" placeholder="e.g., PayAlly, Oxen, Stripe dashboard..." autocomplete="off" class="w-full px-3.5 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-200">
+                        <datalist id="known-service-names">
+                            @foreach($knownServiceNames as $knownName)
+                                <option value="{{ $knownName }}"></option>
+                            @endforeach
+                        </datalist>
+                        @error('name') <span class="text-[10px] text-rose-500 mt-1 block">{{ $message }}</span> @enderror
+                    </div>
+                @endif
 
                 <!-- Website Linkage -->
                 <div>
@@ -166,9 +180,12 @@
                             'web_2_0' => 'Web 2.0',
                             default => 'Other',
                         };
-                        $credentialName = $cred->website
-                            ? $cred->website->name . ' / ' . $typeLabel
-                            : $typeLabel . ' Credential';
+                        $customName = $cred->type === 'other' ? trim((string) $cred->name) : '';
+                        $credentialName = $customName !== ''
+                            ? $customName . ($cred->website ? ' / ' . $cred->website->name : '')
+                            : ($cred->website
+                                ? $cred->website->name . ' / ' . $typeLabel
+                                : $typeLabel . ' Credential');
                         $providerHost = $cred->provider_url ? (parse_url($cred->provider_url, PHP_URL_HOST) ?: $cred->provider_url) : null;
                         $websiteHost = $cred->website?->url ? (parse_url($cred->website->url, PHP_URL_HOST) ?: $cred->website->url) : null;
                         $credentialPayload = [
