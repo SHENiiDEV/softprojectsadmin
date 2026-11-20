@@ -48,8 +48,6 @@ class Edit extends Component
 
     public string $director_fee_status = '';
 
-    public ?int $director_managed_by = null;
-
     public function mount(Project $project): void
     {
         $this->project = $project;
@@ -78,11 +76,9 @@ class Edit extends Component
         if ($director) {
             $this->director_name = $director->name;
             $this->director_fee_status = $director->fee_paid_status;
-            $this->director_managed_by = $director->managed_by;
         } else {
             $this->director_name = '';
             $this->director_fee_status = 'unpaid';
-            $this->director_managed_by = null;
         }
     }
 
@@ -106,7 +102,6 @@ class Edit extends Component
             'settlement_bank_2' => 'nullable|string|max:2000',
             'director_name' => 'required|string|max:255',
             'director_fee_status' => 'required|string',
-            'director_managed_by' => 'nullable|exists:users,id',
         ];
     }
 
@@ -162,7 +157,6 @@ class Edit extends Component
             [
                 'name' => $this->director_name,
                 'fee_paid_status' => $this->director_fee_status,
-                'managed_by' => $this->director_managed_by ?: null,
             ]
         );
 

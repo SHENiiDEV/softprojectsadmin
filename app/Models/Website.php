@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['project_id', 'name', 'url', 'status', 'gateways', 'visa_status', 'mastercard_status'])]
+#[Fillable(['project_id', 'responsible_user_id', 'name', 'url', 'status', 'gateways', 'visa_status', 'mastercard_status'])]
 class Website extends Model
 {
     use HasFactory;
@@ -31,6 +31,14 @@ class Website extends Model
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
+    }
+
+    /**
+     * Team member responsible for this website.
+     */
+    public function responsible(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'responsible_user_id');
     }
 
     /**

@@ -55,6 +55,18 @@
                     @error('url') <span class="text-[10px] text-rose-500 mt-1 block">{{ $message }}</span> @enderror
                 </div>
 
+                <!-- Responsible -->
+                <div>
+                    <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">Responsible</label>
+                    <select wire:model="responsible_user_id" class="w-full px-3.5 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-200">
+                        <option value="">Not assigned</option>
+                        @foreach($users as $responsibleUser)
+                            <option value="{{ $responsibleUser->id }}">{{ $responsibleUser->name }}</option>
+                        @endforeach
+                    </select>
+                    @error('responsible_user_id') <span class="text-[10px] text-rose-500 mt-1 block">{{ $message }}</span> @enderror
+                </div>
+
                 <!-- Status -->
                 <div>
                     <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">Integration Status <span class="text-rose-500">*</span></label>
@@ -207,6 +219,9 @@
                             <!-- Name -->
                             <td class="p-3.5 whitespace-nowrap">
                                 <div class="font-semibold text-slate-800 dark:text-slate-200">{{ $web->name }}</div>
+                                <div class="text-[11px] mt-0.5 {{ $web->responsible ? 'text-slate-500 dark:text-slate-400' : 'text-slate-300 dark:text-slate-600' }}">
+                                    <i class="fa-solid fa-user-tie mr-1"></i>{{ $web->responsible?->name ?? 'No responsible' }}
+                                </div>
                                 @if(!empty($web->gateways))
                                     <div class="flex flex-wrap gap-1 mt-1 max-w-[320px]">
                                         @foreach($web->gateways as $gw)

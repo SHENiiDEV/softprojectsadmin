@@ -26,7 +26,7 @@
     <!-- Flash message -->
     @if ($flashMessage)
         <div class="p-3.5 rounded-xl border flex items-center justify-between shadow-sm text-xs font-semibold
-            {{ $flashType === 'success' ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-100 dark:border-emerald-800/40 text-emerald-800 dark:text-emerald-455' : 'bg-rose-50 dark:bg-rose-950/20 border-rose-100 dark:border-rose-800/40 text-rose-800 dark:text-rose-455' }}">
+            {{ $flashType === 'success' ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-100 dark:border-emerald-800/40 text-emerald-800 dark:text-emerald-500' : 'bg-rose-50 dark:bg-rose-950/20 border-rose-100 dark:border-rose-800/40 text-rose-800 dark:text-rose-500' }}">
             <span>{{ $flashMessage }}</span>
             <button type="button" wire:click="dismissFlash" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
                 <i class="fa-solid fa-xmark"></i>
@@ -160,7 +160,7 @@
                             </div>
                         </div>
                     @empty
-                        <div class="text-center py-12 border-2 border-dashed border-slate-100 dark:border-slate-805 rounded-2xl text-slate-405 dark:text-slate-600">
+                        <div class="text-center py-12 border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-2xl text-slate-400 dark:text-slate-600">
                             <i class="fa-regular fa-folder-open text-2xl mb-2.5 block text-slate-300 dark:text-slate-700"></i>
                             <p class="text-xs font-semibold">No SMM posts scheduled yet</p>
                             <p class="text-[10px] mt-0.5">Use the scheduler to queue social media publications.</p>
@@ -197,7 +197,7 @@
 
                     <div>
                         <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Rating (1-5 Stars)</label>
-                        <select wire:model="reviewRating" class="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-805 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
+                        <select wire:model="reviewRating" class="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all">
                             <option value="5">⭐⭐⭐⭐⭐ 5 Stars</option>
                             <option value="4">⭐⭐⭐⭐ 4 Stars</option>
                             <option value="3">⭐⭐⭐ 3 Stars</option>
@@ -249,7 +249,7 @@
                             <div class="flex items-start justify-between">
                                 <div>
                                     <div class="flex items-center space-x-2">
-                                        <span class="text-xs font-bold text-slate-805 dark:text-slate-200">{{ $rev->reviewer_name }}</span>
+                                        <span class="text-xs font-bold text-slate-800 dark:text-slate-200">{{ $rev->reviewer_name }}</span>
                                         <span class="text-[9px] text-slate-400">{{ $rev->platform }}</span>
                                     </div>
                                     <div class="text-amber-500 font-bold text-[10px] mt-0.5">
@@ -277,7 +277,7 @@
                             </div>
 
                             @if($rev->content)
-                                <p class="text-xs text-slate-655 dark:text-slate-300 mt-2 leading-relaxed italic">"{{ $rev->content }}"</p>
+                                <p class="text-xs text-slate-700 dark:text-slate-300 mt-2 leading-relaxed italic">"{{ $rev->content }}"</p>
                             @endif
 
                             <div class="flex items-center justify-between text-[9px] text-slate-400 mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800/60">
@@ -292,7 +292,7 @@
                             </div>
                         </div>
                     @empty
-                        <div class="text-center py-12 border-2 border-dashed border-slate-100 dark:border-slate-805 rounded-2xl text-slate-405 dark:text-slate-600">
+                        <div class="text-center py-12 border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-2xl text-slate-400 dark:text-slate-600">
                             <i class="fa-regular fa-star text-2xl mb-2.5 block text-slate-300 dark:text-slate-700"></i>
                             <p class="text-xs font-semibold">No reviews registered yet</p>
                             <p class="text-[10px] mt-0.5">Customer reviews from Trustpilot or Google will appear here.</p>

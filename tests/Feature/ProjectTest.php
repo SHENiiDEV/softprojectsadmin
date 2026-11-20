@@ -70,7 +70,7 @@ class ProjectTest extends TestCase
             ->set('manager_id', $user->id)
             ->set('director_name', 'Jane Director')
             ->set('director_fee_status', 'paid')
-            ->set('director_managed_by', $user->id)
+            ->set('website_responsible_id', $user->id)
             ->call('save');
 
         $project = Project::where('name', 'New Custom Co')->first();
@@ -86,6 +86,7 @@ class ProjectTest extends TestCase
         $this->assertDatabaseHas('websites', [
             'project_id' => $project->id,
             'url' => 'https://customcompany.com',
+            'responsible_user_id' => $user->id,
         ]);
 
         $this->assertEquals(['Krisp' => '+11111', 'Zadarma' => '+22222'], $project->phones);
@@ -95,7 +96,6 @@ class ProjectTest extends TestCase
             'project_id' => $project->id,
             'name' => 'Jane Director',
             'fee_paid_status' => 'paid',
-            'managed_by' => $user->id,
         ]);
     }
 

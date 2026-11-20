@@ -163,10 +163,6 @@
                     </span>
                 </td>
             </tr>
-            <tr>
-                <th>Curator / Manager</th>
-                <td>{{ $project->director?->manager?->name ?: 'Not assigned' }}</td>
-            </tr>
         </table>
     </div>
 

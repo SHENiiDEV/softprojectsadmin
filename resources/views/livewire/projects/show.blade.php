@@ -284,14 +284,6 @@
                         </span>
                     </div>
 
-                    <!-- Director Curator -->
-                    <div>
-                        <span class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">Curator / Manager</span>
-                        <span class="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center">
-                            <span class="w-2 h-2 rounded-full mr-2 bg-sky-500"></span>
-                            {{ $project->director?->manager?->name ?: 'Not assigned' }}
-                        </span>
-                    </div>
                 </div>
             </div>
         </div>

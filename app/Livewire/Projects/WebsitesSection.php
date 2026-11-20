@@ -4,6 +4,7 @@ namespace App\Livewire\Projects;
 
 use App\Livewire\Concerns\RequiresPermission;
 use App\Models\Project;
+use App\Models\User;
 use App\Models\Website;
 use App\Services\GatewayService;
 use Livewire\Component;
@@ -61,6 +62,8 @@ class WebsitesSection extends Component
     public string $url = '';
 
     public string $status = 'No integration';
+
+    public ?int $responsible_user_id = null;
 
     public array $gateways = [];
 
@@ -145,6 +148,7 @@ class WebsitesSection extends Component
         return [
             'name' => 'required|string|max:255',
             'url' => 'required|url',
+            'responsible_user_id' => 'nullable|exists:users,id',
             'status' => 'required|in:Live,Test,No integration',
             'gateways' => 'nullable|array',
             'gateways.*' => 'string|in:'.implode(',', $available),
@@ -176,6 +180,7 @@ class WebsitesSection extends Component
         $this->name = $website->name;
         $this->url = $website->url;
         $this->status = $website->status ?? 'No integration';
+        $this->responsible_user_id = $website->responsible_user_id;
         $this->gateways = $website->gateways ?? [];
         $this->visa_status = $website->visa_status ?? 'Stopped';
         $this->mastercard_status = $website->mastercard_status ?? 'Stopped';
@@ -193,6 +198,7 @@ class WebsitesSection extends Component
             $website->update([
                 'name' => $this->name,
                 'url' => $this->url,
+                'responsible_user_id' => $this->responsible_user_id ?: null,
                 'status' => $this->status,
                 'gateways' => $this->gateways,
                 'visa_status' => $this->visa_status,
@@ -203,6 +209,7 @@ class WebsitesSection extends Component
             $this->project->websites()->create([
                 'name' => $this->name,
                 'url' => $this->url,
+                'responsible_user_id' => $this->responsible_user_id ?: null,
                 'status' => $this->status,
                 'gateways' => $this->gateways,
                 'visa_status' => $this->visa_status,
@@ -276,6 +283,7 @@ class WebsitesSection extends Component
         $this->name = '';
         $this->url = '';
         $this->status = 'No integration';
+        $this->responsible_user_id = null;
         $this->gateways = [];
         $this->visa_status = 'Stopped';
         $this->mastercard_status = 'Stopped';
@@ -286,7 +294,7 @@ class WebsitesSection extends Component
 
     public function render()
     {
-        $websites = $this->project->websites()->orderBy('id', 'desc')->get();
+        $websites = $this->project->websites()->with('responsible:id,name')->orderBy('id', 'desc')->get();
 
         $allProjects = Project::where('id', '!=', $this->project->id)
             ->notArchived()
@@ -296,6 +304,7 @@ class WebsitesSection extends Component
         return view('livewire.projects.websites-section', [
             'websites' => $websites,
             'allProjects' => $allProjects,
+            'users' => User::orderBy('name')->get(['id', 'name']),
         ]);
     }
 }

@@ -39,6 +39,18 @@
                             @error('website') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
                         </div>
 
+                        <!-- Website responsible -->
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Website Responsible</label>
+                            <select wire:model="website_responsible_id" class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800/80 rounded-xl text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-200">
+                                <option value="">Not assigned</option>
+                                @foreach($allUsers as $u)
+                                    <option value="{{ $u->id }}">{{ $u->name }}</option>
+                                @endforeach
+                            </select>
+                            @error('website_responsible_id') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
+                        </div>
+
                         <!-- MCC Code -->
                         <div>
                             <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">MCC Code (Industry)</label>
@@ -78,13 +90,6 @@
                                 @endforeach
                             </select>
                             @error('client_id') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
-                        </div>
-
-                        <!-- UBO -->
-                        <div>
-                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Director Curator</label>
-                            <input type="text" wire:model="ubo" class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800/80 rounded-xl text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-200" placeholder="UBO name">
-                            @error('ubo') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
                         </div>
 
                         <!-- Manager ID -->
@@ -175,16 +180,11 @@
                             @error('director_fee_status') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
                         </div>
 
-                        <!-- Director Managed By -->
+                        <!-- Director Curator (external contact) -->
                         <div>
-                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Curator / Manager</label>
-                            <select wire:model="director_managed_by" class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800/80 rounded-xl text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-200">
-                                <option value="">Unassigned</option>
-                                @foreach($allUsers as $u)
-                                    <option value="{{ $u->id }}">{{ $u->name }} ({{ $u->roles->first()?->name }})</option>
-                                @endforeach
-                            </select>
-                            @error('director_managed_by') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Director Curator</label>
+                            <input type="text" wire:model="ubo" class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800/80 rounded-xl text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-200" placeholder="e.g., David (SuperVerify)">
+                            @error('ubo') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
                         </div>
                     </div>
                 </div>
