@@ -110,13 +110,20 @@
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-800/40 text-sm align-top">
                     @forelse($rows as $row)
-                        <tr wire:key="onb-{{ $row['project']->id }}" class="hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-colors">
+                        <tr wire:key="onb-{{ $row['code'] }}" class="hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-colors">
                             <td class="py-3.5 px-4 whitespace-nowrap font-mono text-xs font-semibold text-slate-500 dark:text-slate-400">{{ $row['code'] }}</td>
 
                             <td class="py-3.5 px-4 text-slate-700 dark:text-slate-200">{{ $row['client'] ?? '—' }}</td>
 
                             <td class="py-3.5 px-4">
-                                <a href="{{ route('projects.show', $row['project']) }}" wire:navigate class="font-semibold text-slate-800 dark:text-white hover:text-sky-600 dark:hover:text-sky-400 transition-colors">{{ $row['project']->name }}</a>
+                                @if($row['linked'])
+                                    <a href="{{ route('projects.show', $row['project']) }}" wire:navigate class="font-semibold text-slate-800 dark:text-white hover:text-sky-600 dark:hover:text-sky-400 transition-colors">{{ $row['company'] }}</a>
+                                @else
+                                    <span class="font-semibold text-slate-800 dark:text-white">{{ $row['company'] }}</span>
+                                    <span class="mt-1 flex items-start gap-1 text-[10px] font-semibold text-amber-600 dark:text-amber-400" title="Open the task and choose Client &amp; Company">
+                                        <i class="fa-solid fa-link-slash mt-0.5"></i> Not linked to a company
+                                    </span>
+                                @endif
                                 <div class="flex gap-2 mt-1 text-[10px] text-slate-400">
                                     @if($row['onboarding_task_id'])
                                         <a href="{{ route('tasks.kanban', ['task_id' => $row['onboarding_task_id']]) }}" wire:navigate class="hover:text-sky-500"><i class="fa-solid fa-clipboard-check mr-0.5"></i>Onboarding task</a>
@@ -188,6 +195,10 @@
                                     <textarea rows="3" wire:change="saveCurrentStatus({{ $row['primary_task_id'] }}, $event.target.value)" placeholder="Latest news, provider replies, what we wait for..." class="{{ $input }} w-full resize-y">{{ $row['current_status'] }}</textarea>
                                 @else
                                     <p class="text-xs text-slate-700 dark:text-slate-200 whitespace-pre-line">{{ $row['current_status'] ?: '—' }}</p>
+                                @endif
+
+                                @if(! $row['current_status'] && $row['description'] !== '')
+                                    <p class="mt-1.5 text-[11px] leading-snug text-slate-400 dark:text-slate-500"><i class="fa-solid fa-align-left mr-0.5"></i>{{ $row['description'] }}</p>
                                 @endif
 
                                 @if($row['comment'])

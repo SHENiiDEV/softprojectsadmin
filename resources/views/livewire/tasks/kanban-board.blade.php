@@ -1196,6 +1196,12 @@
                                                 @error('taskOnboardingStatus') <span class="text-[10px] text-rose-500 mt-1 block">{{ $message }}</span> @enderror
                                             </div>
 
+                                            @if(empty($taskProject))
+                                                <p class="sm:col-span-2 text-[11px] leading-snug text-amber-600 dark:text-amber-400">
+                                                    <i class="fa-solid fa-link-slash mr-0.5"></i> Choose <span class="font-semibold">Client &amp; Company</span> below: director, websites and providers then fill in on the Onboarding Status page automatically.
+                                                </p>
+                                            @endif
+
                                             <!-- Current status -->
                                             <div class="sm:col-span-2">
                                                 <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">Current Status</label>
