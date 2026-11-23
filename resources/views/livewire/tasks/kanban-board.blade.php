@@ -144,6 +144,16 @@
                     <option value="critical">Critical</option>
                 </select>
             </div>
+
+            <!-- Type Filter -->
+            <div class="lg:col-span-2">
+                <select wire:model.live="filterType" class="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800/80 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-200">
+                    <option value="">All Types</option>
+                    @foreach(\App\Models\Task::TYPES as $typeKey => $typeLabel)
+                        <option value="{{ $typeKey }}">{{ $typeLabel }}</option>
+                    @endforeach
+                </select>
+            </div>
         </div>
     </div>
 
@@ -202,6 +212,13 @@
                                         @else bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400 @endif">
                                         {{ $task->priority }}
                                     </span>
+
+                                    <!-- Type -->
+                                    @if(($task->type ?? 'general') !== 'general')
+                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-indigo-50 text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-400">
+                                            {{ \App\Models\Task::TYPES[$task->type] ?? $task->type }}
+                                        </span>
+                                    @endif
 
                                     <!-- Project label -->
                                     @if($task->project)
@@ -1155,6 +1172,37 @@
                                             </select>
                                             @error('taskPriority') <span class="text-[10px] text-rose-500 mt-1 block">{{ $message }}</span> @enderror
                                         </div>
+
+                                        <!-- Type -->
+                                        <div>
+                                            <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">Type</label>
+                                            <select wire:model.live="taskType" class="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-200">
+                                                @foreach(\App\Models\Task::TYPES as $typeKey => $typeLabel)
+                                                    <option value="{{ $typeKey }}">{{ $typeLabel }}</option>
+                                                @endforeach
+                                            </select>
+                                            @error('taskType') <span class="text-[10px] text-rose-500 mt-1 block">{{ $message }}</span> @enderror
+                                        </div>
+
+                                        @if(in_array($taskType, \App\Models\Task::ONBOARDING_TYPES, true))
+                                            <!-- Onboarding status -->
+                                            <div>
+                                                <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">Onboarding Status</label>
+                                                <select wire:model="taskOnboardingStatus" class="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-200">
+                                                    @foreach(\App\Models\Task::ONBOARDING_STATUSES as $onboardingStatusOption)
+                                                        <option value="{{ $onboardingStatusOption }}">{{ $onboardingStatusOption }}</option>
+                                                    @endforeach
+                                                </select>
+                                                @error('taskOnboardingStatus') <span class="text-[10px] text-rose-500 mt-1 block">{{ $message }}</span> @enderror
+                                            </div>
+
+                                            <!-- Current status -->
+                                            <div class="sm:col-span-2">
+                                                <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">Current Status</label>
+                                                <textarea wire:model="taskCurrentStatus" rows="3" placeholder="Latest news: provider replies, dates, what we wait for..." class="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-200"></textarea>
+                                                @error('taskCurrentStatus') <span class="text-[10px] text-rose-500 mt-1 block">{{ $message }}</span> @enderror
+                                            </div>
+                                        @endif
 
                                         <!-- Client / Company -->
                                         <div>

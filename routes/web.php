@@ -13,6 +13,7 @@ use App\Livewire\CredentialVault;
 use App\Livewire\Dashboard;
 use App\Livewire\DeadlineCenter;
 use App\Livewire\MyWork;
+use App\Livewire\Onboarding\Index as OnboardingIndex;
 use App\Livewire\PciDss\Index as PciDssIndex;
 use App\Livewire\Projects\Create as ProjectsCreate;
 use App\Livewire\Projects\Edit as ProjectsEdit;
@@ -45,6 +46,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/projects/{project}', ProjectsShow::class)->middleware('permission:view_projects')->name('projects.show');
     Route::get('/projects/{project}/edit', ProjectsEdit::class)->middleware('permission:manage_projects')->name('projects.edit');
     Route::get('/projects/{project}/pdf', [ProjectPdfController::class, 'export'])->middleware(['feature:pdf_export', 'permission:view_projects'])->name('projects.pdf');
+
+    Route::get('/onboarding', OnboardingIndex::class)->middleware(['feature:onboarding', 'permission:view_tasks'])->name('onboarding.index');
 
     Route::get('/tasks', KanbanBoard::class)->middleware(['feature:kanban', 'permission:view_tasks'])->name('tasks.kanban');
 

@@ -14,6 +14,7 @@ use App\Services\EmailReplyService;
 use App\Services\NotificationService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
@@ -30,6 +31,8 @@ class KanbanBoard extends Component
     public $filterAssignee = '';
 
     public $filterPriority = '';
+
+    public $filterType = '';
 
     // Archive view mode ('0' = Active tasks, '1' = Archived tasks)
     public string $showArchived = '0';
@@ -61,6 +64,12 @@ class KanbanBoard extends Component
     public array $taskAssignees = []; // Nullable array of up to 2 assigned user IDs
 
     public $taskPriority = 'medium';
+
+    public $taskType = 'general';
+
+    public $taskOnboardingStatus = '';
+
+    public $taskCurrentStatus = '';
 
     public $taskStatus = 'todo';
 
@@ -126,6 +135,9 @@ class KanbanBoard extends Component
             'taskAssignees' => 'nullable|array|max:2',
             'taskAssignees.*' => 'exists:users,id',
             'taskPriority' => 'required|in:low,medium,high,critical',
+            'taskType' => ['required', Rule::in(array_keys(Task::TYPES))],
+            'taskOnboardingStatus' => ['nullable', Rule::in(Task::ONBOARDING_STATUSES)],
+            'taskCurrentStatus' => 'nullable|string|max:5000',
             'taskStatus' => 'required|in:email_inbox,todo,in_progress,review,done',
             'taskDueDate' => 'nullable|date',
             'attachments.*' => 'nullable|file|max:10240', // 10MB max
@@ -138,6 +150,8 @@ class KanbanBoard extends Component
     {
         // Set initial filters from query parameters if available
         $this->filterProject = request()->query('project_id', '');
+        $queryType = (string) request()->query('type', '');
+        $this->filterType = array_key_exists($queryType, Task::TYPES) ? $queryType : '';
 
         $taskId = request()->query('task_id');
         if ($taskId) {
@@ -340,6 +354,10 @@ class KanbanBoard extends Component
             $baseQuery->where('priority', $this->filterPriority);
         }
 
+        if (! empty($this->filterType) && array_key_exists($this->filterType, Task::TYPES)) {
+            $baseQuery->where('type', $this->filterType);
+        }
+
         // 1. Calculate total counts for column headers
         $statusCounts = [
             'email_inbox' => (clone $baseQuery)->where('status', 'email_inbox')->count(),
@@ -449,6 +467,9 @@ class KanbanBoard extends Component
                 $this->taskAssignees = [(string) $task->assigned_to];
             }
             $this->taskPriority = $task->priority;
+            $this->taskType = $task->type ?: 'general';
+            $this->taskOnboardingStatus = $task->onboarding_status ?? '';
+            $this->taskCurrentStatus = $task->current_status ?? '';
             $this->taskStatus = $task->status;
             $this->taskDueDate = $task->due_date ? $task->due_date->format('Y-m-d') : '';
             $this->existingMedia = $task->getMedia('attachments');
@@ -459,6 +480,9 @@ class KanbanBoard extends Component
             $this->taskProject = $this->filterProject !== 'global' ? $this->filterProject : '';
             $this->taskAssignees = [];
             $this->taskPriority = 'medium';
+            $this->taskType = 'general';
+            $this->taskOnboardingStatus = '';
+            $this->taskCurrentStatus = '';
             $this->taskStatus = 'todo';
             $this->taskDueDate = '';
             $this->existingMedia = [];
@@ -480,6 +504,11 @@ class KanbanBoard extends Component
         $assigneeIds = array_values(array_filter(array_unique(array_map('intval', (array) $this->taskAssignees))));
         $primaryAssignee = $assigneeIds[0] ?? null;
 
+        // Onboarding fields only make sense for Onboarding / KYB tasks; everything else keeps them empty.
+        $isOnboarding = in_array($this->taskType, Task::ONBOARDING_TYPES, true);
+        $onboardingStatus = $isOnboarding ? ($this->taskOnboardingStatus ?: 'Not started') : null;
+        $currentStatus = $isOnboarding ? (trim((string) $this->taskCurrentStatus) ?: null) : null;
+
         if ($this->editingTaskId) {
             $task = Task::findOrFail($this->editingTaskId);
             $task->update([
@@ -488,6 +517,9 @@ class KanbanBoard extends Component
                 'project_id' => $this->taskProject ?: null,
                 'assigned_to' => $primaryAssignee,
                 'priority' => $this->taskPriority,
+                'type' => $this->taskType,
+                'onboarding_status' => $onboardingStatus,
+                'current_status' => $currentStatus,
                 'status' => $this->taskStatus,
                 'due_date' => $this->taskDueDate ?: null,
             ]);
@@ -502,6 +534,9 @@ class KanbanBoard extends Component
                 'assigned_to' => $primaryAssignee,
                 'creator_id' => auth()->id(),
                 'priority' => $this->taskPriority,
+                'type' => $this->taskType,
+                'onboarding_status' => $onboardingStatus,
+                'current_status' => $currentStatus,
                 'status' => $this->taskStatus,
                 'due_date' => $this->taskDueDate ?: null,
             ]);

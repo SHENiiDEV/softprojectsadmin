@@ -19,6 +19,7 @@ return [
     'clients' => env('ENABLE_CLIENTS', true),
     'pci_dss' => env('ENABLE_PCI_DSS', true),
     'tariffs' => env('ENABLE_TARIFFS', true),
+    'onboarding' => env('ENABLE_ONBOARDING', true),
     'users' => env('ENABLE_USERS', true),
     'my_work' => env('ENABLE_MY_WORK', false),
     'websites_tab' => env('ENABLE_WEBSITES_TAB', true),

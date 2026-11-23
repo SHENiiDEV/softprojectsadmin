@@ -320,6 +320,7 @@ class ClientPortal extends Component
             'title' => $taskTitle,
             'description' => $taskDescription,
             'status' => 'todo',
+            'type' => 'client_request',
             'priority' => $priority,
         ]);
 
@@ -722,6 +723,7 @@ class ClientPortal extends Component
                             'title' => $taskTitle,
                             'description' => $descriptionHtml,
                             'status' => 'todo',
+                            'type' => 'client_request',
                             'priority' => 'high',
                         ]);
                         $createdTasksCount++;
