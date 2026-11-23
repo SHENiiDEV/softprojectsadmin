@@ -180,12 +180,29 @@ class Task extends Model implements HasMedia
             }
 
             if ($task->wasChanged('onboarding_status') && $actor) {
+                $from = $task->getOriginal('onboarding_status') ?: 'none';
+                $to = $task->onboarding_status ?: 'none';
+
                 ActivityLog::create([
                     'user_id' => $actor->id,
                     'task_id' => $task->id,
                     'project_id' => $task->project_id,
                     'action' => 'onboarding_status_updated',
-                    'description' => "Task '{$task->title}' onboarding status changed to '".($task->onboarding_status ?: 'none')."' by ".$actor->name,
+                    'description' => "Onboarding status changed from '{$from}' to '{$to}' ({$task->title})",
+                ]);
+            }
+
+            if ($task->wasChanged('current_status') && $actor) {
+                $text = trim((string) $task->current_status);
+
+                ActivityLog::create([
+                    'user_id' => $actor->id,
+                    'task_id' => $task->id,
+                    'project_id' => $task->project_id,
+                    'action' => 'onboarding_current_status_updated',
+                    'description' => $text === ''
+                        ? "Current status cleared ({$task->title})"
+                        : 'Current status updated: '.Str::limit($text, 160)." ({$task->title})",
                 ]);
             }
 

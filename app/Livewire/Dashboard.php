@@ -10,6 +10,7 @@ use App\Models\SupportTicket;
 use App\Models\Task;
 use App\Models\TaskTimeLog;
 use App\Models\User;
+use App\Services\OnboardingBoard;
 use Illuminate\Support\Collection;
 use Livewire\Component;
 
@@ -210,6 +211,30 @@ class Dashboard extends Component
         $time = config('features.task_time_logs') ? $this->timeSummary($user) : null;
         $workload = $user->can('view_reports') ? $this->teamWorkload() : collect();
 
+        $onboarding = null;
+
+        if ($canViewTasks && config('features.onboarding')) {
+            $onboardingRows = app(OnboardingBoard::class)->rows();
+
+            if ($onboardingRows->isNotEmpty()) {
+                $finished = OnboardingBoard::FINISHED_STATUSES;
+                $statusOrder = array_flip(Task::ONBOARDING_STATUSES);
+
+                $onboarding = [
+                    'total' => $onboardingRows->count(),
+                    'active' => $onboardingRows->reject(fn (array $row) => in_array($row['status'], $finished, true))->count(),
+                    'counts' => collect(Task::ONBOARDING_STATUSES)
+                        ->mapWithKeys(fn (string $status) => [$status => $onboardingRows->where('status', $status)->count()])
+                        ->filter(),
+                    'mine' => $onboardingRows
+                        ->filter(fn (array $row) => $row['responsible']->contains('id', $user->id) && ! in_array($row['status'], $finished, true))
+                        ->sortBy(fn (array $row) => $statusOrder[$row['status']] ?? 99)
+                        ->take(5)
+                        ->values(),
+                ];
+            }
+        }
+
         return view('livewire.dashboard', [
             'greeting' => $this->greeting(),
             'canViewTasks' => $canViewTasks,
@@ -224,6 +249,7 @@ class Dashboard extends Component
             'projectCounts' => $projectCounts,
             'recentProjects' => $canViewProjects ? Project::notArchived()->latest('updated_at')->limit(5)->get() : collect(),
             'activity' => $activity,
+            'onboarding' => $onboarding,
             'documents' => $documents,
             'tickets' => $tickets,
             'time' => $time,

@@ -317,6 +317,18 @@
             </button>
             @endif
 
+            <!-- Onboarding Tab -->
+            @if(config('features.onboarding', true))
+            @can('view_tasks')
+            <button @click="activeTab = 'onboarding'" 
+                    :class="activeTab === 'onboarding' ? 'bg-sky-100/70 text-sky-700 border-sky-500 dark:bg-sky-950/40 dark:text-sky-400 dark:border-sky-400' : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'"
+                    class="flex items-center px-6 py-4 border-b-2 font-semibold text-sm transition-all duration-150 whitespace-nowrap">
+                <i class="fa-solid fa-clipboard-check w-4.5 mr-2"></i>
+                Onboarding
+            </button>
+            @endcan
+            @endif
+
             <!-- Boarding Tab -->
             @if(config('features.compliance_tab', true))
             <button @click="activeTab = 'boarding'" 
@@ -435,6 +447,15 @@
             <div x-show="activeTab === 'reports'" x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0">
                 <livewire:projects.reports-section :project="$project" />
             </div>
+            @endif
+
+            <!-- Onboarding Tab Pane -->
+            @if(config('features.onboarding', true))
+            @can('view_tasks')
+            <div x-show="activeTab === 'onboarding'" x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0">
+                <livewire:projects.onboarding-section :project="$project" />
+            </div>
+            @endcan
             @endif
 
             <!-- Documents Tab Pane -->
