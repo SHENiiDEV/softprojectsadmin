@@ -35,9 +35,10 @@
                   <input type="text"
                          wire:model.live.debounce.250ms="query"
                          x-ref="searchInput"
-                         placeholder="Type to search subscribers, bots, tickets, broadcasts, or shortcuts... (Esc to exit)"
+                         placeholder="Search companies, directors, clients, tasks, comments, websites, providers... (Enter opens the first result)"
                          class="flex-1 bg-transparent border-0 focus:ring-0 text-base font-bold text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none"
-                         @keydown.escape="open = false" />
+                         @keydown.escape="open = false"
+                         @keydown.enter.prevent="$root.querySelector('[data-search-result]')?.click()" />
                   
                   <kbd class="px-2 py-1 text-[10px] font-mono font-bold text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-sm select-none">ESC</kbd>
               </div>
@@ -63,13 +64,14 @@
                                           <span class="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-wider">
                                               {{ $groupNames[$group] ?? $group }}
                                           </span>
+                                          <span class="text-[10px] font-semibold text-slate-300 dark:text-slate-600">{{ count($items) }}</span>
                                           <span class="h-px flex-1 bg-slate-100 dark:bg-slate-800/60"></span>
                                       </div>
                                       
                                       <!-- Group Grid -->
                                       <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
                                           @foreach($items as $item)
-                                              <a href="{{ $item['url'] }}" 
+                                              <a href="{{ $item['url'] }}" data-search-result 
                                                  class="group flex items-center p-3 rounded-2xl border border-transparent hover:border-indigo-100/60 dark:hover:border-indigo-950/40 hover:bg-indigo-50/40 dark:hover:bg-indigo-950/20 transition-all duration-200"
                                                  @if(str_starts_with($item['url'], 'http')) target="_blank" @endif
                                                  @click="open = false">
