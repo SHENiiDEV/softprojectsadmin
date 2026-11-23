@@ -25,6 +25,9 @@ class Index extends Component
 
     public string $sortBy = 'id'; // id | company | status | updated
 
+    /** Code (ONB-001 / TASK-27) of the row shown in the side panel. */
+    public ?string $selected = null;
+
     /**
      * @var array<string, array<string, string>>
      */
@@ -53,6 +56,16 @@ class Index extends Component
     public function mount(): void
     {
         $this->requirePermission('view_tasks');
+    }
+
+    public function select(string $code): void
+    {
+        $this->selected = $code;
+    }
+
+    public function closeDetail(): void
+    {
+        $this->selected = null;
     }
 
     public function resetFilters(): void
@@ -159,6 +172,7 @@ class Index extends Component
                 'current_status' => $primary->current_status,
                 'description' => Str::limit(trim(strip_tags(html_entity_decode((string) $primary->description))), 220),
                 'comment' => $comment,
+                'tasks' => $companyTasks->sortBy('type')->values(),
                 'updated_at' => $companyTasks->max('updated_at'),
             ];
         })->values();
@@ -265,7 +279,20 @@ class Index extends Component
 
         $user = auth()->user();
 
+        $detail = $this->selected !== null ? $allRows->firstWhere('code', $this->selected) : null;
+        $detailComments = $detail === null
+            ? collect()
+            : Comment::whereIn('task_id', $detail['tasks']->pluck('id'))
+                ->whereNull('parent_id')
+                ->whereNotNull('user_id')
+                ->with('user:id,name')
+                ->orderByDesc('id')
+                ->limit(8)
+                ->get();
+
         return view('livewire.onboarding.index', [
+            'detail' => $detail,
+            'detailComments' => $detailComments,
             'rows' => $rows->values(),
             'total' => $allRows->count(),
             'statusCounts' => $statusCounts,
