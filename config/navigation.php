@@ -41,6 +41,7 @@ return [
             'items' => [
                 ['key' => 'projects', 'label' => 'Companies', 'route' => 'projects.index', 'active' => 'projects.*', 'icon' => 'fa-building', 'permission' => 'view_projects'],
                 ['key' => 'clients', 'label' => 'Clients', 'route' => 'clients.index', 'active' => 'clients.*', 'icon' => 'fa-users', 'feature' => 'clients', 'permission' => 'view_clients'],
+                ['key' => 'onboarding', 'label' => 'Onboarding Status', 'route' => 'onboarding.index', 'active' => 'onboarding.*', 'icon' => 'fa-clipboard-check', 'feature' => 'onboarding', 'permission' => 'view_tasks'],
                 ['key' => 'health', 'label' => 'Health Score', 'route' => 'health.score', 'active' => 'health.score', 'icon' => 'fa-heart-pulse', 'feature' => 'health_score', 'permission' => 'view_projects'],
             ],
         ],

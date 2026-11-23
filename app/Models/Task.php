@@ -17,10 +17,65 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
-#[Fillable(['project_id', 'parent_id', 'creator_id', 'assigned_to', 'title', 'description', 'status', 'priority', 'due_date', 'order', 'archived_at'])]
+#[Fillable(['project_id', 'parent_id', 'creator_id', 'assigned_to', 'title', 'description', 'status', 'priority', 'type', 'onboarding_status', 'current_status', 'due_date', 'order', 'archived_at'])]
 class Task extends Model implements HasMedia
 {
     use HasFactory, InteractsWithMedia;
+
+    /**
+     * Task types (key => label). "general" is the default for everything created before types existed.
+     *
+     * @var array<string, string>
+     */
+    public const TYPES = [
+        'general' => 'General',
+        'onboarding' => 'Onboarding',
+        'kyb' => 'KYB',
+        'website' => 'Website',
+        'client_request' => 'Client Request',
+        'provider_request' => 'Provider / Bank Request',
+        'pci_dss' => 'PCI DSS',
+        'reporting' => 'Reporting / Companies House',
+    ];
+
+    /**
+     * Types that feed the Onboarding Status page and carry an onboarding status.
+     *
+     * @var list<string>
+     */
+    public const ONBOARDING_TYPES = ['onboarding', 'kyb'];
+
+    /**
+     * Onboarding statuses (same list as the master onboarding tracker).
+     *
+     * @var list<string>
+     */
+    public const ONBOARDING_STATUSES = [
+        'Not started',
+        'In progress',
+        'KYB in process',
+        'Waiting for update',
+        'Waiting for website completion',
+        'Blocked',
+        'Under review',
+        'Approved',
+        'Rejected',
+        'On hold',
+        'Completed',
+    ];
+
+    public function isOnboardingType(): bool
+    {
+        return in_array($this->type, self::ONBOARDING_TYPES, true);
+    }
+
+    /**
+     * Scope: tasks that belong to the onboarding tracker (Onboarding and KYB types).
+     */
+    public function scopeOnboarding($query)
+    {
+        return $query->whereIn('type', self::ONBOARDING_TYPES);
+    }
 
     /**
      * Boot the model and register created/updated event listeners.
@@ -122,6 +177,16 @@ class Task extends Model implements HasMedia
                     $task->status,
                     $actor
                 );
+            }
+
+            if ($task->wasChanged('onboarding_status') && $actor) {
+                ActivityLog::create([
+                    'user_id' => $actor->id,
+                    'task_id' => $task->id,
+                    'project_id' => $task->project_id,
+                    'action' => 'onboarding_status_updated',
+                    'description' => "Task '{$task->title}' onboarding status changed to '".($task->onboarding_status ?: 'none')."' by ".$actor->name,
+                ]);
             }
 
             $relevant = ['title', 'description', 'priority', 'due_date'];
