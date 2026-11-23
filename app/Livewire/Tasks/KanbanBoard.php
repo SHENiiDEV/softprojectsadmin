@@ -156,6 +156,19 @@ class KanbanBoard extends Component
         $taskId = request()->query('task_id');
         if ($taskId) {
             $this->openTaskModal($taskId);
+
+            return;
+        }
+
+        // Shortcut from the Onboarding Status page: ?new=kyb&project_id=ID opens a prefilled create form
+        $newType = (string) request()->query('new', '');
+        if ($newType !== '' && array_key_exists($newType, Task::TYPES) && ! auth()->user()->hasRole('curator')) {
+            $this->openTaskModal();
+            $this->taskType = $newType;
+            $this->taskOnboardingStatus = in_array($newType, Task::ONBOARDING_TYPES, true) ? 'Not started' : '';
+
+            $project = $this->taskProject ? Project::find($this->taskProject) : null;
+            $this->taskTitle = Task::TYPES[$newType].($project ? ' - '.$project->name : '');
         }
     }
 

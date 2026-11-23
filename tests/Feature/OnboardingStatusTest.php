@@ -183,6 +183,76 @@ class OnboardingStatusTest extends TestCase
             ->assertSee('Stefan Pisari');
     }
 
+    public function test_clicking_a_row_opens_a_side_panel_with_tasks_comments_and_open_task_links(): void
+    {
+        $project = $this->company();
+        $kyb = $this->task($project, 'kyb', ['title' => 'KYB package', 'assigned_to' => $this->kybOwner->id]);
+        Comment::create(['task_id' => $kyb->id, 'user_id' => $this->manager->id, 'content' => '<p>Passport scan received</p>']);
+        $code = 'ONB-'.str_pad((string) $project->id, 3, '0', STR_PAD_LEFT);
+
+        Livewire::actingAs($this->manager)->test(OnboardingIndex::class)
+            ->assertSet('selected', null)
+            ->assertDontSee('Latest comments')
+            ->call('select', $code)
+            ->assertSet('selected', $code)
+            ->assertSee('Latest comments')
+            ->assertSee('Passport scan received')
+            ->assertSee('KYB package')
+            ->assertSee('Open task')
+            ->assertSee(route('tasks.kanban', ['task_id' => $kyb->id]), false)
+            ->assertSee(route('projects.show', $project), false)
+            // no Onboarding task yet: a shortcut to create one for this company is offered
+            ->assertSee(route('tasks.kanban', ['new' => 'onboarding', 'project_id' => $project->id]), false)
+            ->call('closeDetail')
+            ->assertSet('selected', null)
+            ->assertDontSee('Latest comments');
+    }
+
+    public function test_panel_edits_the_current_status_and_curators_get_no_edit_controls(): void
+    {
+        $project = $this->company();
+        $task = $this->task($project, 'onboarding');
+        $code = 'ONB-'.str_pad((string) $project->id, 3, '0', STR_PAD_LEFT);
+
+        Livewire::actingAs($this->manager)->test(OnboardingIndex::class)
+            ->call('select', $code)
+            ->assertSee('Saved automatically')
+            ->call('saveCurrentStatus', $task->id, 'Docs sent to Madfin')
+            ->assertSee('Current status saved.')
+            ->assertSee('Docs sent to Madfin');
+
+        Livewire::actingAs($this->curator)->test(OnboardingIndex::class)
+            ->call('select', $code)
+            ->assertDontSee('Saved automatically')
+            ->assertDontSee('KYB task</a>', false);
+    }
+
+    public function test_kanban_new_shortcut_opens_a_prefilled_create_form(): void
+    {
+        $project = $this->company('Delta Ltd');
+
+        Livewire::withQueryParams(['new' => 'kyb', 'project_id' => (string) $project->id])
+            ->actingAs($this->manager)
+            ->test(KanbanBoard::class)
+            ->assertSet('showModal', true)
+            ->assertSet('taskType', 'kyb')
+            ->assertSet('taskOnboardingStatus', 'Not started')
+            ->assertSet('taskProject', (string) $project->id)
+            ->assertSet('taskTitle', 'KYB - Delta Ltd');
+
+        // curators cannot create tasks, so the shortcut does nothing for them
+        Livewire::withQueryParams(['new' => 'kyb'])
+            ->actingAs($this->curator)
+            ->test(KanbanBoard::class)
+            ->assertSet('showModal', false);
+
+        // unknown types are ignored
+        Livewire::withQueryParams(['new' => 'bogus'])
+            ->actingAs($this->manager)
+            ->test(KanbanBoard::class)
+            ->assertSet('showModal', false);
+    }
+
     public function test_filters_and_search_narrow_the_table(): void
     {
         $first = $this->company('Alpha Ltd');
