@@ -151,6 +151,38 @@ class OnboardingStatusTest extends TestCase
             ->assertSee('No onboarding yet');
     }
 
+    public function test_task_without_a_company_still_gets_its_own_row_until_it_is_linked(): void
+    {
+        $task = Task::create([
+            'title' => 'LOOTERA IT MB',
+            'description' => '<p>Бординг в PayDo - в процессе через Solvex</p>',
+            'status' => 'review',
+            'priority' => 'medium',
+            'type' => 'onboarding',
+            'onboarding_status' => 'Under review',
+        ]);
+
+        Livewire::actingAs($this->manager)->test(OnboardingIndex::class)
+            ->assertSee('LOOTERA IT MB')
+            ->assertSee('Not linked to a company')
+            ->assertSee('TASK-'.$task->id)
+            ->assertSee('Under review')
+            ->assertSee('Бординг в PayDo - в процессе через Solvex')
+            ->call('setStatus', $task->id, 'Approved')
+            ->assertSee('Approved');
+
+        $this->assertSame('Approved', $task->fresh()->onboarding_status);
+
+        // Once the task is linked to a company, it joins that company's row
+        $project = $this->company('Lootera IT MB');
+        $task->update(['project_id' => $project->id]);
+
+        Livewire::actingAs($this->manager)->test(OnboardingIndex::class)
+            ->assertDontSee('Not linked to a company')
+            ->assertSee('ONB-'.str_pad((string) $project->id, 3, '0', STR_PAD_LEFT))
+            ->assertSee('Stefan Pisari');
+    }
+
     public function test_filters_and_search_narrow_the_table(): void
     {
         $first = $this->company('Alpha Ltd');

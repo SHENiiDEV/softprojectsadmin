@@ -104,8 +104,7 @@ class Index extends Component
     {
         $tasks = Task::onboarding()
             ->whereNull('archived_at')
-            ->whereNotNull('project_id')
-            ->whereHas('project', fn ($q) => $q->notArchived())
+            ->where(fn ($q) => $q->whereNull('project_id')->orWhereHas('project', fn ($p) => $p->notArchived()))
             ->with(['project.client', 'project.director', 'project.websites.responsible', 'project.boarding', 'assignee', 'assignees'])
             ->orderByDesc('id')
             ->get();
@@ -119,8 +118,9 @@ class Index extends Component
             ->groupBy('task_id')
             ->map(fn (Collection $comments) => $comments->first());
 
-        return $tasks->groupBy('project_id')->map(function (Collection $companyTasks) use ($latestComments) {
-            /** @var Project $project */
+        // Tasks of a company are merged into one row; a task that is not linked to any company stays a row of its own.
+        return $tasks->groupBy(fn (Task $task) => $task->project_id ?? 'task-'.$task->id)->map(function (Collection $companyTasks) use ($latestComments) {
+            /** @var Project|null $project */
             $project = $companyTasks->first()->project;
 
             $onboarding = $companyTasks->firstWhere('type', 'onboarding');
@@ -140,13 +140,16 @@ class Index extends Component
 
             return [
                 'project' => $project,
-                'code' => 'ONB-'.str_pad((string) $project->id, 3, '0', STR_PAD_LEFT),
-                'client' => $project->client?->name,
-                'client_id' => $project->client_id,
-                'director' => $project->director?->name,
-                'curator' => $project->ubo,
-                'websites' => $project->websites,
-                'providers' => $this->providersFor($project),
+                'linked' => $project !== null,
+                'order' => $project?->id ?? 1_000_000 + $primary->id,
+                'code' => $project ? 'ONB-'.str_pad((string) $project->id, 3, '0', STR_PAD_LEFT) : 'TASK-'.$primary->id,
+                'company' => $project?->name ?? $primary->title,
+                'client' => $project?->client?->name,
+                'client_id' => $project?->client_id,
+                'director' => $project?->director?->name,
+                'curator' => $project?->ubo,
+                'websites' => $project ? $project->websites : collect(),
+                'providers' => $project ? $this->providersFor($project) : [],
                 'status' => $primary->onboarding_status ?: 'Not started',
                 'primary_task_id' => $primary->id,
                 'kyb_status' => $kyb?->onboarding_status,
@@ -154,6 +157,7 @@ class Index extends Component
                 'onboarding_task_id' => $onboarding?->id,
                 'responsible' => $responsible,
                 'current_status' => $primary->current_status,
+                'description' => Str::limit(trim(strip_tags(html_entity_decode((string) $primary->description))), 220),
                 'comment' => $comment,
                 'updated_at' => $companyTasks->max('updated_at'),
             ];
@@ -237,7 +241,7 @@ class Index extends Component
                 return $c->filter(function (array $row) use ($needle) {
                     $haystack = Str::lower(implode(' ', array_filter([
                         $row['code'],
-                        $row['project']->name,
+                        $row['company'],
                         $row['client'],
                         $row['director'],
                         $row['curator'],
@@ -253,10 +257,10 @@ class Index extends Component
         $statusOrder = array_flip(Task::ONBOARDING_STATUSES);
 
         $rows = match ($this->sortBy) {
-            'company' => $rows->sortBy(fn (array $row) => Str::lower($row['project']->name)),
+            'company' => $rows->sortBy(fn (array $row) => Str::lower($row['company'])),
             'status' => $rows->sortBy(fn (array $row) => $statusOrder[$row['status']] ?? 99),
             'updated' => $rows->sortByDesc(fn (array $row) => $row['updated_at']),
-            default => $rows->sortBy(fn (array $row) => $row['project']->id),
+            default => $rows->sortBy(fn (array $row) => $row['order']),
         };
 
         $user = auth()->user();
