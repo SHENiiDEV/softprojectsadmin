@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Livewire\Dashboard;
 use App\Livewire\Onboarding\Index as OnboardingIndex;
+use App\Livewire\Projects\OnboardingSection;
 use App\Livewire\Tasks\KanbanBoard;
 use App\Models\ActivityLog;
 use App\Models\Boarding;
@@ -404,5 +406,136 @@ class OnboardingStatusTest extends TestCase
             ->set('filterType', 'kyb')
             ->assertSee('KYB package')
             ->assertDontSee('PCI scan');
+    }
+
+    public function test_panel_shows_who_changed_what_and_when(): void
+    {
+        $project = $this->company();
+        $task = $this->task($project, 'onboarding');
+        $other = $this->company('Other Co');
+        $otherTask = $this->task($other, 'kyb');
+        $code = 'ONB-'.str_pad((string) $project->id, 3, '0', STR_PAD_LEFT);
+
+        $component = Livewire::actingAs($this->manager)->test(OnboardingIndex::class)
+            ->call('select', $code)
+            ->assertSee('No changes recorded yet.')
+            ->call('setStatus', $task->id, 'Waiting for update')
+            ->call('saveCurrentStatus', $task->id, '16.11 form sent to PayAlly')
+            ->assertSee("Onboarding status changed from 'Not started' to 'Waiting for update'")
+            ->assertSee('Current status updated: 16.11 form sent to PayAlly')
+            ->assertSee($this->manager->name);
+
+        // another company's changes never leak into this history
+        Livewire::actingAs($this->manager)->test(OnboardingIndex::class)
+            ->call('select', 'ONB-'.str_pad((string) $other->id, 3, '0', STR_PAD_LEFT))
+            ->assertDontSee('Waiting for update')
+            ->assertSee('No changes recorded yet.');
+
+        $this->assertTrue(ActivityLog::where('task_id', $otherTask->id)->where('action', 'onboarding_status_updated')->doesntExist());
+
+        // clearing the text is recorded as well
+        $component->call('saveCurrentStatus', $task->id, '')->assertSee('Current status cleared');
+    }
+
+    public function test_panel_can_be_opened_from_a_link(): void
+    {
+        $project = $this->company();
+        $this->task($project, 'kyb');
+        $code = 'ONB-'.str_pad((string) $project->id, 3, '0', STR_PAD_LEFT);
+
+        Livewire::withQueryParams(['open' => $code])
+            ->actingAs($this->manager)
+            ->test(OnboardingIndex::class)
+            ->assertSet('selected', $code)
+            ->assertSee('History');
+    }
+
+    public function test_company_tab_shows_status_tasks_history_and_deep_link(): void
+    {
+        $project = $this->company();
+        $code = 'ONB-'.str_pad((string) $project->id, 3, '0', STR_PAD_LEFT);
+
+        Livewire::actingAs($this->manager)->test(OnboardingSection::class, ['project' => $project])
+            ->assertSee('No onboarding yet')
+            ->assertSee(route('tasks.kanban', ['new' => 'kyb', 'project_id' => $project->id]), false);
+
+        $kyb = $this->task($project, 'kyb', ['title' => 'KYB package', 'assigned_to' => $this->kybOwner->id, 'onboarding_status' => 'KYB in process']);
+
+        Livewire::actingAs($this->manager)->test(OnboardingSection::class, ['project' => $project])
+            ->assertDontSee('No onboarding yet')
+            ->assertSee('KYB in process')
+            ->assertSee('Gleb KYB')
+            ->assertSee('KYB package')
+            ->assertSee(route('tasks.kanban', ['task_id' => $kyb->id]), false)
+            ->assertSee(route('onboarding.index', ['open' => $code]), false)
+            ->call('setStatus', $kyb->id, 'Under review')
+            ->assertSee('Onboarding status updated.')
+            ->assertSee("changed from 'KYB in process' to 'Under review'");
+
+        $this->assertSame('Under review', $kyb->fresh()->onboarding_status);
+    }
+
+    public function test_company_tab_is_read_only_for_curators_and_hidden_without_the_feature(): void
+    {
+        $project = $this->company();
+        $kyb = $this->task($project, 'kyb');
+
+        Livewire::actingAs($this->curator)->test(OnboardingSection::class, ['project' => $project])
+            ->assertSee('Onboarding')
+            ->assertDontSee('Saved automatically')
+            ->call('setStatus', $kyb->id, 'Completed')
+            ->assertForbidden();
+
+        $this->actingAs($this->manager)->get(route('projects.show', $project))
+            ->assertOk()
+            ->assertSee("activeTab = 'onboarding'", false);
+
+        config(['features.onboarding' => false]);
+
+        $this->actingAs($this->manager)->get(route('projects.show', $project))
+            ->assertOk()
+            ->assertDontSee("activeTab = 'onboarding'", false);
+    }
+
+    public function test_dashboard_shows_the_onboarding_pipeline_and_my_open_onboardings(): void
+    {
+        config(['features.deadline_center' => true]);
+
+        $mine = $this->company('Mine Ltd');
+        $done = $this->company('Done Ltd');
+        $notMine = $this->company('Theirs Ltd');
+
+        $this->task($mine, 'kyb', ['assigned_to' => $this->manager->id, 'onboarding_status' => 'Waiting for update', 'current_status' => 'Waiting for PayAlly']);
+        $this->task($done, 'kyb', ['assigned_to' => $this->manager->id, 'onboarding_status' => 'Completed']);
+        $this->task($notMine, 'kyb', ['assigned_to' => $this->kybOwner->id, 'onboarding_status' => 'Blocked']);
+
+        $code = 'ONB-'.str_pad((string) $mine->id, 3, '0', STR_PAD_LEFT);
+
+        $this->actingAs($this->manager)->get('/dashboard')
+            ->assertOk()
+            ->assertSee('Onboarding')
+            ->assertSee('2 in progress of 3 companies')
+            ->assertSee('My onboardings')
+            ->assertSee('Mine Ltd')
+            ->assertSee('Waiting for PayAlly')
+            ->assertSee(route('onboarding.index', ['open' => $code]), false)
+            ->assertSee(route('onboarding.index', ['status' => 'Blocked']), false);
+
+        // only unfinished onboardings that I am responsible for are listed under "My onboardings"
+        Livewire::actingAs($this->manager)->test(Dashboard::class)
+            ->assertViewHas('onboarding', fn (array $onboarding) => $onboarding['mine']->pluck('company')->all() === ['Mine Ltd']
+                && $onboarding['total'] === 3
+                && $onboarding['active'] === 2
+                && $onboarding['counts']->all() === ['Waiting for update' => 1, 'Blocked' => 1, 'Completed' => 1]);
+    }
+
+    public function test_dashboard_hides_the_onboarding_block_when_there_is_nothing_or_the_feature_is_off(): void
+    {
+        $this->actingAs($this->manager)->get('/dashboard')->assertOk()->assertDontSee('My onboardings')->assertDontSee('companies</p>', false);
+
+        $this->task($this->company(), 'kyb', ['assigned_to' => $this->manager->id]);
+        config(['features.onboarding' => false]);
+
+        $this->actingAs($this->manager)->get('/dashboard')->assertOk()->assertDontSee('My onboardings');
     }
 }

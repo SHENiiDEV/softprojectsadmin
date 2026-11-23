@@ -23,7 +23,7 @@ class ViewStyleGuardTest extends TestCase
         $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(dirname(__DIR__, 2).'/resources/views'));
 
         foreach ($iterator as $file) {
-            if ($file->isFile() && str_ends_with($file->getFilename(), '.blade.php')) {
+            if ($file->isFile() && str_ends_with($file->getFilename(), '.php')) {
                 $files[substr($file->getPathname(), strlen(dirname(__DIR__, 2)) + 1)] = [$file->getPathname()];
             }
         }

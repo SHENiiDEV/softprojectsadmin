@@ -7,6 +7,7 @@
     $priorityDots = ['critical' => 'bg-rose-500', 'high' => 'bg-orange-500', 'medium' => 'bg-amber-400', 'low' => 'bg-slate-300 dark:bg-slate-600'];
     $card = 'bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-2xl shadow-sm';
     $needsAttention = $overdueTasks + $overdueReports;
+    $onboardingTones = (include resource_path('views/onboarding/tones.php'))['status'];
     $formatDuration = fn (int $seconds) => sprintf('%d:%02d', intdiv($seconds, 3600), intdiv($seconds % 3600, 60));
 @endphp
 
@@ -121,6 +122,44 @@
                             </li>
                         @endforelse
                     </ul>
+                </section>
+            @endif
+
+            {{-- Onboarding pipeline --}}
+            @if($onboarding)
+                <section class="{{ $card }} p-6">
+                    <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800/60">
+                        <div>
+                            <h2 class="font-outfit font-bold text-lg text-slate-800 dark:text-white">Onboarding</h2>
+                            <p class="text-xs text-slate-400 mt-0.5">{{ $onboarding['active'] }} in progress of {{ $onboarding['total'] }} companies</p>
+                        </div>
+                        <a href="{{ route('onboarding.index') }}" wire:navigate class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">View all</a>
+                    </div>
+
+                    <div class="flex flex-wrap gap-2 mt-4">
+                        @foreach($onboarding['counts'] as $status => $count)
+                            <a href="{{ route('onboarding.index', ['status' => $status]) }}" wire:navigate class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-semibold hover:opacity-80 transition {{ $onboardingTones[$status] }}">
+                                {{ $status }} <span class="font-outfit font-bold">{{ $count }}</span>
+                            </a>
+                        @endforeach
+                    </div>
+
+                    @if($onboarding['mine']->isNotEmpty())
+                        <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-5 mb-1">My onboardings</div>
+                        <ul class="divide-y divide-slate-100 dark:divide-slate-800/40">
+                            @foreach($onboarding['mine'] as $row)
+                                <li>
+                                    <a href="{{ route('onboarding.index', ['open' => $row['code']]) }}" wire:navigate class="flex items-center gap-3 py-3 px-1 -mx-1 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/30 transition">
+                                        <div class="min-w-0 flex-1">
+                                            <p class="text-sm font-medium text-slate-700 dark:text-slate-200 truncate">{{ $row['company'] }}</p>
+                                            <p class="text-[11px] text-slate-400 truncate">{{ $row['current_status'] ?: ($row['client'] ?? $row['code']) }}</p>
+                                        </div>
+                                        <span class="shrink-0 inline-flex px-2 py-0.5 rounded-lg border text-[11px] font-semibold {{ $onboardingTones[$row['status']] ?? $onboardingTones['Not started'] }}">{{ $row['status'] }}</span>
+                                    </a>
+                                </li>
+                            @endforeach
+                        </ul>
+                    @endif
                 </section>
             @endif
 
