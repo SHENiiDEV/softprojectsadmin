@@ -16,6 +16,7 @@ use App\Models\Task;
 use App\Models\User;
 use App\Models\Website;
 use App\Services\NavigationMenu;
+use App\Services\OnboardingBoard;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -537,5 +538,177 @@ class OnboardingStatusTest extends TestCase
         config(['features.onboarding' => false]);
 
         $this->actingAs($this->manager)->get('/dashboard')->assertOk()->assertDontSee('My onboardings');
+    }
+
+    public function test_status_counts_follow_the_selected_responsible_client_and_search(): void
+    {
+        $other = User::factory()->create(['name' => 'Renat Other'])->assignRole('worker');
+
+        $a = $this->company('Alpha Ltd');
+        $b = $this->company('Beta Ltd');
+        $c = $this->company('Gamma Ltd');
+
+        $this->task($a, 'kyb', ['assigned_to' => $this->kybOwner->id, 'onboarding_status' => 'In progress']);
+        $this->task($b, 'kyb', ['assigned_to' => $this->kybOwner->id, 'onboarding_status' => 'Approved']);
+        $this->task($c, 'kyb', ['assigned_to' => $other->id, 'onboarding_status' => 'In progress']);
+
+        $component = Livewire::actingAs($this->manager)->test(OnboardingIndex::class);
+
+        $component->assertViewHas('total', 3)
+            ->assertViewHas('statusCounts', fn ($counts) => $counts->sortKeys()->all() === ['Approved' => 1, 'In progress' => 2])
+            ->assertSee('Gleb KYB (2)')
+            ->assertSee('Renat Other (1)');
+
+        // choosing a person narrows the numbers on top to that person's companies
+        $component->set('filterResponsible', (string) $this->kybOwner->id)
+            ->assertViewHas('total', 2)
+            ->assertViewHas('statusCounts', fn ($counts) => $counts->sortKeys()->all() === ['Approved' => 1, 'In progress' => 1]);
+
+        // the status filter narrows the table but not the chips, so the person's other statuses stay visible
+        $component->set('filterStatus', 'Approved')
+            ->assertViewHas('total', 2)
+            ->assertViewHas('statusCounts', fn ($counts) => $counts->sortKeys()->all() === ['Approved' => 1, 'In progress' => 1])
+            ->assertViewHas('rows', fn ($rows) => $rows->pluck('company')->all() === ['Beta Ltd']);
+
+        $component->set('filterStatus', '')->set('filterResponsible', (string) $other->id)
+            ->assertViewHas('total', 1)
+            ->assertViewHas('statusCounts', fn ($counts) => $counts->sortKeys()->all() === ['In progress' => 1]);
+    }
+
+    public function test_provider_statuses_are_read_from_the_compliance_fields(): void
+    {
+        $project = $this->company();
+        $this->task($project, 'kyb');
+
+        Boarding::create([
+            'project_id' => $project->id,
+            'providers_data' => [
+                '1_TPF' => ['name' => 'TPF', 'boarding_status' => 'pending', 'verification_status' => 'verified'],
+                '1_Decta' => ['name' => 'Decta', 'boarding_status' => 'pending', 'verification_status' => 'pending'],
+                '1_Madfin' => ['name' => 'Madfin', 'boarding_status' => 'boarding_completed', 'verification_status' => 'pending'],
+                '1_PayAlly' => ['name' => 'PayAlly', 'boarding_status' => 'in_progress', 'verification_status' => 'pending'],
+                '1_Rapyd' => ['name' => 'Rapyd', 'boarding_status' => 'pending', 'verification_status' => 'rejected'],
+                '1_Vialet' => ['name' => 'Vialet', 'boarding_status' => 'need_to_complete', 'verification_status' => 'need_to_upload'],
+            ],
+        ]);
+
+        $providers = collect(app(OnboardingBoard::class)->rowFor($project)['providers'])->pluck('status', 'name')->all();
+
+        $this->assertSame([
+            'TPF' => 'Completed',
+            'Decta' => 'Pending',
+            'Madfin' => 'Completed',
+            'PayAlly' => 'In process',
+            'Rapyd' => 'Decline',
+            'Vialet' => 'Pending',
+        ], $providers);
+    }
+
+    public function test_provider_status_can_be_changed_in_the_panel_and_is_stored_for_the_compliance_tab(): void
+    {
+        $project = $this->company();
+        $this->task($project, 'kyb');
+        $boarding = Boarding::create([
+            'project_id' => $project->id,
+            'providers_data' => [
+                '7_PayAlly' => ['name' => 'PayAlly', 'website_id' => 7, 'boarding_status' => 'pending', 'verification_status' => 'pending', 'kyb_status' => 'sent'],
+                '8_PayAlly' => ['name' => 'PayAlly', 'website_id' => 8, 'boarding_status' => 'pending', 'verification_status' => 'pending', 'kyb_status' => 'sent'],
+                '7_Madfin' => ['name' => 'Madfin', 'boarding_status' => 'pending', 'verification_status' => 'pending'],
+            ],
+        ]);
+        $code = 'ONB-'.str_pad((string) $project->id, 3, '0', STR_PAD_LEFT);
+
+        Livewire::actingAs($this->manager)->test(OnboardingIndex::class)
+            ->call('select', $code)
+            ->assertSee('click a status to change it')
+            ->assertSee('Decline')
+            ->assertSee('In process')
+            ->call('setProviderStatus', $project->id, 'PayAlly', 'in_process')
+            ->assertSee('PayAlly: In process.')
+            ->assertSee("Provider PayAlly: status changed from 'Pending' to 'In process'")
+            ->call('setProviderStatus', $project->id, 'Madfin', 'decline')
+            ->call('setProviderStatus', $project->id, 'PayAlly', 'completed');
+
+        $data = $boarding->fresh()->providers_data;
+
+        // every website entry of the provider is updated, with the values the Compliance tab understands
+        foreach (['7_PayAlly', '8_PayAlly'] as $key) {
+            $this->assertSame('boarding_completed', $data[$key]['boarding_status']);
+            $this->assertSame('completed', $data[$key]['verification_status']);
+            $this->assertSame('sent', $data[$key]['kyb_status']);
+        }
+        $this->assertSame('rejected', $data['7_Madfin']['verification_status']);
+        $this->assertSame('rejected', $data['7_Madfin']['boarding_status']);
+
+        $providers = collect(app(OnboardingBoard::class)->rowFor($project)['providers'])->pluck('status', 'name')->all();
+        $this->assertSame(['PayAlly' => 'Completed', 'Madfin' => 'Decline'], $providers);
+
+        $this->assertSame(3, ActivityLog::where('project_id', $project->id)->where('action', 'provider_status_updated')->count());
+    }
+
+    public function test_provider_from_website_gateways_gets_a_record_when_its_status_is_set(): void
+    {
+        $project = $this->company();
+        $this->task($project, 'onboarding');
+        $website = $project->websites()->first();
+        $website->update(['gateways' => ['Decta']]);
+
+        $this->assertSame('Pending', app(OnboardingBoard::class)->rowFor($project)['providers'][0]['status']);
+
+        Livewire::actingAs($this->manager)->test(OnboardingIndex::class)
+            ->call('setProviderStatus', $project->id, 'Decta', 'in_process');
+
+        $entry = Boarding::where('project_id', $project->id)->firstOrFail()->providers_data["{$website->id}_Decta"];
+        $this->assertSame('Decta', $entry['name']);
+        $this->assertSame($website->id, $entry['website_id']);
+        $this->assertSame('in_progress', $entry['verification_status']);
+        $this->assertSame('In process', app(OnboardingBoard::class)->rowFor($project->fresh())['providers'][0]['status']);
+    }
+
+    public function test_provider_status_editing_is_protected(): void
+    {
+        $project = $this->company();
+        $this->task($project, 'kyb');
+        $boarding = Boarding::create(['project_id' => $project->id, 'providers_data' => ['1_PayAlly' => ['name' => 'PayAlly', 'boarding_status' => 'pending', 'verification_status' => 'pending']]]);
+        $code = 'ONB-'.str_pad((string) $project->id, 3, '0', STR_PAD_LEFT);
+
+        // curators see the providers but have no selectors and cannot call the action
+        Livewire::actingAs($this->curator)->test(OnboardingIndex::class)
+            ->call('select', $code)
+            ->assertDontSee('click a status to change it')
+            ->call('setProviderStatus', $project->id, 'PayAlly', 'completed')
+            ->assertForbidden();
+
+        // unknown status values are ignored
+        Livewire::actingAs($this->manager)->test(OnboardingIndex::class)
+            ->call('setProviderStatus', $project->id, 'PayAlly', 'verified-ish');
+
+        $this->assertSame('pending', $boarding->fresh()->providers_data['1_PayAlly']['verification_status']);
+
+        // a company that is not in the tracker cannot be edited through this page
+        $untracked = $this->company('Untracked Co');
+
+        try {
+            Livewire::actingAs($this->manager)->test(OnboardingIndex::class)
+                ->call('setProviderStatus', $untracked->id, 'PayAlly', 'completed');
+        } catch (\Throwable) {
+            // 404
+        }
+
+        $this->assertNull(Boarding::where('project_id', $untracked->id)->first());
+    }
+
+    public function test_company_tab_edits_provider_statuses_too(): void
+    {
+        $project = $this->company();
+        $this->task($project, 'kyb');
+        $boarding = Boarding::create(['project_id' => $project->id, 'providers_data' => ['1_PayAlly' => ['name' => 'PayAlly', 'boarding_status' => 'pending', 'verification_status' => 'pending']]]);
+
+        Livewire::actingAs($this->manager)->test(OnboardingSection::class, ['project' => $project])
+            ->assertSee('click a status to change it')
+            ->call('setProviderStatus', $project->id, 'PayAlly', 'decline')
+            ->assertSee('PayAlly: Decline.');
+
+        $this->assertSame('rejected', $boarding->fresh()->providers_data['1_PayAlly']['verification_status']);
     }
 }

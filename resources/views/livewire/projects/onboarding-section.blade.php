@@ -64,14 +64,8 @@
                 </div>
 
                 <div>
-                    <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Providers</div>
-                    <div class="flex flex-wrap gap-1.5">
-                        @forelse($row['providers'] as $provider)
-                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[11px] font-semibold {{ $providerTones[$provider['tone']] }}">{{ $provider['name'] }}<span class="font-normal opacity-80">· {{ $provider['status'] }}</span></span>
-                        @empty
-                            <span class="text-sm text-slate-400">No providers yet. Add gateways to the websites or fill the Compliance tab.</span>
-                        @endforelse
-                    </div>
+                    <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Providers@if($canEdit) <span class="normal-case font-normal tracking-normal text-slate-400">· click a status to change it</span>@endif</div>
+                    @include('onboarding.providers', ['providers' => $row['providers'], 'projectId' => $project->id, 'canEdit' => $canEdit, 'emptyText' => 'No providers yet. Add gateways to the websites or fill the Compliance tab.'])
                 </div>
             </div>
 
