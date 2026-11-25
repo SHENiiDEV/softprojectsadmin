@@ -284,6 +284,8 @@ class OnboardingBoard
         $boarding = $project->boarding ?? Boarding::create(['project_id' => $project->id]);
         $data = is_array($boarding->providers_data) ? $boarding->providers_data : [];
         $legacy = self::LEGACY_VALUES[$status];
+        // The Compliance tab keeps the date boarding was completed per provider: fill it the first time
+        $completedAt = $status === 'completed' ? now()->toDateString() : null;
         $matched = false;
 
         foreach ($data as $key => $item) {
@@ -294,6 +296,9 @@ class OnboardingBoard
             $name = trim((string) ($item['name'] ?? Str::after((string) $key, '_')));
             if (strcasecmp($name, $provider) === 0) {
                 $data[$key] = array_merge($item, $legacy, ['name' => $name]);
+                if ($completedAt !== null && empty($item['boarding_completed_at'])) {
+                    $data[$key]['boarding_completed_at'] = $completedAt;
+                }
                 $matched = true;
             }
         }
@@ -314,7 +319,7 @@ class OnboardingBoard
                     'website_name' => $websiteName,
                     'website_url' => $websiteUrl,
                     'name' => $provider,
-                    'boarding_completed_at' => null,
+                    'boarding_completed_at' => $completedAt,
                     'kyb_sent_at' => null,
                     'kyb_status' => 'sent',
                 ], $legacy);
