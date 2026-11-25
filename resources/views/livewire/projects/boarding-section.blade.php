@@ -158,6 +158,7 @@
                             <option value="in_progress">In Progress</option>
                             <option value="pending">Pending</option>
                             <option value="need_to_complete">Need to Complete</option>
+                            <option value="rejected">Rejected / Declined</option>
                         </select>
                     </div>
 

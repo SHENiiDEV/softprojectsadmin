@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\ActivityLog;
+use App\Models\Boarding;
 use App\Models\Comment;
 use App\Models\Project;
 use App\Models\Task;
@@ -33,20 +34,41 @@ class OnboardingBoard
         'task_created',
         'task_assigned',
         'task_unassigned',
+        'provider_status_updated',
     ];
 
     /**
-     * Provider boarding status -> tone, mirrors the Compliance tab of a company.
+     * Status of a company at one provider (key => label), in the order of the selector.
+     *
+     * @var array<string, string>
+     */
+    public const PROVIDER_STATUSES = [
+        'completed' => 'Completed',
+        'decline' => 'Decline',
+        'in_process' => 'In process',
+        'pending' => 'Pending',
+    ];
+
+    /**
+     * What a provider status is stored as in the Compliance tab (boarding_status / verification_status).
+     *
+     * @var array<string, array{boarding_status: string, verification_status: string}>
+     */
+    private const LEGACY_VALUES = [
+        'completed' => ['boarding_status' => 'boarding_completed', 'verification_status' => 'completed'],
+        'decline' => ['boarding_status' => 'rejected', 'verification_status' => 'rejected'],
+        'in_process' => ['boarding_status' => 'in_progress', 'verification_status' => 'in_progress'],
+        'pending' => ['boarding_status' => 'pending', 'verification_status' => 'pending'],
+    ];
+
+    /**
+     * Provider status -> badge tone.
      */
     private const PROVIDER_TONES = [
-        'verified' => 'emerald',
         'completed' => 'emerald',
-        'boarding_completed' => 'emerald',
-        'in_progress' => 'sky',
-        'sent' => 'sky',
-        'need_to_complete' => 'amber',
-        'need_to_send' => 'amber',
+        'in_process' => 'sky',
         'pending' => 'slate',
+        'decline' => 'rose',
     ];
 
     /**
@@ -166,7 +188,7 @@ class OnboardingBoard
     /**
      * Providers the company is being onboarded with, from its Compliance tab (falls back to website gateways).
      *
-     * @return list<array{name: string, status: string, tone: string}>
+     * @return list<array{name: string, key: string, status: string, tone: string}>
      */
     private function providersFor(Project $project): array
     {
@@ -183,8 +205,7 @@ class OnboardingBoard
                 continue;
             }
 
-            $status = (string) ($item['verification_status'] ?? $item['boarding_status'] ?? 'pending');
-            $providers[$name] = $this->betterProvider($providers[$name] ?? null, $status);
+            $providers[$name] = $this->betterProvider($providers[$name] ?? null, $this->providerStatus($item));
         }
 
         if ($providers === []) {
@@ -202,23 +223,107 @@ class OnboardingBoard
         foreach ($providers as $name => $status) {
             $list[] = [
                 'name' => $name,
-                'status' => Str::headline($status),
-                'tone' => self::PROVIDER_TONES[$status] ?? (str_contains($status, 'reject') ? 'rose' : 'slate'),
+                'key' => $status,
+                'status' => self::PROVIDER_STATUSES[$status],
+                'tone' => self::PROVIDER_TONES[$status],
             ];
         }
 
         return $list;
     }
 
+    /**
+     * One status out of the two Compliance fields: declined beats everything, then completed, then in process.
+     *
+     * @param  array<string, mixed>  $item
+     */
+    private function providerStatus(array $item): string
+    {
+        $values = array_map(
+            fn ($value) => strtolower((string) $value),
+            array_filter([$item['verification_status'] ?? null, $item['boarding_status'] ?? null], fn ($value) => $value !== null),
+        );
+
+        $in = fn (array $options) => count(array_intersect($values, $options)) > 0;
+
+        return match (true) {
+            $in(['rejected', 'decline', 'declined']) => 'decline',
+            $in(['verified', 'completed', 'boarding_completed']) => 'completed',
+            $in(['in_progress', 'sent']) => 'in_process',
+            default => 'pending',
+        };
+    }
+
+    /**
+     * When one provider sits on several websites, the best status wins.
+     */
     private function betterProvider(?string $current, string $candidate): string
     {
         if ($current === null) {
             return $candidate;
         }
 
-        $order = array_keys(self::PROVIDER_TONES);
-        $rank = fn (string $status) => ($i = array_search($status, $order, true)) === false ? count($order) : $i;
+        $order = ['completed', 'in_process', 'pending', 'decline'];
 
-        return $rank($candidate) < $rank($current) ? $candidate : $current;
+        return array_search($candidate, $order, true) < array_search($current, $order, true) ? $candidate : $current;
+    }
+
+    /**
+     * Set the status of one provider on every website of the company (creates the record when needed).
+     * Written in the Compliance tab format, so both screens show the same. Returns the previous label.
+     */
+    public function setProviderStatus(Project $project, string $provider, string $status): ?string
+    {
+        if (! isset(self::PROVIDER_STATUSES[$status])) {
+            return null;
+        }
+
+        $project->loadMissing(['boarding', 'websites']);
+        $previous = collect($this->providersFor($project))->firstWhere('name', $provider)['status'] ?? 'Pending';
+
+        $boarding = $project->boarding ?? Boarding::create(['project_id' => $project->id]);
+        $data = is_array($boarding->providers_data) ? $boarding->providers_data : [];
+        $legacy = self::LEGACY_VALUES[$status];
+        $matched = false;
+
+        foreach ($data as $key => $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $name = trim((string) ($item['name'] ?? Str::after((string) $key, '_')));
+            if (strcasecmp($name, $provider) === 0) {
+                $data[$key] = array_merge($item, $legacy, ['name' => $name]);
+                $matched = true;
+            }
+        }
+
+        if (! $matched) {
+            $sites = $project->websites->filter(fn ($website) => collect((array) $website->gateways)
+                ->contains(fn ($gateway) => strcasecmp(trim((string) $gateway), $provider) === 0));
+
+            $entries = $sites->isEmpty()
+                ? [[0, 'Company', '']]
+                : $sites->map(fn ($website) => [$website->id, $website->name ?: $website->url, (string) $website->url])->all();
+
+            foreach ($entries as [$websiteId, $websiteName, $websiteUrl]) {
+                $key = "{$websiteId}_{$provider}";
+                $data[$key] = array_merge([
+                    'composite_key' => $key,
+                    'website_id' => $websiteId,
+                    'website_name' => $websiteName,
+                    'website_url' => $websiteUrl,
+                    'name' => $provider,
+                    'boarding_completed_at' => null,
+                    'kyb_sent_at' => null,
+                    'kyb_status' => 'sent',
+                ], $legacy);
+            }
+        }
+
+        $boarding->providers_data = $data;
+        $boarding->save();
+
+        return $previous;
     }
 }

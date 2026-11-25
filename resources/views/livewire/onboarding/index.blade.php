@@ -68,7 +68,7 @@
             <select wire:model.live="filterResponsible" class="{{ $input }} w-full">
                 <option value="">All KYB responsible</option>
                 @foreach($responsibles as $person)
-                    <option value="{{ $person->id }}">{{ $person->name }}</option>
+                    <option value="{{ $person->id }}">{{ $person->name }} ({{ $person->onboarding_count }})</option>
                 @endforeach
             </select>
         </div>
@@ -299,14 +299,8 @@
                             @endforelse
                         </div>
                         <div class="col-span-2">
-                            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Providers</div>
-                            <div class="flex flex-wrap gap-1.5">
-                                @forelse($detail['providers'] as $provider)
-                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[11px] font-semibold {{ $providerTones[$provider['tone']] }}">{{ $provider['name'] }}<span class="font-normal opacity-80">· {{ $provider['status'] }}</span></span>
-                                @empty
-                                    <span class="text-slate-400">—</span>
-                                @endforelse
-                            </div>
+                            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Providers@if($canEdit && $detail['linked']) <span class="normal-case font-normal tracking-normal text-slate-400">· click a status to change it</span>@endif</div>
+                            @include('onboarding.providers', ['providers' => $detail['providers'], 'projectId' => $detail['project']?->id, 'canEdit' => $canEdit && $detail['linked']])
                         </div>
                     </section>
 

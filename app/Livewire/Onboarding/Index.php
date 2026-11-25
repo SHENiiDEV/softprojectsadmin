@@ -66,10 +66,9 @@ class Index extends Component
     {
         $allRows = $board->rows();
 
-        $statusCounts = $allRows->countBy('status');
-
-        $rows = $allRows
-            ->when($this->filterStatus !== '', fn (Collection $c) => $c->where('status', $this->filterStatus))
+        // Everything except the status filter: the status chips and the total count what is left for this
+        // client / person / search, so picking a KYB responsible updates the numbers on top.
+        $scoped = $allRows
             ->when($this->filterClient !== '', fn (Collection $c) => $c->where('client_id', (int) $this->filterClient))
             ->when($this->filterResponsible !== '', fn (Collection $c) => $c->filter(
                 fn (array $row) => $row['responsible']->contains('id', (int) $this->filterResponsible)
@@ -93,6 +92,10 @@ class Index extends Component
                 });
             });
 
+        $statusCounts = $scoped->countBy('status');
+
+        $rows = $scoped->when($this->filterStatus !== '', fn (Collection $c) => $c->where('status', $this->filterStatus));
+
         $statusOrder = array_flip(Task::ONBOARDING_STATUSES);
 
         $rows = match ($this->sortBy) {
@@ -110,10 +113,11 @@ class Index extends Component
             'detailComments' => $detail === null ? collect() : $board->comments($taskIds),
             'detailHistory' => $detail === null ? collect() : $board->history($taskIds),
             'rows' => $rows->values(),
-            'total' => $allRows->count(),
+            'total' => $scoped->count(),
             'statusCounts' => $statusCounts,
             'statuses' => Task::ONBOARDING_STATUSES,
-            'responsibles' => User::whereIn('id', $allRows->pluck('responsible')->flatten()->pluck('id')->unique())->orderBy('name')->get(['id', 'name']),
+            'responsibles' => User::whereIn('id', $allRows->pluck('responsible')->flatten()->pluck('id')->unique())->orderBy('name')->get(['id', 'name'])
+                ->each(fn (User $person) => $person->onboarding_count = $allRows->filter(fn (array $row) => $row['responsible']->contains('id', $person->id))->count()),
             'clients' => $allRows->filter(fn (array $row) => $row['client_id'])->unique('client_id')->sortBy('client')->values(),
             'canEdit' => $this->canEditOnboarding(),
         ])->layout('layouts.app');

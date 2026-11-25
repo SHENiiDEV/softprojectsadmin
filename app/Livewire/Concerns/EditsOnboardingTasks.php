@@ -2,7 +2,10 @@
 
 namespace App\Livewire\Concerns;
 
+use App\Models\ActivityLog;
+use App\Models\Project;
 use App\Models\Task;
+use App\Services\OnboardingBoard;
 use Illuminate\Support\Str;
 
 /**
@@ -46,5 +49,38 @@ trait EditsOnboardingTasks
 
         $this->onboardingTask($taskId)->update(['current_status' => trim($text) !== '' ? Str::limit(trim($text), 5000, '') : null]);
         session()->flash('message', 'Current status saved.');
+    }
+
+    /**
+     * Change the status of one provider for a company that is in the onboarding tracker.
+     */
+    public function setProviderStatus(int $projectId, string $provider, string $status): void
+    {
+        $this->authorizeOnboardingEdit();
+
+        $labels = OnboardingBoard::PROVIDER_STATUSES;
+        $provider = trim($provider);
+
+        if ($provider === '' || ! isset($labels[$status])) {
+            return;
+        }
+
+        $project = Project::findOrFail($projectId);
+        $task = Task::onboarding()->where('project_id', $project->id)->orderByDesc('id')->first();
+        abort_if($task === null, 404);
+
+        $from = app(OnboardingBoard::class)->setProviderStatus($project, $provider, $status);
+
+        if ($from !== $labels[$status]) {
+            ActivityLog::create([
+                'user_id' => auth()->id(),
+                'task_id' => $task->id,
+                'project_id' => $project->id,
+                'action' => 'provider_status_updated',
+                'description' => "Provider {$provider}: status changed from '{$from}' to '{$labels[$status]}'",
+            ]);
+        }
+
+        session()->flash('message', "{$provider}: {$labels[$status]}.");
     }
 }

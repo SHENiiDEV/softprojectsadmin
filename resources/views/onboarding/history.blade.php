@@ -2,6 +2,7 @@
     $historyIcons = [
         'onboarding_status_updated' => ['fa-arrow-right-arrow-left', 'text-sky-500'],
         'onboarding_current_status_updated' => ['fa-pen', 'text-indigo-500'],
+        'provider_status_updated' => ['fa-plug', 'text-emerald-500'],
         'task_created' => ['fa-plus', 'text-emerald-500'],
         'task_assigned' => ['fa-user-plus', 'text-amber-500'],
         'task_unassigned' => ['fa-user-minus', 'text-rose-500'],
