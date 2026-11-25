@@ -23,7 +23,7 @@ class MyWork extends Component
 
     public string $filterPriority = '';
 
-    public string $sortBy = 'default'; // default | latest_comment | due_date
+    public string $sortBy = 'due_date'; // due_date | default (by status) | latest_comment
 
     public string $search = '';
 
@@ -31,7 +31,7 @@ class MyWork extends Component
         'viewMode' => ['except' => 'active'],
         'filterStatus' => ['except' => ''],
         'filterPriority' => ['except' => ''],
-        'sortBy' => ['except' => 'default'],
+        'sortBy' => ['except' => 'due_date'],
         'search' => ['except' => ''],
     ];
 
@@ -127,8 +127,20 @@ class MyWork extends Component
                 ->orderByRaw('latest_comment_at IS NULL, latest_comment_at DESC')
                 ->orderBy('id', 'desc');
         } elseif ($this->sortBy === 'due_date') {
-            $query->orderByRaw('due_date IS NULL, due_date ASC')
-                ->orderBy('id', 'desc');
+            if ($this->viewMode === 'done' || $this->filterStatus === 'done') {
+                // Deadlines mean little for finished work: most recently completed first
+                $query->orderBy('updated_at', 'desc')->orderBy('id', 'desc');
+            } else {
+                // Overdue first, then the nearest deadline; tasks without a date last; same day: most urgent first
+                $query->orderByRaw('due_date IS NULL, due_date ASC')
+                    ->orderByRaw("CASE priority
+                        WHEN 'critical' THEN 1
+                        WHEN 'high'     THEN 2
+                        WHEN 'medium'   THEN 3
+                        WHEN 'low'      THEN 4
+                        ELSE 5 END")
+                    ->orderBy('id', 'desc');
+            }
         } else {
             if ($this->viewMode === 'done' || $this->filterStatus === 'done') {
                 $query->orderBy('updated_at', 'desc')->orderBy('id', 'desc');

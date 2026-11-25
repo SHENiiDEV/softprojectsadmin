@@ -251,9 +251,9 @@
         <select wire:model.live="sortBy"
                 class="px-3 py-2 text-sm rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700
                        text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer">
-            <option value="default">Default Sort</option>
+            <option value="due_date">📅 Due Date (nearest first)</option>
+            <option value="default">📊 By Status</option>
             <option value="latest_comment">💬 Newest Comment First</option>
-            <option value="due_date">📅 Due Date</option>
         </select>
     </div>
 

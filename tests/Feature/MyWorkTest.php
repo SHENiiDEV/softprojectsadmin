@@ -209,4 +209,50 @@ class MyWorkTest extends TestCase
 
         $this->assertSame(0, $task->timeLogs()->count());
     }
+
+    public function test_tasks_are_sorted_by_due_date_by_default(): void
+    {
+        $user = User::factory()->create();
+
+        $make = fn (string $title, ?string $due, string $priority = 'medium', string $status = 'todo') => Task::create([
+            'title' => $title,
+            'status' => $status,
+            'priority' => $priority,
+            'assigned_to' => $user->id,
+            'due_date' => $due,
+        ]);
+
+        $make('No date task', null, 'critical');
+        $make('Later task', today()->addDays(10)->toDateString());
+        $make('Overdue task', today()->subDays(3)->toDateString(), 'low', 'in_progress');
+        $make('Same day low', today()->addDays(2)->toDateString(), 'low');
+        $make('Same day high', today()->addDays(2)->toDateString(), 'high');
+
+        Livewire::actingAs($user)
+            ->test(MyWork::class)
+            ->assertSet('sortBy', 'due_date')
+            ->assertSeeInOrder(['Overdue task', 'Same day high', 'Same day low', 'Later task', 'No date task']);
+    }
+
+    public function test_status_sort_is_still_available_and_done_view_shows_latest_completed_first(): void
+    {
+        $user = User::factory()->create();
+
+        Task::create(['title' => 'Todo soon', 'status' => 'todo', 'priority' => 'low', 'assigned_to' => $user->id, 'due_date' => today()->addDay()->toDateString()]);
+        Task::create(['title' => 'Working later', 'status' => 'in_progress', 'priority' => 'low', 'assigned_to' => $user->id, 'due_date' => today()->addDays(9)->toDateString()]);
+
+        Livewire::actingAs($user)
+            ->test(MyWork::class)
+            ->set('sortBy', 'default')
+            ->assertSeeInOrder(['Working later', 'Todo soon']);
+
+        $older = Task::create(['title' => 'Finished earlier', 'status' => 'done', 'priority' => 'low', 'assigned_to' => $user->id, 'due_date' => today()->subDays(30)->toDateString()]);
+        $older->forceFill(['updated_at' => now()->subDays(2)])->saveQuietly();
+        Task::create(['title' => 'Finished today', 'status' => 'done', 'priority' => 'low', 'assigned_to' => $user->id, 'due_date' => today()->subDays(1)->toDateString()]);
+
+        Livewire::actingAs($user)
+            ->test(MyWork::class)
+            ->set('viewMode', 'done')
+            ->assertSeeInOrder(['Finished today', 'Finished earlier']);
+    }
 }
