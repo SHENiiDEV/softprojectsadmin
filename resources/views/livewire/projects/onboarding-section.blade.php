@@ -64,7 +64,7 @@
                 </div>
 
                 <div>
-                    <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Providers@if($canEdit) <span class="normal-case font-normal tracking-normal text-slate-400">· click a status to change it</span>@endif</div>
+                    <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Providers @if($canEdit) <span class="normal-case font-normal tracking-normal text-slate-400">· click a status to change it</span>@endif</div>
                     @include('onboarding.providers', ['providers' => $row['providers'], 'projectId' => $project->id, 'canEdit' => $canEdit, 'emptyText' => 'No providers yet. Add gateways to the websites or fill the Compliance tab.'])
                 </div>
             </div>

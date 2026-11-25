@@ -299,7 +299,7 @@
                             @endforelse
                         </div>
                         <div class="col-span-2">
-                            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Providers@if($canEdit && $detail['linked']) <span class="normal-case font-normal tracking-normal text-slate-400">· click a status to change it</span>@endif</div>
+                            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Providers @if($canEdit && $detail['linked']) <span class="normal-case font-normal tracking-normal text-slate-400">· click a status to change it</span>@endif</div>
                             @include('onboarding.providers', ['providers' => $detail['providers'], 'projectId' => $detail['project']?->id, 'canEdit' => $canEdit && $detail['linked']])
                         </div>
                     </section>
