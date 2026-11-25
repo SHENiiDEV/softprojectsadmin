@@ -4,6 +4,8 @@ namespace App\Livewire;
 
 use App\Models\Client;
 use App\Models\Project;
+use App\Models\Task;
+use App\Services\OnboardingBoard;
 use Illuminate\Support\Collection;
 use Livewire\Component;
 
@@ -43,12 +45,19 @@ class CompanyHealthScore extends Component
             $query->where('client_id', $this->filterClient);
         }
 
-        $companies = $query->get()->map(function (Project $project) {
+        // Companies whose KYB task is finished (Approved / Completed)
+        $kybDone = Task::where('type', 'kyb')
+            ->whereIn('onboarding_status', ['Approved', 'Completed'])
+            ->whereNotNull('project_id')
+            ->pluck('project_id')
+            ->flip();
+
+        $companies = $query->get()->map(function (Project $project) use ($kybDone) {
             return (object) [
                 'id' => $project->id,
                 'name' => $project->name,
                 'status' => $project->status,
-                'health' => $this->computeHealth($project),
+                'health' => $this->computeHealth($project, $kybDone),
             ];
         });
 
@@ -62,16 +71,18 @@ class CompanyHealthScore extends Component
     /**
      * Compute a health score (0–100) based on completeness of data.
      */
-    private function computeHealth(Project $project): array
+    private function computeHealth(Project $project, Collection $kybDone): array
     {
+        $providers = is_array($project->boarding?->providers_data) ? $project->boarding->providers_data : [];
+
         $checks = [
             'Website' => $project->websites->isNotEmpty(),
             'Director' => $project->director !== null,
-            'KYB' => $project->boarding?->kyb_completed_at !== null,
-            'Onboarding' => $project->boarding?->boarding_completed_at !== null,
-            'CFS' => ($project->boarding?->cfs_verification ?? '') === 'completed',
-            'Bank' => ($project->boarding?->bank_verification ?? '') === 'completed',
-            'Companies House' => ($project->boarding?->companies_house_verification ?? '') === 'completed',
+            // KYB: the KYB task is Approved / Completed (or the old KYB date is still on the record)
+            'KYB' => $kybDone->has($project->id) || $project->boarding?->kyb_completed_at !== null,
+            // Onboarding: at least one provider boarding is Completed (or the old boarding date is still on the record)
+            'Onboarding' => collect($providers)->contains(fn ($item) => is_array($item) && OnboardingBoard::formStatus($item) === 'completed')
+                || $project->boarding?->boarding_completed_at !== null,
             'Report' => $project->report !== null,
             'Credentials' => $project->credentials->isNotEmpty(),
         ];

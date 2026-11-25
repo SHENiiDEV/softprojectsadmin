@@ -633,7 +633,7 @@ class OnboardingStatusTest extends TestCase
 
         // every website entry of the provider is updated, with the values the Compliance tab understands
         foreach (['7_PayAlly', '8_PayAlly'] as $key) {
-            $this->assertSame('boarding_completed', $data[$key]['boarding_status']);
+            $this->assertSame('completed', $data[$key]['boarding_status']);
             $this->assertSame('completed', $data[$key]['verification_status']);
             $this->assertSame('sent', $data[$key]['kyb_status']);
         }
@@ -727,6 +727,7 @@ class OnboardingStatusTest extends TestCase
         // moving between other statuses does not notify
         $component->call('setProviderStatus', $project->id, 'PayAlly', 'in_process');
         $this->assertSame(0, $completedNotifications());
+        $this->assertSame(today()->toDateString(), $boarding->fresh()->providers_data['1_PayAlly']['kyb_sent_at']);
 
         $component->call('setProviderStatus', $project->id, 'PayAlly', 'completed');
         $this->assertSame(1, $completedNotifications());
