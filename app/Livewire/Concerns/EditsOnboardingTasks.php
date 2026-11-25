@@ -5,6 +5,7 @@ namespace App\Livewire\Concerns;
 use App\Models\ActivityLog;
 use App\Models\Project;
 use App\Models\Task;
+use App\Services\NotificationService;
 use App\Services\OnboardingBoard;
 use Illuminate\Support\Str;
 
@@ -79,6 +80,11 @@ trait EditsOnboardingTasks
                 'action' => 'provider_status_updated',
                 'description' => "Provider {$provider}: status changed from '{$from}' to '{$labels[$status]}'",
             ]);
+        }
+
+        // Same as in the Compliance tab: the company manager hears when a provider boarding is completed
+        if ($status === 'completed' && $from !== $labels['completed'] && $project->manager) {
+            NotificationService::sendProviderBoardingCompletedNotification($project, $provider, $project->manager, auth()->user());
         }
 
         session()->flash('message', "{$provider}: {$labels[$status]}.");

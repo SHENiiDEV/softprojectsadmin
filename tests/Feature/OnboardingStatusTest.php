@@ -711,4 +711,34 @@ class OnboardingStatusTest extends TestCase
 
         $this->assertSame('rejected', $boarding->fresh()->providers_data['1_PayAlly']['verification_status']);
     }
+
+    public function test_completing_a_provider_notifies_the_manager_and_sets_the_date_like_the_compliance_tab(): void
+    {
+        $companyManager = User::factory()->create()->assignRole('manager');
+        $project = $this->company();
+        $project->update(['manager_id' => $companyManager->id]);
+        $this->task($project, 'kyb');
+        $boarding = Boarding::create(['project_id' => $project->id, 'providers_data' => ['1_PayAlly' => ['name' => 'PayAlly', 'boarding_status' => 'pending', 'verification_status' => 'pending']]]);
+
+        $completedNotifications = fn () => $companyManager->fresh()->notifications->filter(fn ($n) => ($n->data['type'] ?? null) === 'boarding_completed')->count();
+
+        $component = Livewire::actingAs($this->admin)->test(OnboardingIndex::class);
+
+        // moving between other statuses does not notify
+        $component->call('setProviderStatus', $project->id, 'PayAlly', 'in_process');
+        $this->assertSame(0, $completedNotifications());
+
+        $component->call('setProviderStatus', $project->id, 'PayAlly', 'completed');
+        $this->assertSame(1, $completedNotifications());
+        $this->assertSame(today()->toDateString(), $boarding->fresh()->providers_data['1_PayAlly']['boarding_completed_at']);
+
+        // completed again (no change) and a repeated choice stay silent
+        $component->call('setProviderStatus', $project->id, 'PayAlly', 'completed');
+        $this->assertSame(1, $completedNotifications());
+
+        // an existing date is kept when the status is set to completed once more later
+        $boarding->update(['providers_data' => ['1_PayAlly' => array_merge($boarding->fresh()->providers_data['1_PayAlly'], ['boarding_completed_at' => '2026-10-01', 'boarding_status' => 'pending', 'verification_status' => 'pending'])]]);
+        $component->call('setProviderStatus', $project->id, 'PayAlly', 'completed');
+        $this->assertSame('2026-10-01', $boarding->fresh()->providers_data['1_PayAlly']['boarding_completed_at']);
+    }
 }
