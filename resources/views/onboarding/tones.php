@@ -4,7 +4,7 @@
  * Tailwind class maps for the onboarding UI (status badges, row accents, provider chips).
  *
  * They live under resources/views so Tailwind sees the full class names (see `content` in tailwind.config.js).
- * Use in Blade: @php($tones = include resource_path('views/onboarding/tones.php'))
+ * Use in Blade: $tones = include resource_path('views/onboarding/tones.php');
  */
 
 return [

@@ -45,4 +45,18 @@ class BladeCompilationTest extends TestCase
 
         $this->addToAssertionCount(1);
     }
+
+    /**
+     * Blade cuts every "@php ... @endphp" block out first with a lazy regex, so an inline "@php(...)" in the same
+     * template swallows everything up to the next "@endphp" and later variables end up undefined.
+     */
+    #[DataProvider('bladeFiles')]
+    public function test_template_does_not_use_inline_php_directive(string $path): void
+    {
+        $this->assertDoesNotMatchRegularExpression(
+            '/(?<!@)@php\s*\(/',
+            (string) file_get_contents($path),
+            "{$path} uses the inline @php(...); use an @php ... @endphp block instead."
+        );
+    }
 }

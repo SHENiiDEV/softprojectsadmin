@@ -33,7 +33,9 @@
     <!-- Providers at a glance -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         @foreach($providers as $cKey => $pData)
-            @php($duration = $this->durationOf($pData))
+            @php
+                $duration = $this->durationOf($pData);
+            @endphp
             <div class="p-4 bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800/60 rounded-2xl flex flex-col justify-between space-y-2">
                 <div>
                     <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5 truncate" title="{{ $pData['website_name'] ?? '' }} - {{ $pData['name'] }}">

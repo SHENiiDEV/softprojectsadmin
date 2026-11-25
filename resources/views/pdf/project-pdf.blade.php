@@ -167,7 +167,9 @@
     </div>
 
     <!-- Provider boarding -->
-    @php($providerDetails = \App\Services\OnboardingBoard::providerDetails($project))
+    @php
+        $providerDetails = \App\Services\OnboardingBoard::providerDetails($project);
+    @endphp
     @if($providerDetails)
     <div class="section">
         <div class="section-title">Provider Boarding (KYB/KYC)</div>

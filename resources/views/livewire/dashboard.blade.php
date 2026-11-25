@@ -100,7 +100,9 @@
 
                     <ul class="divide-y divide-slate-100 dark:divide-slate-800/40">
                         @forelse($myTasks as $task)
-                            @php($isOverdue = $task->due_date && $task->due_date->lt(today()))
+                            @php
+                                $isOverdue = $task->due_date && $task->due_date->lt(today());
+                            @endphp
                             <li>
                                 <a href="{{ route('tasks.kanban', ['task_id' => $task->id]) }}" wire:navigate class="flex items-center gap-3 py-3 px-1 -mx-1 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/30 transition">
                                     <span class="h-2.5 w-2.5 rounded-full flex-shrink-0 {{ $priorityDots[$task->priority] ?? 'bg-slate-300' }}" title="{{ ucfirst((string) $task->priority) }} priority"></span>
