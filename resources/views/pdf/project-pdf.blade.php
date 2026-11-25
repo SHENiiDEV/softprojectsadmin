@@ -166,51 +166,32 @@
         </table>
     </div>
 
-    <!-- Compliance Checklist -->
-    @if($project->boarding)
+    <!-- Provider boarding -->
+    @php($providerDetails = \App\Services\OnboardingBoard::providerDetails($project))
+    @if($providerDetails)
     <div class="section">
-        <div class="section-title">Compliance Verification Checklist (KYB/KYC)</div>
+        <div class="section-title">Provider Boarding (KYB/KYC)</div>
         <table>
             <tr>
-                <th>KYB Verification Completed</th>
-                <td>{{ $project->boarding->kyb_completed_at ? $project->boarding->kyb_completed_at->format('d M Y') : 'Pending' }}</td>
+                <th>Provider</th>
+                <th>Website</th>
+                <th>Status</th>
+                <th>Send date</th>
+                <th>Complete date</th>
+                <th>Boarding time</th>
             </tr>
+            @foreach($providerDetails as $detail)
             <tr>
-                <th>Boarding Completed</th>
-                <td>{{ $project->boarding->boarding_completed_at ? $project->boarding->boarding_completed_at->format('d M Y') : 'Pending' }}</td>
-            </tr>
-            <tr>
-                <th>CFS Verification</th>
+                <td>{{ $detail['name'] }}</td>
+                <td>{{ $detail['website'] ?: '—' }}</td>
                 <td>
-                    <span class="badge {{ $project->boarding->cfs_verification === 'completed' ? 'badge-success' : ($project->boarding->cfs_verification === 'pending' ? 'badge-warning' : 'badge-danger') }}">
-                        {{ str_replace('_', ' ', $project->boarding->cfs_verification) }}
-                    </span>
+                    <span class="badge {{ $detail['form_status'] === 'completed' ? 'badge-success' : ($detail['form_status'] === 'rejected' ? 'badge-danger' : 'badge-warning') }}">{{ $detail['status'] }}</span>
                 </td>
+                <td>{{ $detail['sent_at'] ? \Illuminate\Support\Carbon::parse($detail['sent_at'])->format('d M Y') : '—' }}</td>
+                <td>{{ $detail['completed_at'] ? \Illuminate\Support\Carbon::parse($detail['completed_at'])->format('d M Y') : '—' }}</td>
+                <td>{{ $detail['duration'] ?? '—' }}</td>
             </tr>
-            <tr>
-                <th>Cardaq / SumSub Status</th>
-                <td>
-                    <span class="badge {{ $project->boarding->cardaq_sumsub === 'approved' ? 'badge-success' : ($project->boarding->cardaq_sumsub === 'pending' ? 'badge-warning' : 'badge-danger') }}">
-                        {{ str_replace('_', ' ', $project->boarding->cardaq_sumsub) }}
-                    </span>
-                </td>
-            </tr>
-            <tr>
-                <th>Bank Verification</th>
-                <td>
-                    <span class="badge {{ $project->boarding->bank_verification === 'completed' ? 'badge-success' : ($project->boarding->bank_verification === 'pending' ? 'badge-warning' : 'badge-danger') }}">
-                        {{ str_replace('_', ' ', $project->boarding->bank_verification) }}
-                    </span>
-                </td>
-            </tr>
-            <tr>
-                <th>Companies House Registry</th>
-                <td>
-                    <span class="badge {{ $project->boarding->companies_house_verification === 'completed' ? 'badge-success' : ($project->boarding->companies_house_verification === 'pending' ? 'badge-warning' : 'badge-danger') }}">
-                        {{ str_replace('_', ' ', $project->boarding->companies_house_verification) }}
-                    </span>
-                </td>
-            </tr>
+            @endforeach
         </table>
     </div>
     @endif

@@ -7,6 +7,7 @@ use App\Models\Boarding;
 use App\Models\Comment;
 use App\Models\Project;
 use App\Models\Task;
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
@@ -50,15 +51,27 @@ class OnboardingBoard
     ];
 
     /**
-     * What a provider status is stored as in the Compliance tab (boarding_status / verification_status).
+     * Provider status as stored in the Compliance tab form (boarding_status = verification_status).
      *
-     * @var array<string, array{boarding_status: string, verification_status: string}>
+     * @var array<string, string>
      */
-    private const LEGACY_VALUES = [
-        'completed' => ['boarding_status' => 'boarding_completed', 'verification_status' => 'completed'],
-        'decline' => ['boarding_status' => 'rejected', 'verification_status' => 'rejected'],
-        'in_process' => ['boarding_status' => 'in_progress', 'verification_status' => 'in_progress'],
-        'pending' => ['boarding_status' => 'pending', 'verification_status' => 'pending'],
+    public const FORM_STATUSES = [
+        'completed' => 'Completed',
+        'in_progress' => 'In Progress',
+        'pending' => 'Pending',
+        'rejected' => 'Declined',
+    ];
+
+    /**
+     * Canonical provider status -> value stored in the Compliance tab form.
+     *
+     * @var array<string, string>
+     */
+    private const FORM_VALUES = [
+        'completed' => 'completed',
+        'in_process' => 'in_progress',
+        'pending' => 'pending',
+        'decline' => 'rejected',
     ];
 
     /**
@@ -205,7 +218,7 @@ class OnboardingBoard
                 continue;
             }
 
-            $providers[$name] = $this->betterProvider($providers[$name] ?? null, $this->providerStatus($item));
+            $providers[$name] = $this->betterProvider($providers[$name] ?? null, self::providerStatus($item));
         }
 
         if ($providers === []) {
@@ -237,7 +250,7 @@ class OnboardingBoard
      *
      * @param  array<string, mixed>  $item
      */
-    private function providerStatus(array $item): string
+    public static function providerStatus(array $item): string
     {
         $values = array_map(
             fn ($value) => strtolower((string) $value),
@@ -283,8 +296,11 @@ class OnboardingBoard
 
         $boarding = $project->boarding ?? Boarding::create(['project_id' => $project->id]);
         $data = is_array($boarding->providers_data) ? $boarding->providers_data : [];
-        $legacy = self::LEGACY_VALUES[$status];
-        // The Compliance tab keeps the date boarding was completed per provider: fill it the first time
+        $value = self::FORM_VALUES[$status];
+        $legacy = ['boarding_status' => $value, 'verification_status' => $value];
+        // Same as the Compliance tab: the first time a provider goes In Progress the send date is set, the first time
+        // it is Completed the completion date is set (an existing date is never overwritten)
+        $sentAt = $status === 'in_process' ? now()->toDateString() : null;
         $completedAt = $status === 'completed' ? now()->toDateString() : null;
         $matched = false;
 
@@ -298,6 +314,9 @@ class OnboardingBoard
                 $data[$key] = array_merge($item, $legacy, ['name' => $name]);
                 if ($completedAt !== null && empty($item['boarding_completed_at'])) {
                     $data[$key]['boarding_completed_at'] = $completedAt;
+                }
+                if ($sentAt !== null && empty($item['kyb_sent_at'])) {
+                    $data[$key]['kyb_sent_at'] = $sentAt;
                 }
                 $matched = true;
             }
@@ -320,7 +339,7 @@ class OnboardingBoard
                     'website_url' => $websiteUrl,
                     'name' => $provider,
                     'boarding_completed_at' => $completedAt,
-                    'kyb_sent_at' => null,
+                    'kyb_sent_at' => $sentAt,
                     'kyb_status' => 'sent',
                 ], $legacy);
             }
@@ -330,5 +349,94 @@ class OnboardingBoard
         $boarding->save();
 
         return $previous;
+    }
+
+    /**
+     * Compliance form value (completed / in_progress / pending / rejected) of a provider record.
+     *
+     * @param  array<string, mixed>  $item
+     */
+    public static function formStatus(array $item): string
+    {
+        return self::FORM_VALUES[self::providerStatus($item)];
+    }
+
+    /**
+     * How long boarding with a provider took (Completed) or has taken so far (In Progress), in days.
+     *
+     * @return array{days: int, running: bool}|null
+     */
+    public static function duration(?string $sentAt, ?string $completedAt, string $formStatus): ?array
+    {
+        if (blank($sentAt)) {
+            return null;
+        }
+
+        try {
+            $start = Carbon::parse($sentAt)->startOfDay();
+
+            if ($formStatus === 'completed' && filled($completedAt)) {
+                $end = Carbon::parse($completedAt)->startOfDay();
+
+                return $end->gte($start) ? ['days' => (int) $start->diffInDays($end), 'running' => false] : null;
+            }
+
+            if ($formStatus === 'in_progress') {
+                return ['days' => (int) $start->diffInDays(today()), 'running' => true];
+            }
+        } catch (\Throwable) {
+            return null;
+        }
+
+        return null;
+    }
+
+    /**
+     * "Took 12 days" / "12 days so far" / "Same day".
+     *
+     * @param  array{days: int, running: bool}|null  $duration
+     */
+    public static function durationLabel(?array $duration): ?string
+    {
+        if ($duration === null) {
+            return null;
+        }
+
+        $days = $duration['days'];
+        $text = $days === 0 ? ($duration['running'] ? 'started today' : 'same day') : $days.' '.Str::plural('day', $days);
+
+        return $duration['running'] ? ($days === 0 ? 'Started today' : $text.' so far') : ($days === 0 ? 'Done the same day' : 'Took '.$text);
+    }
+
+    /**
+     * Per provider / website records of a company with status, dates and duration (used by the PDF and Health Score).
+     *
+     * @return list<array{name: string, website: string, status: string, form_status: string, sent_at: ?string, completed_at: ?string, duration: ?string}>
+     */
+    public static function providerDetails(Project $project): array
+    {
+        $data = is_array($project->boarding?->providers_data) ? $project->boarding->providers_data : [];
+        $details = [];
+
+        foreach ($data as $key => $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $name = trim((string) ($item['name'] ?? Str::after((string) $key, '_')));
+            $form = self::formStatus($item);
+
+            $details[] = [
+                'name' => $name,
+                'website' => (string) ($item['website_name'] ?? ''),
+                'status' => self::FORM_STATUSES[$form],
+                'form_status' => $form,
+                'sent_at' => $item['kyb_sent_at'] ?? null,
+                'completed_at' => $item['boarding_completed_at'] ?? null,
+                'duration' => self::durationLabel(self::duration($item['kyb_sent_at'] ?? null, $item['boarding_completed_at'] ?? null, $form)),
+            ];
+        }
+
+        return $details;
     }
 }

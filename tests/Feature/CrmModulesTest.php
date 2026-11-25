@@ -86,7 +86,7 @@ class CrmModulesTest extends TestCase
         ]);
     }
 
-    public function test_boarding_is_initialized_and_can_be_updated(): void
+    public function test_boarding_is_initialized_and_provider_status_can_be_updated(): void
     {
         $this->actingAs($this->user);
 
@@ -95,20 +95,21 @@ class CrmModulesTest extends TestCase
         ]);
 
         // Mounting the component should auto-initialize boarding record
-        Livewire::test(BoardingSection::class, ['project' => $this->project])
-            ->assertSet('cfs_verification', 'need_to_complete')
-            ->set('cfs_verification', 'completed')
-            ->set('bank_verification', 'pending')
-            ->set('kyb_completed_at', '2026-05-25')
+        $component = Livewire::test(BoardingSection::class, ['project' => $this->project]);
+
+        $this->assertDatabaseHas('boardings', ['project_id' => $this->project->id]);
+
+        $key = array_key_first($component->get('providers'));
+
+        $component
+            ->assertSet("providers.{$key}.status", 'pending')
+            ->set("providers.{$key}.status", 'in_progress')
             ->call('save')
             ->assertHasNoErrors();
 
-        $this->assertDatabaseHas('boardings', [
-            'project_id' => $this->project->id,
-            'cfs_verification' => 'completed',
-            'bank_verification' => 'pending',
-            'kyb_completed_at' => '2026-05-25',
-        ]);
+        $data = $this->project->boarding->fresh()->providers_data;
+        $this->assertSame('in_progress', $data[$key]['verification_status']);
+        $this->assertSame(today()->toDateString(), $data[$key]['kyb_sent_at']);
     }
 
     public function test_reports_can_be_saved_and_calculates_days(): void
