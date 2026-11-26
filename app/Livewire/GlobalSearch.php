@@ -9,6 +9,7 @@ use App\Models\PciDssDocument;
 use App\Models\Project;
 use App\Models\ProjectNote;
 use App\Models\Provider;
+use App\Models\ScamLink;
 use App\Models\SmmPost;
 use App\Models\SupportTicket;
 use App\Models\Task;
@@ -56,6 +57,7 @@ class GlobalSearch extends Component
         'documents' => 'PCI DSS documents',
         'credentials' => 'Credentials',
         'providers' => 'Providers',
+        'scam' => 'Scam links',
         'users' => 'Team',
         'posts' => 'SMM posts',
     ];
@@ -118,6 +120,10 @@ class GlobalSearch extends Component
 
         if ($can('view_tariffs') && config('features.tariffs')) {
             $this->results['providers'] = $this->providers();
+        }
+
+        if ($can('view_scam_links') && config('features.scam_links')) {
+            $this->results['scam'] = $this->scamLinks();
         }
 
         if ($can('manage_users')) {
@@ -428,6 +434,23 @@ class GlobalSearch extends Component
             'url' => route('tariffs.index'),
             'icon' => 'fa-solid fa-scale-balanced',
             'icon_bg' => self::ICON_TONES['indigo'],
+        ])->all());
+    }
+
+    /**
+     * @return list<array<string, string>>
+     */
+    private function scamLinks(): array
+    {
+        $query = ScamLink::query()->orderBy('domain');
+        $this->matches($query, ['domain', 'note'], $this->terms);
+
+        return $this->rank($query->limit(self::LIMIT)->get()->map(fn (ScamLink $link) => [
+            'title' => $link->domain,
+            'subtitle' => 'On the scam list'.($link->note ? ' · '.$link->note : ''),
+            'url' => route('scam-links.index', ['search' => $link->domain]),
+            'icon' => 'fa-solid fa-ban',
+            'icon_bg' => self::ICON_TONES['rose'],
         ])->all());
     }
 

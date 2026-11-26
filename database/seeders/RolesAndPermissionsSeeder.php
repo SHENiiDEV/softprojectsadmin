@@ -36,6 +36,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'manage_pci_dss',
             'view_tariffs',
             'manage_tariffs',
+            'view_scam_links',
+            'manage_scam_links',
             'view_reports',
             'manage_users',
         ];
@@ -65,6 +67,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'manage_pci_dss',
             'view_tariffs',
             'manage_tariffs',
+            'view_scam_links',
+            'manage_scam_links',
             'view_reports',
         ]);
 
@@ -81,6 +85,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'manage_clients',
             'view_pci_dss',
             'view_tariffs',
+            'view_scam_links',
+            'manage_scam_links',
             'manage_users',
         ]);
 
@@ -92,6 +98,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'view_deadlines',
             'view_calendar',
             'view_activity',
+            'view_scam_links',
         ]);
 
         // Create default users (idempotent, using updateOrCreate)
