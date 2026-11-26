@@ -1,4 +1,4 @@
-const CACHE_NAME = 'softproject-pwa-v2';
+const CACHE_NAME = 'softproject-pwa-v3';
 const STATIC_ASSETS = [
     '/',
     '/manifest.json',
@@ -40,7 +40,9 @@ self.addEventListener('fetch', (event) => {
     }
 
     const url = new URL(event.request.url);
-    if (url.pathname.startsWith('/livewire/')) {
+
+    // Only our own pages and assets: browser extensions (chrome-extension://) and CDNs are left alone
+    if (url.origin !== self.location.origin || url.pathname.startsWith('/livewire/')) {
         return;
     }
 
@@ -51,13 +53,18 @@ self.addEventListener('fetch', (event) => {
                     const isAsset = url.pathname.match(/\.(css|js|png|jpg|jpeg|svg|woff2?|ico|webmanifest|json)$/);
                     if (isAsset) {
                         const responseClone = networkResponse.clone();
-                        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
+                        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone)).catch(() => {});
                     }
                 }
                 return networkResponse;
             })
             .catch(() => {
-                return caches.match(event.request);
+                // Offline: the cached copy, otherwise an explicit answer (respondWith must never get "undefined")
+                return caches.match(event.request).then((cached) => cached || new Response('Offline', {
+                    status: 503,
+                    statusText: 'Service Unavailable',
+                    headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+                }));
             })
     );
 });

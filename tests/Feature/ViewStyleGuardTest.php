@@ -53,4 +53,18 @@ class ViewStyleGuardTest extends TestCase
             'Hover-only control in '.$path.' (wrap it with [@media(hover:hover)]: variants)'
         );
     }
+
+    /**
+     * Alpine only wraps an x-init / x-data expression in a function body (so "const" works) when it STARTS with
+     * let / const / if. A leading comment turns it into a plain expression: "Unexpected token 'const'" on every page.
+     */
+    #[DataProvider('bladeFiles')]
+    public function test_alpine_expressions_do_not_start_with_a_comment(string $path): void
+    {
+        $this->assertDoesNotMatchRegularExpression(
+            '/x-init="\s*(\/\/|\/\*)/',
+            (string) file_get_contents($path),
+            "{$path}: x-init starts with a comment (Alpine then cannot parse the statements that follow)."
+        );
+    }
 }

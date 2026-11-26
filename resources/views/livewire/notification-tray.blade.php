@@ -55,21 +55,22 @@
          }
      }" 
      x-init="
-         // Populate initial unread notifications to avoid spamming on page load
-         const initial = JSON.parse($refs.notificationsData.textContent || '[]');
-         if (notifiedIds.length === 0) {
-             initial.forEach(n => {
-                 notifiedIds.push(n.id);
-             });
-             localStorage.setItem('notified_notification_ids', JSON.stringify(notifiedIds));
-         }
+         $nextTick(() => {
+             const initial = JSON.parse($refs.notificationsData?.textContent || '[]');
+             if (notifiedIds.length === 0) {
+                 initial.forEach(n => {
+                     notifiedIds.push(n.id);
+                 });
+                 localStorage.setItem('notified_notification_ids', JSON.stringify(notifiedIds));
+             }
 
-         // Watch for future updates
-         $watch('$refs.notificationsData.textContent', (val) => {
-             triggerPush(JSON.parse(val || '[]'));
+             $watch(() => $refs.notificationsData?.textContent, (val) => {
+                 triggerPush(JSON.parse(val || '[]'));
+             });
          });
      "
      wire:poll.10s>
+    {{-- x-init remembers the unread notifications already on the page (no push spam on load) and pushes new ones. It must not start with a comment: Alpine then no longer treats "const" as a statement. --}}
     <!-- Bell Button -->
     <button @click="open = !open; if(permissionStatus === 'default') requestPermission();" type="button" class="relative p-2.5 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all focus:outline-none" title="Notifications">
         <i class="fa-regular fa-bell text-lg"></i>
