@@ -35,6 +35,8 @@ class Settings extends Component
         'manage_pci_dss' => 'Manage PCI DSS Documents (Upload/Edit/Delete)',
         'view_tariffs' => 'View Tariffs & Matrix',
         'manage_tariffs' => 'Manage Tariffs (Providers/Rates/Fees)',
+        'view_scam_links' => 'Check links against the Scam Links list',
+        'manage_scam_links' => 'Manage Scam Links (Add/Remove)',
         'view_reports' => 'View Reports (Time & Productivity)',
         'manage_users' => 'Manage Users Settings',
     ];

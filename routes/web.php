@@ -20,6 +20,7 @@ use App\Livewire\Projects\Edit as ProjectsEdit;
 use App\Livewire\Projects\Index as ProjectsIndex;
 use App\Livewire\Projects\Show as ProjectsShow;
 use App\Livewire\Reports\ProductivityReport;
+use App\Livewire\ScamLinks\Index as ScamLinksIndex;
 use App\Livewire\Reports\TimeReport;
 use App\Livewire\Settings;
 use App\Livewire\Settings\EmailTemplates;
@@ -46,6 +47,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/projects/{project}', ProjectsShow::class)->middleware('permission:view_projects')->name('projects.show');
     Route::get('/projects/{project}/edit', ProjectsEdit::class)->middleware('permission:manage_projects')->name('projects.edit');
     Route::get('/projects/{project}/pdf', [ProjectPdfController::class, 'export'])->middleware(['feature:pdf_export', 'permission:view_projects'])->name('projects.pdf');
+
+    Route::get('/scam-links', ScamLinksIndex::class)->middleware(['feature:scam_links', 'permission:view_scam_links'])->name('scam-links.index');
 
     Route::get('/onboarding', OnboardingIndex::class)->middleware(['feature:onboarding', 'permission:view_tasks'])->name('onboarding.index');
 

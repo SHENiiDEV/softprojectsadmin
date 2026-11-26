@@ -50,6 +50,7 @@ return [
             'items' => [
                 ['key' => 'pci-dss', 'label' => 'PCI DSS', 'route' => 'pci-dss.index', 'active' => 'pci-dss.*', 'icon' => 'fa-shield-halved', 'feature' => 'pci_dss', 'permission' => 'view_pci_dss'],
                 ['key' => 'tariffs', 'label' => 'Tariffs & Matrix', 'route' => 'tariffs.index', 'active' => 'tariffs.*', 'icon' => 'fa-scale-balanced', 'feature' => 'tariffs', 'permission' => 'view_tariffs'],
+                ['key' => 'scam-links', 'label' => 'Scam Links', 'route' => 'scam-links.index', 'active' => 'scam-links.*', 'icon' => 'fa-ban', 'feature' => 'scam_links', 'permission' => 'view_scam_links'],
                 ['key' => 'credentials', 'label' => 'Credentials', 'route' => 'credentials', 'active' => 'credentials', 'icon' => 'fa-key', 'feature' => 'credential_vault', 'permission' => 'view_credentials'],
             ],
         ],
