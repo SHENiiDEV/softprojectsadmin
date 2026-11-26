@@ -36,7 +36,7 @@
 
     @if (config('features.smm', true) && $activeSubTab === 'smm')
         <!-- SMM checklist per website and social network -->
-        <livewire:projects.smm-tracker :project="$project" :key="'smm-tracker-'.$project->id" />
+        <livewire:projects.smm-tracker-section :project="$project" :key="'smm-tracker-'.$project->id" />
 
         <!-- Earlier post scheduler (kept so nothing is lost) -->
         <details class="group bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-2xl">
