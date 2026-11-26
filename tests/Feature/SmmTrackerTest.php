@@ -206,6 +206,7 @@ class SmmTrackerTest extends TestCase
         $manager = User::factory()->create()->assignRole('manager');
 
         Livewire::actingAs($manager)->test(OperationsSection::class, ['project' => $this->project])
+            ->assertSeeLivewire(SmmTrackerSection::class)
             ->assertSee('Post log')
             ->assertSee('Schedule SMM Post');
     }
