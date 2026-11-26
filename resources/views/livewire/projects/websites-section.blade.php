@@ -186,6 +186,66 @@
                     @enderror
                 </div>
 
+                <!-- Social Networks -->
+                <div class="md:col-span-2 space-y-2.5">
+                    <div class="flex items-center gap-2">
+                        <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Social Networks</label>
+                        @if(count($socials) > 0)
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400 border border-indigo-200/40 dark:border-indigo-800/40">{{ count($socials) }} selected</span>
+                        @endif
+                    </div>
+
+                    <!-- Which networks the site has -->
+                    <div class="flex flex-wrap gap-2">
+                        @foreach($this->availableSocials as $network => $icon)
+                            @php
+                                $socialSelected = isset($socials[\Illuminate\Support\Str::slug($network)]);
+                            @endphp
+                            <button type="button"
+                                    wire:click="toggleSocial('{{ addslashes($network) }}')"
+                                    aria-pressed="{{ $socialSelected ? 'true' : 'false' }}"
+                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition {{ $socialSelected ? 'bg-indigo-50 text-indigo-700 border-indigo-300 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-700' : 'bg-white text-slate-500 border-slate-200 hover:border-indigo-300 hover:text-indigo-600 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-800' }}">
+                                <i class="{{ $icon }}"></i>{{ $network }}
+                                @if($socialSelected)<i class="fa-solid fa-check text-[10px]"></i>@endif
+                            </button>
+                        @endforeach
+                    </div>
+
+                    <!-- Link and status of every selected network -->
+                    @if(count($socials) > 0)
+                        <div class="space-y-2">
+                            @foreach($socials as $socialKey => $profile)
+                                <div wire:key="social-{{ $socialKey }}" class="grid grid-cols-1 sm:grid-cols-12 gap-2 items-start p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80">
+                                    <div class="sm:col-span-3 flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-200 sm:pt-2">
+                                        <i class="{{ \App\Models\Website::socialIcon($profile['network']) }} w-4 text-center text-slate-400"></i>{{ $profile['network'] }}
+                                    </div>
+                                    <div class="sm:col-span-6">
+                                        <input type="text" wire:model="socials.{{ $socialKey }}.url" placeholder="https://... profile link" class="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-200">
+                                        @error("socials.{$socialKey}.url") <span class="text-[10px] text-rose-500 mt-1 block">{{ $message }}</span> @enderror
+                                    </div>
+                                    <div class="sm:col-span-2">
+                                        <select wire:model="socials.{{ $socialKey }}.status" class="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all duration-200">
+                                            @foreach(\App\Models\Website::SOCIAL_STATUSES as $statusValue => $statusLabel)
+                                                <option value="{{ $statusValue }}">{{ $statusLabel }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="sm:col-span-1 text-right sm:pt-1.5">
+                                        <button type="button" wire:click="toggleSocial('{{ addslashes($profile['network']) }}')" title="Remove {{ $profile['network'] }}" class="p-1 text-slate-400 hover:text-rose-500 transition-colors"><i class="fa-solid fa-xmark"></i></button>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+
+                    <!-- Add a network that is not in the list -->
+                    <div class="flex items-center gap-2">
+                        <input type="text" wire:model="newSocialName" wire:keydown.enter.prevent="addCustomSocial" placeholder="Other network (e.g. VK, Threads)..." class="flex-1 px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500">
+                        <button type="button" wire:click="addCustomSocial" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200/60 dark:border-indigo-800/60 hover:bg-indigo-100/80 transition">Add</button>
+                    </div>
+                    @error('newSocialName') <span class="text-[10px] text-rose-500 block">{{ $message }}</span> @enderror
+                </div>
+
                 <!-- Form Buttons -->
                 <div class="md:col-span-2 flex items-center justify-end space-x-2 pt-2">
                     <button type="button" wire:click="cancel" class="px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl transition-all duration-150">
@@ -228,6 +288,24 @@
                                             <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200/20 dark:border-indigo-900/20">
                                                 {{ $gw }}
                                             </span>
+                                        @endforeach
+                                    </div>
+                                @endif
+                                @php
+                                    $socialProfiles = $web->socialProfiles();
+                                @endphp
+                                @if(! empty($socialProfiles))
+                                    <div class="flex flex-wrap gap-1 mt-1 max-w-[320px]">
+                                        @foreach($socialProfiles as $profile)
+                                            @if($profile['status'] === 'created')
+                                                @if($profile['url'])
+                                                    <a href="{{ $profile['url'] }}" target="_blank" rel="noopener" title="{{ $profile['network'] }} · Created" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-900/40 hover:opacity-80"><i class="{{ \App\Models\Website::socialIcon($profile['network']) }}"></i>{{ $profile['network'] }}</a>
+                                                @else
+                                                    <span title="{{ $profile['network'] }} · Created, no link" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-900/40"><i class="{{ \App\Models\Website::socialIcon($profile['network']) }}"></i>{{ $profile['network'] }}</span>
+                                                @endif
+                                            @else
+                                                <span title="{{ $profile['network'] }} · Not created" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold text-slate-400 dark:text-slate-500 border border-dashed border-slate-300 dark:border-slate-700"><i class="{{ \App\Models\Website::socialIcon($profile['network']) }}"></i>{{ $profile['network'] }}</span>
+                                            @endif
                                         @endforeach
                                     </div>
                                 @endif

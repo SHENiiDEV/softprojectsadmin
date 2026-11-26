@@ -175,7 +175,7 @@ class GlobalSearch extends Component
         $columns = ['name', 'ubo', 'mcc', 'notes', 'settlement_bank_1', 'settlement_bank_2', 'director.name', 'client.name', 'websites.name', 'websites.url'];
         if ($this->like === 'like') {
             // JSON columns are plain text for LIKE on MySQL / SQLite
-            array_push($columns, 'phones', 'emails', 'websites.gateways', 'boarding.providers_data');
+            array_push($columns, 'phones', 'emails', 'websites.gateways', 'websites.socials', 'boarding.providers_data');
         }
 
         $query = Project::query()->with(['director', 'client', 'websites', 'boarding'])->orderBy('name');
@@ -207,7 +207,7 @@ class GlobalSearch extends Component
             'Director Curator' => $project->ubo,
             'Director' => $project->director?->name,
             'Client' => $project->client?->name,
-            'Website' => $project->websites->map(fn (Website $w) => $w->name.' '.$w->url.' '.implode(' ', (array) $w->gateways))->implode(' | '),
+            'Website' => $project->websites->map(fn (Website $w) => $w->name.' '.$w->url.' '.implode(' ', (array) $w->gateways).' '.collect($w->socialProfiles())->pluck('network')->implode(' '))->implode(' | '),
             'Provider' => json_encode($project->boarding?->providers_data, JSON_UNESCAPED_UNICODE),
             'MCC' => $project->mcc,
             'Bank' => $project->settlement_bank_1.' '.$project->settlement_bank_2,
@@ -337,7 +337,7 @@ class GlobalSearch extends Component
     {
         $columns = ['name', 'url', 'project.name', 'responsible.name'];
         if ($this->like === 'like') {
-            $columns[] = 'gateways';
+            array_push($columns, 'gateways', 'socials');
         }
 
         $query = Website::query()->with(['project:id,name', 'responsible:id,name'])->orderByDesc('id');
