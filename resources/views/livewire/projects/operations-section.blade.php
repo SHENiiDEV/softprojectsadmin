@@ -35,7 +35,16 @@
     @endif
 
     @if (config('features.smm', true) && $activeSubTab === 'smm')
-        <!-- SMM TRACKER SECTION -->
+        <!-- SMM checklist per website and social network -->
+        <livewire:projects.smm-tracker :project="$project" :key="'smm-tracker-'.$project->id" />
+
+        <!-- Earlier post scheduler (kept so nothing is lost) -->
+        <details class="group bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-2xl">
+            <summary class="cursor-pointer list-none flex items-center justify-between px-5 py-3.5 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                <span><i class="fa-solid fa-calendar-days mr-2 text-slate-400"></i>Post log (scheduler)</span>
+                <i class="fa-solid fa-chevron-down text-xs text-slate-400 group-open:rotate-180 transition-transform"></i>
+            </summary>
+            <div class="p-5 pt-0">
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <!-- Form to Add/Edit SMM Post (5 cols) -->
             <div class="lg:col-span-5 bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800/80 rounded-2xl p-5 space-y-4">
@@ -169,6 +178,8 @@
                 </div>
             </div>
         </div>
+            </div>
+        </details>
     @else
         <!-- REVIEWS MANAGER SECTION -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">

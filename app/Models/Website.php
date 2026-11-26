@@ -80,9 +80,10 @@ class Website extends Model
     }
 
     /**
-     * Social profiles as a clean list: network, url (or null) and status.
+     * Social profiles as a clean list: network, url (or null), status and the SMM checklist
+     * (post made / checked, each with who and when).
      *
-     * @return list<array{network: string, url: ?string, status: string}>
+     * @return list<array{network: string, url: ?string, status: string, post_done: bool, post_done_at: ?string, post_done_by: ?int, checked: bool, checked_at: ?string, checked_by: ?int}>
      */
     public function socialProfiles(): array
     {
@@ -99,6 +100,12 @@ class Website extends Model
                 'network' => $network,
                 'url' => filled($profile['url'] ?? null) ? (string) $profile['url'] : null,
                 'status' => array_key_exists($profile['status'] ?? '', self::SOCIAL_STATUSES) ? $profile['status'] : 'not_created',
+                'post_done' => (bool) ($profile['post_done'] ?? false),
+                'post_done_at' => $profile['post_done_at'] ?? null,
+                'post_done_by' => isset($profile['post_done_by']) ? (int) $profile['post_done_by'] : null,
+                'checked' => (bool) ($profile['checked'] ?? false),
+                'checked_at' => $profile['checked_at'] ?? null,
+                'checked_by' => isset($profile['checked_by']) ? (int) $profile['checked_by'] : null,
             ];
         }
 

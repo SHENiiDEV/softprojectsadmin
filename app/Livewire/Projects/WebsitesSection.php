@@ -232,17 +232,20 @@ class WebsitesSection extends Component
     }
 
     /**
-     * The form state as stored on the website: a list of network, url and status.
+     * The form state as stored on the website: network, url and status; everything else already saved on a
+     * network (the SMM checklist: post made / checked) is kept.
      *
-     * @return list<array{network: string, url: ?string, status: string}>
+     * @return list<array<string, mixed>>
      */
-    private function socialsPayload(): array
+    private function socialsPayload(?Website $existing = null): array
     {
-        return collect($this->socials)->map(fn (array $profile) => [
+        $saved = collect((array) $existing?->socials)->keyBy(fn ($profile) => Str::slug((string) ($profile['network'] ?? '')));
+
+        return collect($this->socials)->map(fn (array $profile, string $key) => array_merge($saved->get($key, []), [
             'network' => trim($profile['network']),
             'url' => filled($profile['url'] ?? null) ? trim($profile['url']) : null,
             'status' => $profile['status'],
-        ])->values()->all();
+        ]))->values()->all();
     }
 
     public function mount(Project $project): void
@@ -296,7 +299,7 @@ class WebsitesSection extends Component
                 'responsible_user_id' => $this->responsible_user_id ?: null,
                 'status' => $this->status,
                 'gateways' => $this->gateways,
-                'socials' => $this->socialsPayload(),
+                'socials' => $this->socialsPayload($website),
                 'visa_status' => $this->visa_status,
                 'mastercard_status' => $this->mastercard_status,
             ]);
