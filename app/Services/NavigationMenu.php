@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\User;
+use Illuminate\Support\Facades\Route;
 
 class NavigationMenu
 {
@@ -63,6 +64,11 @@ class NavigationMenu
      */
     private function isVisible(array $item, User $user): bool
     {
+        // A route that is not known (e.g. a stale route cache right after a deploy) must not take every page down
+        if (! Route::has($item['route'])) {
+            return false;
+        }
+
         foreach ((array) ($item['feature'] ?? []) as $feature) {
             if (! config("features.{$feature}", true)) {
                 return false;

@@ -103,4 +103,19 @@ class NavigationMenuTest extends TestCase
         $response->assertSee('Compliance &amp; Finance', false);
         $response->assertSee('Administration');
     }
+
+    public function test_an_item_whose_route_does_not_exist_is_left_out_instead_of_breaking_every_page(): void
+    {
+        config(['navigation.groups' => array_merge(config('navigation.groups'), [[
+            'label' => 'Broken',
+            'items' => [['key' => 'ghost', 'label' => 'Ghost', 'route' => 'no.such.route', 'active' => 'no.such.route', 'icon' => 'fa-ghost']],
+        ]])]);
+
+        $admin = User::factory()->create()->assignRole('admin');
+
+        $groups = app(NavigationMenu::class)->groups($admin);
+
+        $this->assertNotContains('Broken', array_column($groups, 'label'));
+        $this->actingAs($admin)->get('/dashboard')->assertOk();
+    }
 }
