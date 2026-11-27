@@ -164,14 +164,13 @@
                                      <i class="fa-solid fa-pen"></i>
                                  </button>
 
-                                <!-- Password reset -->
-                                <button type="button" 
-                                        wire:click="openResetModal({{ $userItem->id }})" 
-                                        class="inline-flex items-center justify-center p-2 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-amber-600 dark:hover:text-amber-400 transition-colors duration-150" 
-                                        title="Reset password">
-                                    <svg class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m-2 4a2 2 0 012 2m-2-4a2 2 0 012-2m-2 4h.01M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                    </svg>
+                                <!-- Password -->
+                                <button type="button"
+                                        wire:click="openResetModal({{ $userItem->id }})"
+                                        class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 border border-amber-200/70 dark:border-amber-900/40 hover:bg-amber-100 dark:hover:bg-amber-950/50 transition-colors"
+                                        title="Change password"
+                                        aria-label="Change password of {{ $userItem->name }}">
+                                    <i class="fa-solid fa-key"></i> Password
                                 </button>
 
                                 <!-- Delete -->
@@ -286,6 +285,13 @@
                         @error('color') <span class="text-xs text-rose-600 mt-1 block">{{ $message }}</span> @enderror
                     </div>
 
+                    @if($editingUserId)
+                        <div class="flex items-center justify-between gap-3 p-3 rounded-xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/30">
+                            <div class="text-xs text-slate-600 dark:text-slate-300"><span class="font-semibold">Password</span><br>Set a new password for this user.</div>
+                            <button type="button" wire:click="openResetModal({{ $editingUserId }})" class="shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold text-amber-700 dark:text-amber-300 bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-900/50 hover:bg-amber-50 transition"><i class="fa-solid fa-key mr-1"></i>Change password</button>
+                        </div>
+                    @endif
+
                     <div class="flex justify-end space-x-3 pt-4 border-t border-slate-100 dark:border-slate-800">
                         <button type="button" 
                                 wire:click="$set('showModal', false)" 
@@ -303,37 +309,53 @@
     @endif
 
     <!-- Password Reset Modal -->
-    @if($showResetModal)
-        <div class="fixed inset-0 overflow-y-auto z-50 flex p-4 modal-safe-center bg-slate-950/60 backdrop-blur-sm">
-            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
-                <div class="flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-800">
-                    <h3 class="font-outfit font-bold text-lg text-slate-800 dark:text-white">Reset User Password</h3>
-                    <button type="button" wire:click="$set('showResetModal', false)" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
+    @if($showResetModal && $resetUser)
+        <div class="fixed inset-0 overflow-y-auto z-50 flex p-4 modal-safe-center bg-slate-950/60 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="reset-title" @keydown.escape.window="$wire.closeResetModal()">
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4" x-data="{ copied: false }">
+                <div class="flex justify-between items-start pb-3 border-b border-slate-100 dark:border-slate-800">
+                    <div>
+                        <h3 id="reset-title" class="font-outfit font-bold text-lg text-slate-800 dark:text-white">Change password</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{{ $resetUser->name }} · {{ $resetUser->email }}</p>
+                    </div>
+                    <button type="button" wire:click="closeResetModal" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200" aria-label="Close">
+                        <i class="fa-solid fa-xmark text-lg"></i>
                     </button>
                 </div>
 
                 <form wire:submit.prevent="resetPassword" class="space-y-4">
                     <div>
-                        <label class="block text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5">New Password</label>
-                        <input type="password" 
-                               wire:model="newPassword" 
-                               class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800/80 rounded-xl text-sm focus:ring-sky-500/20 focus:border-sky-500" 
-                               required>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label for="new-password" class="block text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">New password</label>
+                            <button type="button" wire:click="generatePassword" class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i>Generate</button>
+                        </div>
+                        <div class="relative">
+                            <input id="new-password"
+                                   type="{{ $revealPassword ? 'text' : 'password' }}"
+                                   wire:model="newPassword"
+                                   autocomplete="new-password"
+                                   placeholder="At least 8 characters"
+                                   class="w-full pl-4 pr-20 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800/80 rounded-xl text-sm font-mono focus:ring-sky-500/20 focus:border-sky-500"
+                                   required>
+                            <div class="absolute inset-y-0 right-2 flex items-center gap-1">
+                                <button type="button" wire:click="$toggle('revealPassword')" class="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200" title="{{ $revealPassword ? 'Hide' : 'Show' }} password" aria-label="{{ $revealPassword ? 'Hide' : 'Show' }} password"><i class="fa-solid {{ $revealPassword ? 'fa-eye-slash' : 'fa-eye' }} text-sm"></i></button>
+                                <button type="button" x-on:click="if ($wire.newPassword) { navigator.clipboard.writeText($wire.newPassword); copied = true; setTimeout(() => copied = false, 1500); }" class="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200" title="Copy password" aria-label="Copy password"><i class="text-sm" x-bind:class="copied ? 'fa-solid fa-check text-emerald-500' : 'fa-regular fa-copy'"></i></button>
+                            </div>
+                        </div>
                         @error('newPassword') <span class="text-xs text-rose-600 mt-1 block">{{ $message }}</span> @enderror
+                        <p class="mt-1.5 text-[11px] text-slate-400">Pass it to the person yourself. They can change it later in their Profile.</p>
                     </div>
 
+                    <label class="flex items-start gap-2.5 text-sm text-slate-600 dark:text-slate-300 cursor-pointer">
+                        <input type="checkbox" wire:model="signOutEverywhere" class="mt-0.5 rounded border-slate-300 dark:border-slate-700 text-indigo-600 focus:ring-indigo-500 dark:bg-slate-950">
+                        <span>Sign the user out of all devices<span class="block text-[11px] text-slate-400">Recommended: the old password and open sessions stop working at once.</span></span>
+                    </label>
+
                     <div class="flex justify-end space-x-3 pt-4 border-t border-slate-100 dark:border-slate-800">
-                        <button type="button" 
-                                wire:click="$set('showResetModal', false)" 
-                                class="px-4 py-2 text-sm font-semibold text-slate-500 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400 rounded-xl transition duration-150">
+                        <button type="button" wire:click="closeResetModal" class="px-4 py-2 text-sm font-semibold text-slate-500 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400 rounded-xl transition duration-150">
                             Cancel
                         </button>
-                        <button type="submit" 
-                                class="px-4 py-2 text-sm font-semibold text-white bg-amber-600 hover:bg-amber-700 dark:bg-amber-600 dark:hover:bg-amber-500 rounded-xl transition duration-150">
-                            Reset Password
+                        <button type="submit" wire:loading.attr="disabled" wire:target="resetPassword" class="px-4 py-2 text-sm font-semibold text-white bg-amber-600 hover:bg-amber-700 dark:bg-amber-600 dark:hover:bg-amber-500 rounded-xl transition duration-150 disabled:opacity-60">
+                            Change password
                         </button>
                     </div>
                 </form>
