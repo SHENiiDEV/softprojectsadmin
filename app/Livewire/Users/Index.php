@@ -2,15 +2,22 @@
 
 namespace App\Livewire\Users;
 
+use App\Jobs\SendTelegramMessageJob;
+use App\Livewire\Concerns\RequiresPermission;
+use App\Models\ActivityLog;
 use App\Models\User;
+use App\Notifications\AppNotification;
+use App\Services\TelegramService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
 use Livewire\WithPagination;
 
 class Index extends Component
 {
+    use RequiresPermission;
     use WithPagination;
 
     public string $search = '';
@@ -36,6 +43,12 @@ class Index extends Component
     public string $color = '#3b82f6';
 
     public string $newPassword = '';
+
+    /** Show the password in the field (after "Generate" or by the eye button). */
+    public bool $revealPassword = false;
+
+    /** End every session of the user so the old password stops working at once. */
+    public bool $signOutEverywhere = true;
 
     protected $queryString = [
         'search' => ['except' => ''],
@@ -98,10 +111,51 @@ class Index extends Component
      */
     public function openResetModal(int $userId): void
     {
+        $this->requirePermission('manage_users');
+
+        $target = User::findOrFail($userId);
+
+        if (! $this->canChangePasswordOf($target)) {
+            session()->flash('error', 'Only administrators can change the password of an administrator.');
+
+            return;
+        }
+
         $this->resetValidation();
         $this->editingUserId = $userId;
         $this->newPassword = '';
+        $this->revealPassword = false;
+        $this->signOutEverywhere = true;
+        $this->showModal = false;
         $this->showResetModal = true;
+    }
+
+    /**
+     * Administrators can change anybody's password; everybody else with access to this page only the password of
+     * people who are not administrators (otherwise a curator could take over an admin account).
+     */
+    private function canChangePasswordOf(User $target): bool
+    {
+        return auth()->user()->hasRole('admin') || ! $target->hasRole('admin');
+    }
+
+    public function closeResetModal(): void
+    {
+        $this->showResetModal = false;
+        $this->newPassword = '';
+        $this->revealPassword = false;
+    }
+
+    /**
+     * Fill the field with a random password (letters and digits, easy to read out or paste).
+     */
+    public function generatePassword(): void
+    {
+        $this->requirePermission('manage_users');
+
+        $this->newPassword = Str::password(14, symbols: false);
+        $this->revealPassword = true;
+        $this->resetValidation('newPassword');
     }
 
     /**
@@ -152,21 +206,77 @@ class Index extends Component
     }
 
     /**
-     * Reset user password by moderator.
+     * Change the password of a user. The old one stops working at once; the person is told it was changed.
      */
     public function resetPassword(): void
     {
+        $this->requirePermission('manage_users');
+
         $this->validate([
-            'newPassword' => 'required|string|min:8',
+            'newPassword' => 'required|string|min:8|max:255',
         ]);
 
         $user = User::findOrFail($this->editingUserId);
-        $user->update([
+
+        if (! $this->canChangePasswordOf($user)) {
+            session()->flash('error', 'Only administrators can change the password of an administrator.');
+            $this->closeResetModal();
+
+            return;
+        }
+
+        $user->forceFill([
             'password' => Hash::make($this->newPassword),
+            'remember_token' => Str::random(60),
+        ])->save();
+
+        if ($this->signOutEverywhere) {
+            $this->endSessionsOf($user);
+        }
+
+        $actor = auth()->user();
+
+        ActivityLog::create([
+            'user_id' => $actor->id,
+            'action' => 'user_password_changed',
+            'description' => "Password of {$user->name} ({$user->email}) was changed by {$actor->name}".($this->signOutEverywhere ? ', signed out everywhere' : ''),
         ]);
 
-        $this->showResetModal = false;
-        session()->flash('message', 'User password successfully reset.');
+        if ($user->id !== $actor->id) {
+            $this->tellUserPasswordChanged($user, $actor);
+        }
+
+        $this->closeResetModal();
+        session()->flash('message', "Password of {$user->name} changed".($this->signOutEverywhere && $user->id !== $actor->id ? '; they were signed out of all devices.' : '.'));
+    }
+
+    /**
+     * Delete the stored sessions (database session driver); the current session of the person doing it is kept.
+     */
+    private function endSessionsOf(User $user): void
+    {
+        if (config('session.driver') !== 'database') {
+            return;
+        }
+
+        DB::table(config('session.table', 'sessions'))
+            ->where('user_id', $user->id)
+            ->when($user->id === auth()->id(), fn ($query) => $query->where('id', '!=', session()->getId()))
+            ->delete();
+    }
+
+    /**
+     * In-app and Telegram notice (never with the password itself).
+     */
+    private function tellUserPasswordChanged(User $user, User $actor): void
+    {
+        $message = "Your password was changed by {$actor->name}. If you did not expect this, tell an administrator.";
+
+        $user->notify(new AppNotification('Your password was changed', $message, route('profile'), 'password_changed'));
+
+        if ($user->telegram_id) {
+            SendTelegramMessageJob::dispatch($user->telegram_id, '🔐 '.TelegramService::escapeMarkdownV2($message));
+        }
     }
 
     /**
@@ -211,6 +321,8 @@ class Index extends Component
 
         return view('livewire.users.index', [
             'users' => $users,
+            'resetUser' => $this->showResetModal && $this->editingUserId ? User::find($this->editingUserId) : null,
+            'viewerIsAdmin' => auth()->user()->hasRole('admin'),
         ]);
     }
 }
